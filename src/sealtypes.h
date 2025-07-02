@@ -219,6 +219,7 @@ static inline bool shashmap_insert(shashmap_t* hashmap, const char* key, svalue_
 #define SEAL_VALUE_FALSE  sval(SEAL_BOOL, _bool, false)
 #define SEAL_VALUE_INT(val)    sval(SEAL_INT, _int, val)
 #define SEAL_VALUE_FLOAT(val)  sval(SEAL_FLOAT, _float, val)
+#define SEAL_VALUE_BOOL(val)   sval(SEAL_BOOL, _bool, val)
 #define SEAL_VALUE_PTR(val, _name)    sval(SEAL_PTR, ptr, ((struct seal_pointer) {.ptr = val, .name = _name }))
 
 

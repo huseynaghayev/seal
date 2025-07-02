@@ -2,12 +2,12 @@
 
 
 void seal_parse_args(const char *mod_name,
-                    const char *func_name,
-                    seal_byte argc,
-                    svalue_t *argv,
-                    seal_byte typec,
-                    int *typev,
-                    ...)
+                     const char *func_name,
+                     seal_byte argc,
+                     svalue_t *argv,
+                     seal_byte typec,
+                     int *typev,
+                     ...)
 {
   if (argc != typec)
     MOD_ERROR(mod_name, func_name, "expected %d argument%s, got %d", typec, typec != 1 ? "s" : "", argc);
