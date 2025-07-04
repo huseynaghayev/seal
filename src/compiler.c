@@ -489,6 +489,7 @@ static void compile_func_call(cout_t* cout, ast_t* node, struct scope *s)
   SET_16BITS_INDEX(&s->bc, CONST_IDX(&s->cp));
   EMIT(&s->bc, OP_GET_FIELD);
   EMIT(&s->bc, OP_SWAP);
+  EMIT(&s->bc, 2);
 
   for (int i = 0; i < node->func_call.arg_size; i++)
     compile_node(cout, node->func_call.args[i], s);
@@ -570,6 +571,43 @@ static void compile_assign(cout_t* cout, ast_t* node, struct scope *s)
         EMIT(&s->bc, OP_SET_LOCAL);
         EMIT(&s->bc, e->val.as._int);
       }
+      break;
+    case AST_SUBSCRIPT:
+      compile_node(cout, node->assign.var->subscript.main, s);
+      compile_node(cout, node->assign.var->subscript.index, s);
+      EMIT(&s->bc, OP_COPY);
+      EMIT(&s->bc, 2);
+      EMIT(&s->bc, OP_COPY);
+      EMIT(&s->bc, 2);
+      EMIT(&s->bc, OP_GET_FIELD);
+      compile_node(cout, node->assign.expr, s);
+      EMIT(&s->bc, AUG_ASSIGN_OP_TYPE(aug_type));
+      EMIT(&s->bc, OP_SWAP);
+      EMIT(&s->bc, 3);
+      EMIT(&s->bc, OP_SWAP);
+      EMIT(&s->bc, 2);
+      EMIT(&s->bc, OP_SET_FIELD);
+      break;
+    case AST_MEMACC:
+      compile_node(cout, node->assign.var->memacc.main, s);
+      EMIT(&s->bc, OP_DUP);
+      EMIT(&s->bc, OP_PUSH_CONST); /* push opcode */
+      PUSH_CONST(&s->cp, SEAL_VALUE_STRING_STATIC(node->assign.var->memacc.mem->var_ref.name)); /* push constant into pool */
+      sym_idx = CONST_IDX(&s->cp);
+      SET_16BITS_INDEX(&s->bc, sym_idx);
+
+      EMIT(&s->bc, OP_GET_FIELD);
+
+      compile_node(cout, node->assign.expr, s);
+
+      EMIT(&s->bc, AUG_ASSIGN_OP_TYPE(aug_type));
+
+      EMIT(&s->bc, OP_SWAP);
+      EMIT(&s->bc, 2);
+
+      EMIT(&s->bc, OP_PUSH_CONST); /* push opcode */
+      SET_16BITS_INDEX(&s->bc, sym_idx);
+      EMIT(&s->bc, OP_SET_FIELD);
       break;
     default:
       __compiler_error("assigning to %s is not implemented yet", hast_type_name(lval_type));
