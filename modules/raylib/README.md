@@ -94,3 +94,8 @@
 - [ ] DrawPoly(Vector2 center, int sides, float radius, float rotation, Color color);               // Draw a regular polygon (Vector version)
 - [ ] DrawPolyLines(Vector2 center, int sides, float radius, float rotation, Color color);          // Draw a polygon outline of n sides
 - [ ] DrawPolyLinesEx(Vector2 center, int sides, float radius, float rotation, float lineThick, Color color); // Draw a polygon outline of n sides with extended parameters
+
+### Texture-related functions
+- [x] load_texture(path)
+- [x] unload_texture(tex)
+- [ ] draw_texture(tex, x, y, r, g, b, a)

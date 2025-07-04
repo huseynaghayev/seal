@@ -4,6 +4,7 @@
 #define color(r, g, b, a) ((Color) { r, g, b, a })
 
 static const char *MOD_NAME = "raylib";
+static const char *TEX_NAME = "Texture2D*";
 
 
 /* Window-related functions */
@@ -220,6 +221,48 @@ seal_value __seal_raylib_draw_rectangle(seal_byte argc, seal_value *argv)
 
   return SEAL_VALUE_NULL;
 }
+/* Texture-related functions */
+seal_value __seal_raylib_load_texture(seal_byte argc, seal_value *argv)
+{
+  static const char *FUNC_NAME = "load_texture";
+
+  seal_value path;
+  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_STRING), &path);
+
+  Texture2D *tex_ptr = calloc(1, sizeof(Texture2D));
+  *tex_ptr = LoadTexture(AS_STRING(path));
+
+  return SEAL_VALUE_PTR(tex_ptr, TEX_NAME);
+}
+seal_value __seal_raylib_unload_texture(seal_byte argc, seal_value *argv)
+{
+  static const char *FUNC_NAME = "unload_texture";
+
+  seal_value tex_ptr;
+  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_PTR), &tex_ptr, TEX_NAME);
+
+  UnloadTexture(*((Texture2D*)AS_PTR(tex_ptr).ptr));
+  SEAL_FREE(AS_PTR(tex_ptr).ptr);
+
+  return SEAL_VALUE_NULL;
+}
+seal_value __seal_raylib_draw_texture(seal_byte argc, seal_value *argv)
+{
+  static const char *FUNC_NAME = "draw_texture";
+
+  seal_value tex_ptr, x, y, r, g, b, a;
+  seal_parse_args(MOD_NAME,
+                  FUNC_NAME,
+                  argc,
+                  argv,
+                  7,
+                  PARAM_TYPES(SEAL_PTR, SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER),
+                  &tex_ptr, TEX_NAME, &x, &y, &r, &g, &b, &a);
+
+  DrawTexture(*((Texture2D*)(AS_PTR(tex_ptr).ptr)), AS_NUM(x), AS_NUM(y), color(AS_NUM(r), AS_NUM(g), AS_NUM(b), AS_NUM(a)));
+
+  return SEAL_VALUE_NULL;
+}
 seal_value seal_init_mod()
 {
   seal_value mod = {
@@ -256,6 +299,11 @@ seal_value seal_init_mod()
   MOD_REGISTER_FUNC(mod, __seal_raylib_mouse_y, "mouse_y", 0, false);
 
   MOD_REGISTER_FUNC(mod, __seal_raylib_draw_rectangle, "draw_rectangle", 8, false);
+
+  MOD_REGISTER_FUNC(mod, __seal_raylib_load_texture, "load_texture", 1, false);
+  MOD_REGISTER_FUNC(mod, __seal_raylib_unload_texture, "unload_texture", 1, false);
+
+  MOD_REGISTER_FUNC(mod, __seal_raylib_draw_texture, "draw_texture", 7, false);
 
   return mod;
 }

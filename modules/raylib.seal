@@ -130,6 +130,15 @@ $is_key_pressed = rl.is_key_pressed
 $is_key_down = rl.is_key_down
 $is_key_released = rl.is_key_released
 $is_key_up = rl.is_key_up
+$set_exit_key = rl.set_exit_key
+$is_mouse_pressed = rl.is_mouse_pressed
+$is_mouse_down = rl.is_mouse_down
+$is_mouse_released = rl.is_mouse_released
+$is_mouse_up = rl.is_mouse_up
+$mouse_x = rl.mouse_x
+$mouse_y = rl.mouse_y
+$load_texture = rl.load_texture
+$unload_texture = rl.unload_texture
 
 
 define Color(r, g, b, a)
@@ -150,3 +159,14 @@ define draw_rectangle(x, y, w, h, color)
         x, y, w, h,
         color.r, color.g, color.b, color.a
     )
+
+
+define mouse_pos()
+    return {
+        x = mouse_x(),
+        y = mouse_y()
+    }
+
+
+define draw_texture(tex, x, y, color)
+    rl.draw_texture(tex, x, y, color.r, color.g, color.b, color.a)
