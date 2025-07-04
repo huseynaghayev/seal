@@ -31,7 +31,7 @@ static void __print_string_no_escseq(const char *s)
     case '\"':
       printf("%s", "\\\"");
       break;
-    case 'b':
+    case '\b':
       printf("%s", "\\b");
       break;
     default:
