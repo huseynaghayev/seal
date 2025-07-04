@@ -392,10 +392,15 @@ void eval_vm(vm_t* vm, struct local_frame* lf)
     case OP_DUP:
       DUP(vm);
       break;
+    case OP_COPY:
+      idx = FETCH(lf);
+      PUSH(vm, *(vm->sp - idx));
+      break;
     case OP_SWAP:
+      idx = FETCH(lf);
       left = *(vm->sp - 1);
-      *(vm->sp - 1) = *(vm->sp - 2);
-      *(vm->sp - 2) = left;
+      *(vm->sp - 1) = *(vm->sp - idx);
+      *(vm->sp - idx) = left;
       break;
     case OP_ADD:
       right = POP(vm);
