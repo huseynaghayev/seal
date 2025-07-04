@@ -13,6 +13,7 @@ enum {
   OP_PUSH_CONST ,
   OP_POP        ,
   OP_DUP        ,
+  OP_COPY       ,
   OP_SWAP       ,
   OP_JUMP       ,
   OP_JTRUE      ,
@@ -82,6 +83,7 @@ static inline const char* op_name(int op)
   case OP_PUSH_FALSE:  return "OP_PUSH_FALSE";
   case OP_POP       :  return "OP_POP";
   case OP_DUP       :  return "OP_DUP";
+  case OP_COPY      :  return "OP_COPY";
   case OP_SWAP      :  return "OP_SWAP";
   case OP_JUMP      :  return "OP_JUMP";
   case OP_JTRUE     :  return "OP_JTRUE";
@@ -118,6 +120,7 @@ static inline const char* op_name(int op)
   case OP_TYPOF     :  return "OP_TYPOF";
   case OP_GEN_LIST  :  return "OP_GEN_LIST";
   case OP_GET_FIELD :  return "OP_GET_FIELD";
+  case OP_SET_FIELD :  return "OP_SET_FIELD";
   case OP_GEN_MAP   :  return "OP_GEN_MAP";
   case OP_INCLUDE   :  return "OP_INCLUDE";
   case OP_FOR_PREP  :  return "OP_FOR_PREP";
@@ -152,7 +155,7 @@ static inline void print_op(seal_byte* bytes, size_t byte_size, seal_word* label
       printf("%d", idx);
       break;
     }
-    case OP_GET_LOCAL: case OP_SET_LOCAL: case OP_GEN_LIST: case OP_GEN_MAP: {
+    case OP_GET_LOCAL: case OP_SET_LOCAL: case OP_GEN_LIST: case OP_GEN_MAP: case OP_SWAP: case OP_COPY: {
       seal_byte slot = bytes[i++];
       printf("%d", slot);
       break;
