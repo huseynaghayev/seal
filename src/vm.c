@@ -168,9 +168,6 @@ struct seal_string* str_concat(const char* l, const char* r)
     else \
       ERROR_UNRY_OP(~, val); \
     break; \
-  case OP_TYPOF: \
-    PUSH(vm, SEAL_VALUE_STRING(seal_type_name((val).type))); \
-    break; \
   case OP_NOT: \
     if (IS_BOOL(val)) \
       PUSH_BOOL(vm, !(AS_BOOL(val))); \
@@ -326,6 +323,33 @@ search:
   return val;
 }
 
+/* static strings for typeof unary operator */
+static svalue_t __seal_type_null,
+                __seal_type_int,
+                __seal_type_float,
+                __seal_type_string,
+                __seal_type_bool,
+                __seal_type_list,
+                __seal_type_map,
+                __seal_type_func,
+                __seal_type_mod,
+                __seal_type_ptr;
+
+#define TYPEOF_VAL_STR(val) ( \
+  IS_NULL(val) ? __seal_type_null : \
+  IS_INT(val) ? __seal_type_int : \
+  IS_FLOAT(val) ? __seal_type_float : \
+  IS_STRING(val) ? __seal_type_string : \
+  IS_BOOL(val) ? __seal_type_bool : \
+  IS_LIST(val) ? __seal_type_list : \
+  IS_MAP(val) ? __seal_type_map : \
+  IS_FUNC(val) ? __seal_type_func : \
+  IS_MOD(val) ? __seal_type_mod : \
+  IS_PTR(val) ? __seal_type_ptr : \
+  SEAL_VALUE_NULL \
+)
+/********************************************/
+
 void init_vm(vm_t* vm, cout_t* cout)
 {
   vm->const_pool_ptr = cout->const_pool;
@@ -347,6 +371,18 @@ void init_vm(vm_t* vm, cout_t* cout)
   REGISTER_BUILTIN_FUNC(&vm->globals, __seal_float, "float", 1, false);
   REGISTER_BUILTIN_FUNC(&vm->globals, __seal_push, "push", 2, false);
   REGISTER_BUILTIN_FUNC(&vm->globals, __seal_pop, "pop", 1, false);
+
+
+  __seal_type_null = SEAL_VALUE_STRING_STATIC(seal_type_name(SEAL_NULL));
+  __seal_type_int  = SEAL_VALUE_STRING_STATIC(seal_type_name(SEAL_INT));
+  __seal_type_float = SEAL_VALUE_STRING_STATIC(seal_type_name(SEAL_FLOAT));
+  __seal_type_string = SEAL_VALUE_STRING_STATIC(seal_type_name(SEAL_STRING));
+  __seal_type_bool = SEAL_VALUE_STRING_STATIC(seal_type_name(SEAL_BOOL));
+  __seal_type_list = SEAL_VALUE_STRING_STATIC(seal_type_name(SEAL_LIST));
+  __seal_type_map = SEAL_VALUE_STRING_STATIC(seal_type_name(SEAL_MAP));
+  __seal_type_func = SEAL_VALUE_STRING_STATIC(seal_type_name(SEAL_FUNC));
+  __seal_type_mod = SEAL_VALUE_STRING_STATIC(seal_type_name(SEAL_MOD));
+  __seal_type_ptr = SEAL_VALUE_STRING_STATIC(seal_type_name(SEAL_PTR));
 }
 
 void eval_vm(vm_t* vm, struct local_frame* lf)
@@ -492,9 +528,13 @@ void eval_vm(vm_t* vm, struct local_frame* lf)
       left  = POP(vm);
       CMP_OP(vm, left, right, <=);
       break;
+    case OP_TYPOF:
+      left = POP(vm);
+      PUSH(vm, TYPEOF_VAL_STR(left));
+      gc_decref(left);
+      break;
     case OP_NOT:
     case OP_NEG:
-    case OP_TYPOF:
     case OP_BNOT:
       left = POP(vm);
       UNRY_OP(vm, left, op);

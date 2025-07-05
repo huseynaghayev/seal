@@ -281,6 +281,8 @@ seal_type_name(int type)
     case SEAL_LIST    : return "list";
     case SEAL_MAP     : return "map";
     case SEAL_FUNC    : return "function";
+    case SEAL_MOD     : return "module";
+    case SEAL_PTR     : return "custom";
     case SEAL_NUMBER  : return "number";
     case SEAL_ITERABLE: return "iterable";
     case SEAL_ANY     : return "any";
