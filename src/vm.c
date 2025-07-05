@@ -40,10 +40,15 @@
   IS_NULL(val) ? false : \
   IS_INT(val) ? AS_INT(val) != 0 : \
   IS_FLOAT(val) ? AS_FLOAT(val) != 0.0 : \
-  IS_STRING(val) ? true : \
+  IS_STRING(val) ? val.as.string->size > 0 : \
   IS_BOOL(val) ? AS_BOOL(val) : \
   IS_LIST(val) ? AS_LIST(val)->size > 0 : \
-  (VM_ERROR("cannot convert to bool type"), -1))
+  IS_MAP(val) ? AS_MAP(val)->map->filled > 0 : \
+  IS_FUNC(val) ? true : \
+  IS_MOD(val) ? true : \
+  IS_PTR(val) ? AS_PTR(val).ptr != NULL : \
+  false \
+)
 
 /* macros for seal functions */
 #define IS_FUNC_VARARG(val)    (AS_FUNC(val).is_vararg)
@@ -169,10 +174,7 @@ struct seal_string* str_concat(const char* l, const char* r)
       ERROR_UNRY_OP(~, val); \
     break; \
   case OP_NOT: \
-    if (IS_BOOL(val)) \
-      PUSH_BOOL(vm, !(AS_BOOL(val))); \
-    else \
-      ERROR_UNRY_OP(not, val); \
+    PUSH_BOOL(vm, !(TO_BOOL(val))); \
     break; \
   } \
 } while (0)
@@ -241,6 +243,12 @@ static void RUN_FILE(const char *path, hashmap_t *globals)
   eval_vm(&vm, &main_frame);
   *(globals) = vm.globals;
   set_all_functions_global(globals);
+  /*
+  SEAL_FREE(vm.stack);
+  SEAL_FREE(vm.bytecodes);
+  SEAL_FREE(vm.label_ptr);
+  SEAL_FREE(vm.const_pool_ptr);
+  */
 }
 
 svalue_t insert_mod_cache(const char *name)
@@ -369,6 +377,8 @@ void init_vm(vm_t* vm, cout_t* cout)
   REGISTER_BUILTIN_FUNC(&vm->globals, __seal_len, "len", 1, false);
   REGISTER_BUILTIN_FUNC(&vm->globals, __seal_int, "int", 1, false);
   REGISTER_BUILTIN_FUNC(&vm->globals, __seal_float, "float", 1, false);
+  REGISTER_BUILTIN_FUNC(&vm->globals, __seal_str, "str", 1, false);
+  REGISTER_BUILTIN_FUNC(&vm->globals, __seal_bool, "bool", 1, false);
   REGISTER_BUILTIN_FUNC(&vm->globals, __seal_push, "push", 2, false);
   REGISTER_BUILTIN_FUNC(&vm->globals, __seal_pop, "pop", 1, false);
 
@@ -538,6 +548,7 @@ void eval_vm(vm_t* vm, struct local_frame* lf)
     case OP_BNOT:
       left = POP(vm);
       UNRY_OP(vm, left, op);
+      gc_decref(left);
       break;
     case OP_JUMP:
       addr = FETCH(lf) << 8;
@@ -550,6 +561,7 @@ void eval_vm(vm_t* vm, struct local_frame* lf)
       left = POP(vm);
       if (!TO_BOOL(left))
         JUMP(lf, addr);
+      gc_decref(left);
       break;
     case OP_JTRUE:
       addr = FETCH(lf) << 8;
@@ -557,6 +569,7 @@ void eval_vm(vm_t* vm, struct local_frame* lf)
       left = POP(vm);
       if (TO_BOOL(left))
         JUMP(lf, addr);
+      gc_decref(left);
       break;
     case OP_GET_GLOBAL:
       addr = FETCH(lf) << 8;
