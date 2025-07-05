@@ -1,5 +1,6 @@
 #include "builtins.h"
 #include "gc.h"
+#include "moddef.h"
 
 #define BUILTIN_ERROR(...) do { \
   fprintf(stderr, __VA_ARGS__); \
@@ -7,10 +8,7 @@
   exit(1); \
 } while (0)
 
-#define BUILTIN_FUNC_ARG_ERR(name, arg_i, given, expected) do { \
-  BUILTIN_ERROR("in function \'%s\': expected arg %d to be \'%s\', got \'%s\'", \
-                name, arg_i, seal_type_name(expected), seal_type_name(given)); \
-} while (0)
+static const char *MOD_NAME = "<built-in>";
 
 static void __print_string_no_escseq(const char *s)
 {
@@ -149,59 +147,88 @@ svalue_t __seal_scan(seal_byte argc, svalue_t* argv)
 }
 svalue_t __seal_exit(seal_byte argc, svalue_t* argv)
 {
-   if (!IS_INT(argv[0]))
-    BUILTIN_FUNC_ARG_ERR("exit", 0, VAL_TYPE(argv[0]), SEAL_INT); 
+  static const char *FUNC_NAME = "exit";
 
-   exit(AS_INT(argv[0]));
-   return SEAL_VALUE_NULL;
+  svalue_t exit_code;
+  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_INT), &exit_code);
+
+  exit(AS_INT(exit_code));
+  return SEAL_VALUE_NULL;
 }
 svalue_t __seal_len(seal_byte argc, svalue_t* argv)
 {
-  if (!IS_STRING(argv[0]) && !IS_LIST(argv[0]))
-    BUILTIN_FUNC_ARG_ERR("len", 0, VAL_TYPE(argv[0]), SEAL_STRING | SEAL_LIST);
+  static const char *FUNC_NAME = "len";
 
-  return SEAL_VALUE_INT(IS_STRING(argv[0]) ? argv[0].as.string->size : AS_LIST(argv[0])->size);
+  svalue_t it;
+  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_STRING | SEAL_LIST), &it);
+
+  return SEAL_VALUE_INT(IS_STRING(it) ? it.as.string->size : AS_LIST(it)->size);
 }
 svalue_t __seal_int(seal_byte argc, svalue_t* argv)
 {
-  if (!IS_STRING(argv[0]))
-    BUILTIN_FUNC_ARG_ERR("int", 0, VAL_TYPE(argv[0]), SEAL_STRING);
+  static const char *FUNC_NAME = "int";
 
-  return SEAL_VALUE_INT(atoi(AS_STRING(argv[0])));
+  svalue_t arg;
+  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_STRING | SEAL_NUMBER), &arg);
+
+  return SEAL_VALUE_INT(IS_STRING(arg) ? atoi(AS_STRING(arg)) : AS_NUM(arg));
 }
 svalue_t __seal_float(seal_byte argc, svalue_t* argv)
 {
-  svalue_t s = argv[0];
-  
-  switch (s.type) {
-  case SEAL_INT:
-    return SEAL_VALUE_FLOAT(AS_INT(s));
-  case SEAL_FLOAT:
-    return s;
-  case SEAL_STRING:
-    return SEAL_VALUE_FLOAT(atof(AS_STRING(s)));
-  }
+  static const char *FUNC_NAME = "float";
 
+  svalue_t arg;
+  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_STRING | SEAL_NUMBER), &arg);
+
+  return SEAL_VALUE_FLOAT(IS_STRING(arg) ? atof(AS_STRING(arg)) : AS_NUM(arg));
+}
+svalue_t __seal_str(seal_byte argc, svalue_t* argv)
+{
   return SEAL_VALUE_NULL;
+}
+svalue_t __seal_bool(seal_byte argc, svalue_t* argv)
+{
+  static const char *FUNC_NAME = "bool";
+
+  svalue_t arg;
+  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_ANY), &arg);
+
+  return SEAL_VALUE_BOOL(
+      IS_NULL(arg) ? false :
+      IS_INT(arg) ? AS_INT(arg) != 0 :
+      IS_FLOAT(arg) ? AS_FLOAT(arg) != 0.0 :
+      IS_STRING(arg) ? arg.as.string->size > 0 :
+      IS_BOOL(arg) ? AS_BOOL(arg) :
+      IS_LIST(arg) ? AS_LIST(arg)->size > 0 :
+      IS_MAP(arg) ? AS_MAP(arg)->map->filled > 0 :
+      IS_FUNC(arg) ? true :
+      IS_MOD(arg) ? true :
+      IS_PTR(arg) ? AS_PTR(arg).ptr != NULL :
+      false);
 }
 svalue_t __seal_push(seal_byte argc, svalue_t* argv)
 {
-  if (!IS_LIST(argv[0]))
-    BUILTIN_FUNC_ARG_ERR("push", 0, VAL_TYPE(argv[0]), SEAL_LIST);
+  static const char *FUNC_NAME = "push";
 
-  LIST_PUSH(argv[0], argv[1]);
-  gc_incref(argv[1]);
+  svalue_t list, e;
+  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 2, PARAM_TYPES(SEAL_LIST, SEAL_ANY), &list, &e);
+
+  LIST_PUSH(list, e);
+  gc_incref(e);
+
   return SEAL_VALUE_NULL;
 }
 svalue_t __seal_pop(seal_byte argc, svalue_t* argv)
 {
-  if (!IS_LIST(argv[0]))
-    BUILTIN_FUNC_ARG_ERR("pop", 0, VAL_TYPE(argv[0]), SEAL_LIST);
+  static const char *FUNC_NAME = "pop";
+
+  svalue_t list;
+  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_LIST), &list);
 
   if (AS_LIST(argv[0])->size == 0)
     BUILTIN_ERROR("cannot pop empty list");
 
-  svalue_t popped = AS_LIST(argv[0])->mems[--AS_LIST(argv[0])->size];
+  svalue_t popped = AS_LIST(list)->mems[--AS_LIST(list)->size];
   gc_decref_nofree(popped);
   return popped;
 }
