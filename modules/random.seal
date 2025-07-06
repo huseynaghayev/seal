@@ -1,3 +1,12 @@
+/* Random Module
+ * Provides randomness-related functions.
+ * Includes symbols: srand, rand
+ *
+ * Author: Huseyn Aghayev
+ * Language: Seal
+ * Created: 2025-06-21
+ */
+
 $next = 1
 
 define srand(seed)

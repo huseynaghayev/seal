@@ -1,3 +1,12 @@
+/* Raylib Module
+ * Provides C functions wrappers for Seal.
+ * Original Repo: https://github.com/raysan5/raylib
+ *
+ * Author: Huseyn Aghayev
+ * Language: Seal
+ * Created: 2025-07-02
+ */
+
 include sealraylib as rl
 
 

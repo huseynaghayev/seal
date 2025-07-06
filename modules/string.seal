@@ -1,3 +1,13 @@
+/* String Module
+ * Provides core string functions.
+ * Includes symbols: ascii, char, isnum, isalpha, isalnum
+ * islower, isupper, lower, upper, swapcase
+ *
+ * Author: Huseyn Aghayev
+ * Language: Seal
+ * Created: 2025-06-22
+ */
+
 include sealstring as string
 
 
