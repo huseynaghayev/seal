@@ -1,0 +1,32 @@
+/* Math Module
+ * Provides core functional-programming functions
+ * Includes symbols: map, filter, reduce
+ *
+ * Author: Huseyn Aghayev
+ * Language: Seal
+ * Created: 2025-07-06
+ */
+
+define map(func, list)
+    res = []
+    for i in list
+        push(res, func(i))
+
+    return res
+
+
+define filter(func, list)
+    res = []
+    for i in list
+        if func(i)
+            push(res, i)
+
+    return res
+
+
+define reduce(func, list, init)
+    acc = init
+    for i in list
+        acc = func(acc, i)
+
+    return acc
