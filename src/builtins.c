@@ -184,7 +184,50 @@ svalue_t __seal_float(seal_byte argc, svalue_t* argv)
 }
 svalue_t __seal_str(seal_byte argc, svalue_t* argv)
 {
-  return SEAL_VALUE_NULL;
+  static const char *FUNC_NAME = "str";
+
+  svalue_t arg;
+  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_NULL | SEAL_INT | SEAL_FLOAT | SEAL_STRING | SEAL_BOOL), &arg);
+
+  svalue_t res;
+  char *s;
+  int len;
+
+  switch (VAL_TYPE(arg)) {
+  case SEAL_NULL:
+    s = malloc(5 * sizeof(char));
+    strcpy(s, "null");
+    res = SEAL_VALUE_STRING(s);
+    break;
+  case SEAL_INT:
+    len = snprintf(NULL, 0, "%lld", AS_INT(arg));
+    s = malloc(len * sizeof(char));
+    sprintf(s, "%lld", AS_INT(arg));
+    res = SEAL_VALUE_STRING(s);
+    break;
+  case SEAL_FLOAT:
+    len = snprintf(NULL, 0, "%g", AS_FLOAT(arg));
+    s = malloc(len * sizeof(char));
+    sprintf(s, "%g", AS_FLOAT(arg));
+    res = SEAL_VALUE_STRING(s);
+    break;
+  case SEAL_STRING:
+    return arg;
+    break;
+  case SEAL_BOOL:
+    if (AS_BOOL(arg)) {
+      s = malloc(5 * sizeof(char));
+      strcpy(s, "true");
+      res = SEAL_VALUE_STRING(s);
+    } else {
+      s = malloc(6 * sizeof(char));
+      strcpy(s, "false");
+      res = SEAL_VALUE_STRING(s);
+    }
+    break;
+  }
+
+  return res;
 }
 svalue_t __seal_bool(seal_byte argc, svalue_t* argv)
 {
