@@ -28,7 +28,6 @@ struct vm {
  //uint8_t*  ip;    /* instruction pointer */
  svalue_t* stack; /* stack */
  svalue_t* sp;    /* stack pointer */
- svalue_t* bp;    /* base pointer */
  hashmap_t globals; /* hashmap for globals */
  //struct local_frame* lf; /* local frame for function calls */
 };
