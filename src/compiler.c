@@ -187,6 +187,7 @@ static void compile_node(cout_t* cout, ast_t* node, struct scope *s)
   case AST_SUBSCRIPT: compile_subscript(cout, node, s); break;
   case AST_MEMACC: compile_memacc(cout, node, s); break;
   case AST_INCLUDE: compile_include(cout, node, s); break;
+  case AST_TERNARY: compile_ternary(cout, node, s); break;
   default:
     printf("%s is not implemented yet\n", hast_type_name(ast_type(node)));
     exit(1);
@@ -745,4 +746,26 @@ static void compile_include(cout_t *cout, ast_t *node, struct scope *s)
     PUSH_CONST(&s->cp, SEAL_VALUE_STRING_STATIC(node->include.alias)); /* push alias name into pool */
 
   SET_16BITS_INDEX(&s->bc, CONST_IDX(&s->cp));
+}
+static void compile_ternary(cout_t* cout, ast_t* node, struct scope *s)
+{
+  compile_node(cout, node->ternary.cond, s); /* compile condition */
+
+  EMIT(&s->bc, OP_JFALSE); /* if false, jump to else (false) expression */
+  size_t else_addr_offset = CUR_ADDR_OFFSET(&s->bc); /* store else address offset */
+  EMIT_DUMMY(&s->bc, 2); /* push zero bytes */
+
+  compile_node(cout, node->ternary.expr_true, s);
+
+  EMIT(&s->bc, OP_JUMP);
+  size_t end_addr_offset = CUR_ADDR_OFFSET(&s->bc); /* store end address offset */
+  EMIT_DUMMY(&s->bc, 2); /* push zero bytes */
+
+  PUSH_LABEL(&s->lp, CUR_IDX(&s->bc)); /* push else label */
+  REPLACE_16BITS_INDEX(s->bc.bytecodes + else_addr_offset, LABEL_IDX(&s->lp)); /* replace zero bytes with else label index */
+
+  compile_node(cout, node->ternary.expr_false, s);
+
+  PUSH_LABEL(&s->lp, CUR_IDX(&s->bc)); /* push end label */
+  REPLACE_16BITS_INDEX(s->bc.bytecodes + end_addr_offset, LABEL_IDX(&s->lp)); /* replace zero bytes with end label index */
 }
