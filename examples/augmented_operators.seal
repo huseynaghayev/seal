@@ -1,3 +1,5 @@
+// augmented_operators.seal
+
 i = 0
 max = 100
 
@@ -7,11 +9,11 @@ while i < max
 
     i += 1
 
+print(i += 3)
 print(i -= -1)
 print(i *= -1)
 print(i /= -2)
 print(i %= 3)
-print(i ^= 3)
 
 copy = ''
 for c in 'Seal'

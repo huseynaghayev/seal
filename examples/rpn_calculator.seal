@@ -1,0 +1,30 @@
+// rpn_calculator.seal
+
+include string
+
+src = "2 3 + 4 *" // -> 20
+
+stack = []
+
+for c in src
+    if string.isnum(c)
+        push(stack, int(c))
+    else if c == '+'
+        push(stack, pop(stack) + pop(stack))
+    else if c == '-'
+        a = pop(stack)
+        b = pop(stack)
+        push(stack, b - a)
+    else if c == '*'
+        push(stack, pop(stack) * pop(stack))
+    else if c == '/'
+        a = pop(stack)
+        b = pop(stack)
+        push(stack, b / a)
+    else if c == '%'
+        a = pop(stack)
+        b = pop(stack)
+        push(stack, b % a)
+
+
+print(stack[len(stack) - 1])

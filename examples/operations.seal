@@ -5,11 +5,11 @@
 3 - 1 // subtraction
 9 * 8 // multiplication
 30 / 2 // whole division
-30.2 / 2 // fractional division
-30 / 2.4 //   <
-23.9 / 1.4 // <
-100 % 11 // modulus
-9 ^ 2 // exponentiation
+// fractional division
+30.2 / 2
+30 / 2.4
+23.9 / 1.4
+100 % 11 // modulo
 
 // comparison operations
 10 > 2 // greater than
@@ -29,12 +29,15 @@ true or false // or (right will not be evaluated)
 (true and true or true and true) == ((true and true) or (true and true))
 
 // string operations
-'hello' == 'Hello' // same
+'hello' == 'hello' // same
 'hello' == 'Hello' // not same
 'Hello, ' + 'Seal' // concatenation
 
 // ternary
-if true then 0 else 1 // if <expr == boolean> then <epxr> else <expr>
+if true then 0 else 1 // if <expr> then <epxr> else <expr>
 
 // additional
 20 != null // any type can be comparable to 'null'
+[] != null
+{} != null
+null != null

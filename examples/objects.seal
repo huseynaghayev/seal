@@ -1,10 +1,15 @@
 // objects.seal
 
 define Human(name, age)
-    return {
+    human {
         name = name,
         age = age
     }
+
+    human.talk = define(self, msg) // self is required for self calling maps
+        print(self.name + ' is saying: ' + msg)
+
+    return human // return human map
 
 human = Human('Huseyn', 18)
 another_human = Human('John', 20)
@@ -13,3 +18,6 @@ yet_another_human = human
 print(human, another_human, yet_another_human)
 print(human == another_human) // false
 print(human == yet_another_human) // true
+
+// map..func() is shorthand for map.func(map)
+print(human..talk('hello')) // Huseyn is saying: hello
