@@ -25,12 +25,12 @@
 #define GET_CONST(lf, i) (lf->const_pool[i])
 #define VM_ERROR(...) do { \
   int i = -1, line = -1; \
-  while (i++ < lf->linfo_size) { \
+  while (++i < lf->linfo_size) { \
     if (lf->ip - lf->bytecodes < lf->linfo[i].offset) \
       break; \
     line = lf->linfo[i].line; \
   } \
-  fprintf(stderr, "line %d: ", line); \
+  fprintf(stderr, "seal: file: \'%s\', line %d\n", lf->file_name, line); \
   fprintf(stderr, __VA_ARGS__); \
   fprintf(stderr, "\n"); \
   exit(EXIT_FAILURE); \
@@ -231,15 +231,19 @@ static void set_all_functions_global(hashmap_t *globals)
 
 static void RUN_FILE(const char *path, hashmap_t *globals)
 {
+  int len = strlen(path) + 1;
+  char* file_name = SEAL_CALLOC(len, sizeof(char));
+  strcpy(file_name, path);
+
   ast_t* root;
   lexer_t lexer;
-  init_lexer(&lexer, path);
+  init_lexer(&lexer, file_name);
   lexer_get_tokens(&lexer);
   parser_t parser;
   init_parser(&parser, &lexer);
   root = parser_parse(&parser);
   cout_t cout;
-  compile(&cout, root);
+  compile(&cout, root, file_name);
   vm_t vm;
   init_vm(&vm, &cout);
   svalue_t locals[cout.main_scope_local_size];
@@ -252,6 +256,7 @@ static void RUN_FILE(const char *path, hashmap_t *globals)
     .globals = &vm.globals,
     .linfo = cout.bc.linfo,
     .linfo_size = cout.bc.l_size,
+    .file_name = file_name,
   };
   *(globals) = vm.globals;
   eval_vm(&vm, &main_frame);
@@ -304,8 +309,9 @@ search:
     val = ((svalue_t (*)()) function)();
 #else
     void *handle = dlopen(path, RTLD_LAZY);
-    //if (!handle)
-    //  VM_ERROR("failed to include \'%s\'", path);
+    struct local_frame *lf = NULL;
+    if (!handle)
+      VM_ERROR("failed to include \'%s\'", path);
 
     val = ((svalue_t (*)()) dlsym(handle, "seal_init_mod"))();
 #endif
@@ -337,8 +343,9 @@ search:
     goto search;
   }
 
-  //if (IS_NULL(val))
-  //  VM_ERROR("including \'%s\' failed", path);
+  struct local_frame *lf = NULL;
+  if (IS_NULL(val))
+    VM_ERROR("including \'%s\' failed", path);
 
   return val;
 }
@@ -645,6 +652,7 @@ void eval_vm(vm_t* vm, struct local_frame* lf)
           .globals = AS_USERDEF_FUNC(func).globals ? AS_USERDEF_FUNC(func).globals : &vm->globals,
           .linfo = AS_USERDEF_FUNC(func).linfo,
           .linfo_size = AS_USERDEF_FUNC(func).linfo_size,
+          .file_name = AS_USERDEF_FUNC(func).file_name,
         };
         for (int i = 0; i < argc; i++) {
           SET_LOCAL((&func_lf), i, argv[i]);
