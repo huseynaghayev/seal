@@ -23,6 +23,12 @@ typedef int seal_type;
 typedef struct svalue svalue_t;
 typedef struct hashmap hashmap_t;
 
+
+struct line_info {
+  int line;
+  int offset;
+};
+
 struct seal_func {
   enum {
     FUNC_BUILTIN,
@@ -31,6 +37,8 @@ struct seal_func {
   union {
     struct {
       seal_byte *bytecode;
+      struct line_info *linfo;
+      int linfo_size;
       svalue_t *const_pool;
       seal_word *label_pool;
       seal_byte  argc;
