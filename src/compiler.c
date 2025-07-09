@@ -3,12 +3,19 @@
 #include "hashmap.h"
 #include "sealtypes.h"
 
-#define START_BYTECODE_CAP 8
-#define START_POOL_CAP     8
+#define START_BYTECODE_CAP  8
+#define START_LINE_INFO_CAP 2
+#define START_POOL_CAP      8
 
 #define EMIT(bc, byte) do { \
     if ((bc)->size >= (bc)->cap) { \
       (bc)->bytecodes = SEAL_REALLOC((bc)->bytecodes, sizeof(seal_byte) * ((bc)->cap *= 2)); \
+    } \
+    if ((bc)->l_size == 0 || (bc)->linfo[(bc)->l_size - 1].line < node->line) { \
+      if ((bc)->l_size >= (bc)->l_cap) { \
+        (bc)->linfo = SEAL_REALLOC((bc)->linfo, sizeof(struct line_info) * ((bc)->l_cap *= 2)); \
+      } \
+      (bc)->linfo[(bc)->l_size++] = (struct line_info) { node->line, (bc)->size }; \
     } \
     (bc)->bytecodes[(bc)->size++] = (seal_byte)(byte); \
   } while (0)
@@ -83,7 +90,10 @@ void compile(cout_t* cout, ast_t* node)
     .bc = {
       .cap = START_BYTECODE_CAP,
       .size = 0,
-      .bytecodes = SEAL_CALLOC(START_BYTECODE_CAP, sizeof(seal_byte))
+      .bytecodes = SEAL_CALLOC(START_BYTECODE_CAP, sizeof(seal_byte)),
+      .linfo = SEAL_CALLOC(START_LINE_INFO_CAP, sizeof(struct line_info)),
+      .l_cap = START_LINE_INFO_CAP,
+      .l_size = 0,
     },
     .lp = {
       .cap = START_POOL_CAP,
@@ -172,8 +182,8 @@ static void compile_node(cout_t* cout, ast_t* node, struct scope *s)
   case AST_WHILE: compile_while(cout, node, s); break;
   case AST_DOWHILE: compile_dowhile(cout, node, s); break;
   case AST_FOR: compile_for(cout, node, s); break;
-  case AST_SKIP: compile_skip(cout, s); break;
-  case AST_STOP: compile_stop(cout, s); break;
+  case AST_SKIP: compile_skip(cout, node, s); break;
+  case AST_STOP: compile_stop(cout, node, s); break;
   case AST_UNARY: compile_unary(cout, node, s); break;
   case AST_BINARY: compile_binary(cout, node, s); break;
   case AST_BINARY_BOOL: compile_logical_binary(cout, node, s); break;
@@ -356,7 +366,7 @@ static void compile_for(cout_t *cout, ast_t *node, struct scope *s)
   }
   cout->stop_size = stop_start_size;
 }
-static inline void compile_skip(cout_t* cout, struct scope *s)
+static inline void compile_skip(cout_t* cout, ast_t *node, struct scope *s)
 {
   if (cout->skip_size >= UNCOND_JMP_MAX_SIZE)
     __compiler_error("maximum number of skip has exceeded");
@@ -364,7 +374,7 @@ static inline void compile_skip(cout_t* cout, struct scope *s)
   cout->skip_addr_offset_stack[cout->skip_size++] = CUR_ADDR_OFFSET(&s->bc);
   EMIT_DUMMY(&s->bc, 2);
 }
-static inline void compile_stop(cout_t* cout, struct scope *s)
+static inline void compile_stop(cout_t* cout, ast_t *node, struct scope *s)
 {
   if (cout->stop_size >= UNCOND_JMP_MAX_SIZE)
     __compiler_error("maximum number of stop has exceeded");
@@ -643,7 +653,10 @@ static void compile_func_def(cout_t* cout, ast_t* node, struct scope *s)
     .bc = {
       .cap = START_BYTECODE_CAP,
       .size = 0,
-      .bytecodes = SEAL_CALLOC(START_BYTECODE_CAP, sizeof(seal_byte))
+      .bytecodes = SEAL_CALLOC(START_BYTECODE_CAP, sizeof(seal_byte)),
+      .linfo = SEAL_CALLOC(START_LINE_INFO_CAP, sizeof(struct line_info)),
+      .l_cap = START_LINE_INFO_CAP,
+      .l_size = 0,
     },
     .lp = {
       .cap = START_POOL_CAP,
@@ -677,6 +690,8 @@ static void compile_func_def(cout_t* cout, ast_t* node, struct scope *s)
   func_obj.as.func.as.userdef.const_pool = loc_scope.cp.vals;
   func_obj.as.func.as.userdef.label_pool = loc_scope.lp.addrs;
   func_obj.as.func.as.userdef.local_size = loc_scope.loctable.filled; /* assign size of locals */
+  func_obj.as.func.as.userdef.linfo = loc_scope.bc.linfo; /* assign line info */
+  func_obj.as.func.as.userdef.linfo_size = loc_scope.bc.l_size; /* assign line info size */
 
   EMIT(&s->bc, OP_PUSH_CONST); /* push function object to constant pool */
   PUSH_CONST(&s->cp, func_obj);
