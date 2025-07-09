@@ -21,6 +21,7 @@ struct local_frame {
   svalue_t *const_pool;
   seal_word *label_pool;
   hashmap_t *globals;
+  const char *file_name;
 };
 
 struct vm {
