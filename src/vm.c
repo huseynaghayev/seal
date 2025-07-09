@@ -23,7 +23,19 @@
 #define POP(vm) (*(--(vm->sp)))
 #define JUMP(lf, addr) (lf->ip = &lf->bytecodes[lf->label_pool[addr]])
 #define GET_CONST(lf, i) (lf->const_pool[i])
-#define VM_ERROR(...) (fprintf(stderr, __VA_ARGS__), fprintf(stderr, "\n"), exit(EXIT_FAILURE))
+#define VM_ERROR(...) do { \
+  int i = -1, line = -1; \
+  while (i++ < lf->linfo_size) { \
+    if (lf->ip - lf->bytecodes < lf->linfo[i].offset) \
+      break; \
+    line = lf->linfo[i].line; \
+  } \
+  fprintf(stderr, "line %d: ", line); \
+  fprintf(stderr, __VA_ARGS__); \
+  fprintf(stderr, "\n"); \
+  exit(EXIT_FAILURE); \
+} while (0)
+
 #define ERROR_UNRY_OP(op, val) VM_ERROR("\'%s\' unary operator is not supported for \'%s\'", #op, seal_type_name(val.type))
 #define ERROR_BIN_OP(op, left, right) VM_ERROR("\'%s\' operator is not supported for \'%s\' and \'%s\'", #op, seal_type_name(left.type), seal_type_name(right.type))
 
@@ -237,7 +249,9 @@ static void RUN_FILE(const char *path, hashmap_t *globals)
     .ip = vm.bytecodes,
     .label_pool = cout.labels,
     .const_pool = cout.const_pool,
-    .globals = &vm.globals
+    .globals = &vm.globals,
+    .linfo = cout.bc.linfo,
+    .linfo_size = cout.bc.l_size,
   };
   *(globals) = vm.globals;
   eval_vm(&vm, &main_frame);
@@ -290,8 +304,8 @@ search:
     val = ((svalue_t (*)()) function)();
 #else
     void *handle = dlopen(path, RTLD_LAZY);
-    if (!handle)
-      VM_ERROR("failed to include \'%s\'", path);
+    //if (!handle)
+    //  VM_ERROR("failed to include \'%s\'", path);
 
     val = ((svalue_t (*)()) dlsym(handle, "seal_init_mod"))();
 #endif
@@ -323,8 +337,8 @@ search:
     goto search;
   }
 
-  if (IS_NULL(val))
-    VM_ERROR("including \'%s\' failed", path);
+  //if (IS_NULL(val))
+  //  VM_ERROR("including \'%s\' failed", path);
 
   return val;
 }
@@ -577,7 +591,7 @@ void eval_vm(vm_t* vm, struct local_frame* lf)
       if (entry && entry->key) {
         PUSH(vm, entry->val);
       } else {
-        VM_ERROR("vm: %s is not defined", sym);
+        VM_ERROR("\'%s\' is not defined", sym);
       }
       break;
     case OP_SET_GLOBAL:
@@ -628,7 +642,9 @@ void eval_vm(vm_t* vm, struct local_frame* lf)
           .bytecodes = AS_USERDEF_FUNC(func).bytecode,
           .const_pool = AS_USERDEF_FUNC(func).const_pool,
           .label_pool = AS_USERDEF_FUNC(func).label_pool,
-          .globals = AS_USERDEF_FUNC(func).globals ? AS_USERDEF_FUNC(func).globals : &vm->globals
+          .globals = AS_USERDEF_FUNC(func).globals ? AS_USERDEF_FUNC(func).globals : &vm->globals,
+          .linfo = AS_USERDEF_FUNC(func).linfo,
+          .linfo_size = AS_USERDEF_FUNC(func).linfo_size,
         };
         for (int i = 0; i < argc; i++) {
           SET_LOCAL((&func_lf), i, argv[i]);
