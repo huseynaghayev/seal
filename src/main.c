@@ -64,7 +64,7 @@ int main(int argc, char** argv)
     print_ast(root);
 
   cout_t cout;
-  compile(&cout, root);
+  compile(&cout, root, parser.file_path);
   if (PRINT_OP)
     print_op(cout.bc.bytecodes, cout.bc.size, cout.labels, cout.label_pool_size);
   if (PRINT_BYTE)
@@ -86,6 +86,7 @@ int main(int argc, char** argv)
     .globals = &vm.globals,
     .linfo = cout.bc.linfo,
     .linfo_size = cout.bc.l_size,
+    .file_name = file_path,
   };
   eval_vm(&vm, &main_frame);
   if (PRINT_STACK)
