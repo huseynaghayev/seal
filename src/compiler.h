@@ -45,6 +45,11 @@ struct bytechunk {
   seal_byte* bytecodes; /* bytecode array */
   size_t size; /* bytecode size */
   size_t cap;  /* bytecode capacity */
+
+  /* line info */
+  struct line_info *linfo; /* line info array for debugging */
+  int l_size;
+  int l_cap;
 };
 
 struct const_pool {
@@ -86,8 +91,8 @@ static void compile_if(cout_t*, ast_t*, struct scope*);
 static void compile_while(cout_t*, ast_t*, struct scope*);
 static void compile_dowhile(cout_t*, ast_t*, struct scope*);
 static void compile_for(cout_t*, ast_t*, struct scope*);
-static inline void compile_skip(cout_t*, struct scope*);
-static inline void compile_stop(cout_t*, struct scope*);
+static inline void compile_skip(cout_t*, ast_t*, struct scope*);
+static inline void compile_stop(cout_t*, ast_t*, struct scope*);
 static void compile_unary(cout_t*, ast_t*, struct scope*);
 static void compile_binary(cout_t*, ast_t*, struct scope*);
 static void compile_logical_binary(cout_t*, ast_t*, struct scope*);
