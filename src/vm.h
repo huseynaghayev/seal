@@ -16,6 +16,8 @@ struct local_frame {
   svalue_t* locals;
   seal_byte* ip;
   seal_byte* bytecodes;
+  struct line_info *linfo;
+  int linfo_size;
   svalue_t *const_pool;
   seal_word *label_pool;
   hashmap_t *globals;
