@@ -166,7 +166,6 @@ static void compile_node(cout_t* cout, ast_t* node, struct scope *s)
         case AST_MAP:
         case AST_SUBSCRIPT:
         case AST_MEMACC:
-        case AST_INCLUDE:
           compile_node(cout, node->comp.stmts[i], s);
           EMIT(&s->bc, OP_POP);
           break;
@@ -758,13 +757,25 @@ static void compile_include(cout_t *cout, ast_t *node, struct scope *s)
   EMIT(&s->bc, OP_PUSH_CONST); /* push opcode */
   PUSH_CONST(&s->cp, SEAL_VALUE_STRING_STATIC(node->include.name)); /* push module name into pool */
   SET_16BITS_INDEX(&s->bc, CONST_IDX(&s->cp));
+  EMIT(&s->bc, OP_INCLUDE); /* pushes module to stack */
 
-  EMIT(&s->bc, OP_INCLUDE);
-  EMIT(&s->bc, OP_SET_GLOBAL);
-  if (node->include.alias)
-    PUSH_CONST(&s->cp, SEAL_VALUE_STRING_STATIC(node->include.alias)); /* push alias name into pool */
+  if (node->include.symbols_size == 0) {
+    EMIT(&s->bc, OP_SET_GLOBAL);
+    if (node->include.alias)
+      PUSH_CONST(&s->cp, SEAL_VALUE_STRING_STATIC(node->include.alias)); /* push alias name into pool */
 
-  SET_16BITS_INDEX(&s->bc, CONST_IDX(&s->cp));
+    SET_16BITS_INDEX(&s->bc, CONST_IDX(&s->cp));
+    EMIT(&s->bc, OP_POP); /* pop module */
+  } else {
+    for (int i = 0; i < node->include.symbols_size; i++) {
+      EMIT(&s->bc, OP_PUSH_CONST); /* push opcode */
+      PUSH_CONST(&s->cp, SEAL_VALUE_STRING_STATIC(node->include.symbols[i])); /* push symbol name into pool */
+      SET_16BITS_INDEX(&s->bc, CONST_IDX(&s->cp));     
+    }
+    EMIT(&s->bc, OP_INCLUDE_SYM);
+    EMIT(&s->bc, node->include.symbols_size);
+  }
+
 }
 static void compile_ternary(cout_t* cout, ast_t* node, struct scope *s)
 {
