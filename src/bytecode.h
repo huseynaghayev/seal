@@ -60,6 +60,7 @@ enum {
   OP_GEN_MAP    ,
   /* include */
   OP_INCLUDE    ,
+  OP_INCLUDE_SYM,
   /* for loop */
   OP_FOR_PREP,
   OP_FOR_NEXT,
@@ -123,6 +124,7 @@ static inline const char* op_name(int op)
   case OP_SET_FIELD :  return "OP_SET_FIELD";
   case OP_GEN_MAP   :  return "OP_GEN_MAP";
   case OP_INCLUDE   :  return "OP_INCLUDE";
+  case OP_INCLUDE_SYM:  return "OP_INCLUDE_SYM";
   case OP_FOR_PREP  :  return "OP_FOR_PREP";
   case OP_FOR_NEXT  :  return "OP_FOR_NEXT";
   case OP_FOR_STOP  :  return "OP_FOR_STOP";
@@ -155,7 +157,7 @@ static inline void print_op(seal_byte* bytes, size_t byte_size, seal_word* label
       printf("%d", idx);
       break;
     }
-    case OP_GET_LOCAL: case OP_SET_LOCAL: case OP_GEN_LIST: case OP_GEN_MAP: case OP_SWAP: case OP_COPY: {
+    case OP_GET_LOCAL: case OP_SET_LOCAL: case OP_GEN_LIST: case OP_GEN_MAP: case OP_SWAP: case OP_COPY: case OP_INCLUDE_SYM: {
       seal_byte slot = bytes[i++];
       printf("%d", slot);
       break;
