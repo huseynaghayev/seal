@@ -867,17 +867,30 @@ static ast_t* parser_parse_include(parser_t* parser)
 {
   parser_advance(parser); // 'include'
   ast_t* ast = static_create_ast(AST_INCLUDE, parser_line(parser));
+  ast->include.symbols_size = 0;
   if (parser_match(parser, TOK_ID)) {
     ast->include.name = parser_eat(parser, TOK_ID)->val;
 
     if (parser_match(parser, TOK_AS)) {
       parser_advance(parser);
       ast->include.alias = parser_eat(parser, TOK_ID)->val;
+    } else if (parser_match(parser, TOK_COLON)) {
+      parser_advance(parser);
+
+      ast->include.symbols = SEAL_CALLOC(1, sizeof(char*));
+      ast->include.symbols[0] = parser_eat(parser, TOK_ID)->val;
+      ast->include.symbols_size = 1;
+
+      while (parser_match(parser, TOK_COMMA)) {
+        parser_advance(parser); /* comma */
+
+        ast->include.symbols = SEAL_REALLOC(ast->include.symbols, sizeof(char*) * ++ast->include.symbols_size);
+        ast->include.symbols[ast->include.symbols_size - 1] = parser_eat(parser, TOK_ID)->val;
+      }
     } else {
       ast->include.alias = NULL;
     }
   }
-
   
   return ast;
 }
