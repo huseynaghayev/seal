@@ -800,6 +800,22 @@ void eval_vm(vm_t* vm, struct local_frame* lf)
       left = POP(vm);
       PUSH(vm, insert_mod_cache(AS_STRING(left)));
       break;
+    case OP_INCLUDE_SYM: {
+      seal_byte size = FETCH(lf);
+      const char *names[size];
+      for (int i = size - 1; i >= 0; i--) {
+        names[i] = AS_STRING(POP(vm));
+      }
+      left = POP(vm); /* module */
+      for (int i = 0; i < size; i++) {
+        struct h_entry *e = hashmap_search(AS_MOD(left)->globals, names[i]);
+        if (e == NULL || e->key == NULL)
+          VM_ERROR("failed to load \'%s\' symbol from \'%s\'", names[i], AS_MOD(left)->name);
+
+        hashmap_insert(lf->globals, names[i], e->val);
+      }
+      break;
+   }
     case OP_FOR_PREP:
       /*
        * *(sp - 1) -> iterator (in integer)
