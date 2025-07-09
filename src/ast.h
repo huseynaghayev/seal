@@ -150,6 +150,8 @@ typedef struct ast {
     struct {
       const char* name;
       const char* alias;
+      const char **symbols;
+      size_t symbols_size;
     } include;
   };
 } ast_t;
