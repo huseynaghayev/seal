@@ -83,7 +83,9 @@ int main(int argc, char** argv)
     .ip = vm.bytecodes,
     .label_pool = cout.labels,
     .const_pool = cout.const_pool,
-    .globals = &vm.globals
+    .globals = &vm.globals,
+    .linfo = cout.bc.linfo,
+    .linfo_size = cout.bc.l_size,
   };
   eval_vm(&vm, &main_frame);
   if (PRINT_STACK)
