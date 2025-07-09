@@ -36,7 +36,7 @@ struct vm {
 };
 
 void init_mod_cache();
-svalue_t insert_mod_cache(const char*);
+svalue_t insert_mod_cache(struct local_frame*, const char*);
 
 void init_vm(vm_t* vm, cout_t* cout);
 void eval_vm(vm_t* vm, struct local_frame* lf);

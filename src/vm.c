@@ -268,7 +268,7 @@ static void RUN_FILE(const char *path, hashmap_t *globals)
   SEAL_FREE(vm.const_pool_ptr);
 }
 
-svalue_t insert_mod_cache(const char *name)
+svalue_t insert_mod_cache(struct local_frame *lf, const char *name)
 {
   struct h_entry *e = hashmap_search(&mod_cache, name);
   if (e->key)
@@ -309,7 +309,6 @@ search:
     val = ((svalue_t (*)()) function)();
 #else
     void *handle = dlopen(path, RTLD_LAZY);
-    struct local_frame *lf = NULL;
     if (!handle)
       VM_ERROR("failed to include \'%s\'", path);
 
@@ -343,7 +342,6 @@ search:
     goto search;
   }
 
-  struct local_frame *lf = NULL;
   if (IS_NULL(val))
     VM_ERROR("including \'%s\' failed", path);
 
@@ -798,7 +796,7 @@ void eval_vm(vm_t* vm, struct local_frame* lf)
     }
     case OP_INCLUDE:
       left = POP(vm);
-      PUSH(vm, insert_mod_cache(AS_STRING(left)));
+      PUSH(vm, insert_mod_cache(lf, AS_STRING(left)));
       break;
     case OP_INCLUDE_SYM: {
       seal_byte size = FETCH(lf);
