@@ -79,7 +79,7 @@
   -1)
 
 
-void compile(cout_t* cout, ast_t* node)
+void compile(cout_t* cout, ast_t* node, const char *file_name)
 {
   struct scope main_scope = {
     .cp = {
@@ -99,7 +99,7 @@ void compile(cout_t* cout, ast_t* node)
       .cap = START_POOL_CAP,
       .size = 0,
       .addrs = SEAL_CALLOC(START_POOL_CAP, sizeof(seal_word))
-    }
+    },
   };
   ///* constant values' pool */
   //cout->const_pool_ptr = cout->const_pool = SEAL_CALLOC(CONST_POOL_SIZE, sizeof(svalue_t));
@@ -110,6 +110,9 @@ void compile(cout_t* cout, ast_t* node)
   //cout->bc.bytecodes = SEAL_CALLOC(START_BYTECODE_CAP, sizeof(seal_byte));
 
   ///* skip address offset stack */
+  
+  cout->file_name = file_name;
+
   cout->skip_addr_offset_stack = SEAL_CALLOC(UNCOND_JMP_MAX_SIZE, sizeof(size_t));
 
   cout->stop_addr_offset_stack = SEAL_CALLOC(UNCOND_JMP_MAX_SIZE, sizeof(size_t));
@@ -678,7 +681,8 @@ static void compile_func_def(cout_t* cout, ast_t* node, struct scope *s)
       .name = node->func_def.name,
       .as.userdef = {
         .argc = node->func_def.param_size,
-        .globals = NULL
+        .globals = NULL,
+        .file_name = cout->file_name,
       }
     }
   };
