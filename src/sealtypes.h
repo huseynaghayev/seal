@@ -44,6 +44,7 @@ struct seal_func {
       seal_byte  argc;
       seal_byte  local_size;
       hashmap_t *globals;
+      const char *file_name;
     } userdef;
     struct {
       svalue_t (*cfunc)(seal_byte argc, svalue_t* argv);
