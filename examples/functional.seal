@@ -1,0 +1,22 @@
+// functional.seal
+
+// from func module import these symbols
+include func: map, filter, reduce
+
+
+arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+// map: apply given function to every element of given list
+// and return them in a list
+squared_arr = map(
+    define(x) x * x, // pass lambda-function to function
+    arr
+)
+
+define is_even(n)
+    
+
+squared_arr = map(
+    define(x) x * x, // pass lambda-function to function
+    arr
+)
