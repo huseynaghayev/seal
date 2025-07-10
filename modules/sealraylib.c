@@ -305,6 +305,33 @@ seal_value __seal_raylib_draw_rectangle(seal_byte argc, seal_value *argv)
 
   return SEAL_VALUE_NULL;
 }
+seal_value __seal_raylib_draw_triangle(seal_byte argc, seal_value *argv)
+{
+  static const char *FUNC_NAME = "draw_triangle";
+
+  seal_value x1, y1, x2, y2, x3, y3, r, g, b, a;
+  seal_parse_args(MOD_NAME,
+                  FUNC_NAME,
+                  argc,
+                  argv,
+                  10,
+                  PARAM_TYPES(
+                    SEAL_NUMBER, SEAL_NUMBER,
+                    SEAL_NUMBER, SEAL_NUMBER,
+                    SEAL_NUMBER, SEAL_NUMBER,
+                    SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER,
+                  ),
+                  &x1, &y1, &x2, &y2, &x3, &y3, &r, &g, &b, &a);
+
+  DrawTriangle(
+    vec2(AS_NUM(x1), AS_NUM(y1)),
+    vec2(AS_NUM(x2), AS_NUM(y2)),
+    vec2(AS_NUM(x3), AS_NUM(y3)),
+    color(AS_NUM(r), AS_NUM(g), AS_NUM(b), AS_NUM(a))
+  );
+
+  return SEAL_VALUE_NULL;
+}
 
 /* Texture-related functions */
 seal_value __seal_raylib_load_texture(seal_byte argc, seal_value *argv)
@@ -454,6 +481,7 @@ seal_value seal_init_mod()
   MOD_REGISTER_FUNC(mod, __seal_raylib_draw_line, "draw_line", 9, false);
   MOD_REGISTER_FUNC(mod, __seal_raylib_draw_circle, "draw_circle", 7, false);
   MOD_REGISTER_FUNC(mod, __seal_raylib_draw_rectangle, "draw_rectangle", 11, false);
+  MOD_REGISTER_FUNC(mod, __seal_raylib_draw_triangle, "draw_triangle", 10, false);
 
   MOD_REGISTER_FUNC(mod, __seal_raylib_load_texture, "load_texture", 1, false);
   MOD_REGISTER_FUNC(mod, __seal_raylib_unload_texture, "unload_texture", 1, false);

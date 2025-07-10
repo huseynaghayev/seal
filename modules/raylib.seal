@@ -249,6 +249,15 @@ define draw_rectangle(x, y, w, h, color)
     )
 
 
+define draw_triangle(v1, v2, v3, color)
+    rl.draw_triangle(
+        v1.x, v1.y,
+        v2.x, v2.y,
+        v3.x, v3.y,
+        color.r, color.g, color.b, color.a // color
+    )
+
+
 /* Texture-related functions */
 $load_texture = rl.load_texture
 $unload_texture = rl.unload_texture
