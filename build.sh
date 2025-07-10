@@ -4,7 +4,7 @@ CC="gcc"
 OUT="seal"
 DIR="src"
 OBJ="obj"
-FLAGS="-std=c99 -O0"
+FLAGS="-std=c99 -O2"
 
 usage() {
   echo "Usage: $0 [--windows]"
