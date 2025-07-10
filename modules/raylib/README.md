@@ -36,12 +36,12 @@
 
 ### Input-related functions: keyboard
 - [x] is_key_pressed(key)
-- [ ] IsKeyPressedRepeat(int key);
+- [x] is_key_pressed_repeat(key)
 - [x] is_key_down(key)
 - [x] is_key_released(key)
-- [x] is_key_up(key);
+- [x] is_key_up(key)
 - [ ] GetKeyPressed(void);
-- [ ] GetCharPressed(void);
+- [x] get_char_pressed()
 - [x] set_exit_key(key)
 
 ### Input-related functions: mouse
@@ -51,6 +51,7 @@
 - [x] is_mouse_up(button)
 - [x] mouse_x()
 - [x] mouse_y()
+- [x] mouse_pos()
 - [ ] GetMouseDelta(void);
 - [ ] SetMousePosition(int x, int y);
 - [ ] SetMouseOffset(int offsetX, int offsetY);
@@ -61,14 +62,14 @@
 ### Basic shapes drawing functions
 - [ ] DrawLine(int startPosX, int startPosY, int endPosX, int endPosY, Color color);                // Draw a line
 - [ ] DrawLineV(Vector2 startPos, Vector2 endPos, Color color);                                     // Draw a line (using gl lines)
-- [ ] DrawLineEx(Vector2 startPos, Vector2 endPos, float thick, Color color);                       // Draw a line (using triangles/quads)
+- [x] DrawLineEx(Vector2 startPos, Vector2 endPos, float thick, Color color);                       // Draw a line (using triangles/quads)
 - [ ] DrawLineStrip(const Vector2 *points, int pointCount, Color color);                            // Draw lines sequence (using gl lines)
 - [ ] DrawLineBezier(Vector2 startPos, Vector2 endPos, float thick, Color color);                   // Draw line segment cubic-bezier in-out interpolation
 - [ ] DrawCircle(int centerX, int centerY, float radius, Color color);                              // Draw a color-filled circle
 - [ ] DrawCircleSector(Vector2 center, float radius, float startAngle, float endAngle, int segments, Color color);      // Draw a piece of a circle
 - [ ] DrawCircleSectorLines(Vector2 center, float radius, float startAngle, float endAngle, int segments, Color color); // Draw circle sector outline
 - [ ] DrawCircleGradient(int centerX, int centerY, float radius, Color inner, Color outer);         // Draw a gradient-filled circle
-- [ ] DrawCircleV(Vector2 center, float radius, Color color);                                       // Draw a color-filled circle (Vector version)
+- [x] DrawCircleV(Vector2 center, float radius, Color color);                                       // Draw a color-filled circle (Vector version)
 - [ ] DrawCircleLines(int centerX, int centerY, float radius, Color color);                         // Draw circle outline
 - [ ] DrawCircleLinesV(Vector2 center, float radius, Color color);                                  // Draw circle outline (Vector version)
 - [ ] DrawEllipse(int centerX, int centerY, float radiusH, float radiusV, Color color);             // Draw ellipse
@@ -98,4 +99,9 @@
 ### Texture-related functions
 - [x] load_texture(path)
 - [x] unload_texture(tex)
-- [ ] draw_texture(tex, x, y, r, g, b, a)
+- [x] draw_texture(tex, x, y, r, g, b, a)
+
+### Text-related functions
+- [x] load_font(path, size)
+- [x] unload_font(font)
+- [x] draw_text(font, text, pos, font_size, spacing, color)

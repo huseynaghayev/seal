@@ -2,14 +2,19 @@
 #include <raylib.h>
 
 #define color(r, g, b, a) ((Color) { r, g, b, a })
+#define vec2(x, y) ((Vector2) { x, y })
+#define rec(x, y, w, h) ((Rectangle) { x, y, w, h })
 
-static const char *MOD_NAME = "raylib";
-static const char *TEX_NAME = "Texture2D*";
+static const char *MOD_NAME  = "raylib";
+static const char *TEX_NAME  = "Texture2D*";
+static const char *FONT_NAME = "Font*";
 
 
 /* Window-related functions */
 seal_value __seal_raylib_init_window(seal_byte argc, seal_value *argv)
 {
+  SetTraceLogLevel(LOG_NONE); /* do not print log */
+
   static const char *FUNC_NAME = "init_window";
 
   seal_value w, h, title;
@@ -110,6 +115,15 @@ seal_value __seal_raylib_is_key_pressed(seal_byte argc, seal_value *argv)
 
   return SEAL_VALUE_BOOL(IsKeyPressed(AS_INT(key)));
 }
+seal_value __seal_raylib_is_key_pressed_repeat(seal_byte argc, seal_value *argv)
+{
+  static const char *FUNC_NAME = "is_key_pressed_repeat";
+
+  seal_value key;
+  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_INT), &key);
+
+  return SEAL_VALUE_BOOL(IsKeyPressedRepeat(AS_INT(key)));
+}
 seal_value __seal_raylib_is_key_down(seal_byte argc, seal_value *argv)
 {
   static const char *FUNC_NAME = "is_key_down";
@@ -136,6 +150,14 @@ seal_value __seal_raylib_is_key_up(seal_byte argc, seal_value *argv)
   seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_INT), &key);
 
   return SEAL_VALUE_BOOL(IsKeyUp(AS_INT(key)));
+}
+seal_value __seal_raylib_get_char_pressed(seal_byte argc, seal_value *argv)
+{
+  static const char *FUNC_NAME = "get_char_pressed";
+
+  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 0, NULL);
+
+  return SEAL_VALUE_INT(GetCharPressed());
 }
 seal_value __seal_raylib_set_exit_key(seal_byte argc, seal_value *argv)
 {
@@ -204,23 +226,86 @@ seal_value __seal_raylib_mouse_y(seal_byte argc, seal_value *argv)
 }
 
 /* Basic shapes drawing functions */
-seal_value __seal_raylib_draw_rectangle(seal_byte argc, seal_value *argv)
+seal_value __seal_raylib_draw_line(seal_byte argc, seal_value *argv)
 {
-  static const char *FUNC_NAME = "draw_rectangle";
+  static const char *FUNC_NAME = "draw_line";
 
-  seal_value x, y, w, h, r, g, b, a;
+  seal_value x, y, end_x, end_y, thick, r, g, b, a;
   seal_parse_args(MOD_NAME,
                   FUNC_NAME,
                   argc,
                   argv,
-                  8,
-                  PARAM_TYPES(SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER),
-                  &x, &y, &w, &h, &r, &g, &b, &a);
+                  9,
+                  PARAM_TYPES(
+                    SEAL_NUMBER, SEAL_NUMBER, /* start position */
+                    SEAL_NUMBER, SEAL_NUMBER, /* end position */
+                    SEAL_NUMBER, /* thickness */
+                    SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, /* color (rgba) */
+                  ),
+                  &x, &y, &end_x, &end_y, &thick, &r, &g, &b, &a);
 
-  DrawRectangle(AS_NUM(x), AS_NUM(y), AS_NUM(w), AS_NUM(h), color(AS_NUM(r), AS_NUM(g), AS_NUM(b), AS_NUM(a)));
+  DrawLineEx(
+    vec2(AS_NUM(x), AS_NUM(y)),
+    vec2(AS_NUM(end_x), AS_NUM(end_y)),
+    AS_NUM(thick),
+    color(AS_NUM(r), AS_NUM(g), AS_NUM(b), AS_NUM(a))
+  );
 
   return SEAL_VALUE_NULL;
 }
+seal_value __seal_raylib_draw_circle(seal_byte argc, seal_value *argv)
+{
+  static const char *FUNC_NAME = "draw_circle";
+
+  seal_value x, y, radius, r, g, b, a;
+  seal_parse_args(MOD_NAME,
+                  FUNC_NAME,
+                  argc,
+                  argv,
+                  7,
+                  PARAM_TYPES(
+                    SEAL_NUMBER, SEAL_NUMBER, /* start position */
+                    SEAL_NUMBER, /* radius */
+                    SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, /* color (rgba) */
+                  ),
+                  &x, &y, &radius, &r, &g, &b, &a);
+
+  DrawCircleV(
+    vec2(AS_NUM(x), AS_NUM(y)),
+    AS_NUM(radius),
+    color(AS_NUM(r), AS_NUM(g), AS_NUM(b), AS_NUM(a))
+  );
+
+  return SEAL_VALUE_NULL;
+}
+seal_value __seal_raylib_draw_rectangle(seal_byte argc, seal_value *argv)
+{
+  static const char *FUNC_NAME = "draw_rectangle";
+
+  seal_value x, y, w, h, ox, oy, rot, r, g, b, a;
+  seal_parse_args(MOD_NAME,
+                  FUNC_NAME,
+                  argc,
+                  argv,
+                  11,
+                  PARAM_TYPES(
+                    SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, /* rectangle */
+                    SEAL_NUMBER, SEAL_NUMBER, /* origin */
+                    SEAL_NUMBER, /* rotation */
+                    SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, /* color (rgba) */
+                  ),
+                  &x, &y, &w, &h, &ox, &oy, &rot, &r, &g, &b, &a);
+
+  DrawRectanglePro(
+    rec(AS_NUM(x), AS_NUM(y), AS_NUM(w), AS_NUM(h)),
+    vec2(AS_NUM(ox), AS_NUM(oy)),
+    AS_NUM(rot),
+    color(AS_NUM(r), AS_NUM(g), AS_NUM(b), AS_NUM(a))
+  );
+
+  return SEAL_VALUE_NULL;
+}
+
 /* Texture-related functions */
 seal_value __seal_raylib_load_texture(seal_byte argc, seal_value *argv)
 {
@@ -229,7 +314,7 @@ seal_value __seal_raylib_load_texture(seal_byte argc, seal_value *argv)
   seal_value path;
   seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_STRING), &path);
 
-  Texture2D *tex_ptr = calloc(1, sizeof(Texture2D));
+  Texture2D *tex_ptr = SEAL_CALLOC(1, sizeof(Texture2D));
   *tex_ptr = LoadTexture(AS_STRING(path));
 
   return SEAL_VALUE_PTR(tex_ptr, TEX_NAME);
@@ -250,19 +335,85 @@ seal_value __seal_raylib_draw_texture(seal_byte argc, seal_value *argv)
 {
   static const char *FUNC_NAME = "draw_texture";
 
-  seal_value tex_ptr, x, y, r, g, b, a;
+  seal_value tex_ptr, x, y, w, h, dx, dy, dw, dh, ox, oy, rot, r, g, b, a;
   seal_parse_args(MOD_NAME,
                   FUNC_NAME,
                   argc,
                   argv,
-                  7,
-                  PARAM_TYPES(SEAL_PTR, SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER),
-                  &tex_ptr, TEX_NAME, &x, &y, &r, &g, &b, &a);
+                  16,
+                  PARAM_TYPES(
+                    SEAL_PTR, /* texture */
+                    SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, /* source rec */
+                    SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, /* dest rec */
+                    SEAL_NUMBER, SEAL_NUMBER, /* origin vector */
+                    SEAL_NUMBER, /* rotation */
+                    SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, /* color (rgba) */
+                  ),
+                  &tex_ptr, TEX_NAME, &x, &y, &w, &h, &dx, &dy, &dw, &dh, &ox, &oy, &rot, &r, &g, &b, &a);
 
-  DrawTexture(*((Texture2D*)(AS_PTR(tex_ptr).ptr)), AS_NUM(x), AS_NUM(y), color(AS_NUM(r), AS_NUM(g), AS_NUM(b), AS_NUM(a)));
+  DrawTexturePro(
+    *((Texture2D*)(AS_PTR(tex_ptr).ptr)),
+    rec(AS_NUM(x), AS_NUM(y), AS_NUM(w), AS_NUM(h)),
+    rec(AS_NUM(dx), AS_NUM(dy), AS_NUM(dw), AS_NUM(dh)),
+    vec2(AS_NUM(ox), AS_NUM(oy)),
+    AS_NUM(rot),
+    color(AS_NUM(r), AS_NUM(g), AS_NUM(b), AS_NUM(a))
+  );
 
   return SEAL_VALUE_NULL;
 }
+
+/* Text-related functions */
+seal_value __seal_raylib_load_font(seal_byte argc, seal_value *argv)
+{
+  static const char *FUNC_NAME = "load_font";
+
+  seal_value path, size;
+  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 2, PARAM_TYPES(SEAL_STRING, SEAL_INT), &path, &size);
+
+  Font *font_ptr = SEAL_CALLOC(1, sizeof(Font));
+  *font_ptr = LoadFontEx(AS_STRING(path), AS_INT(size), NULL, 0);
+
+  return SEAL_VALUE_PTR(font_ptr, FONT_NAME);
+}
+seal_value __seal_raylib_unload_font(seal_byte argc, seal_value *argv)
+{
+  static const char *FUNC_NAME = "unload_font";
+
+  seal_value font_ptr;
+  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_PTR), &font_ptr, FONT_NAME);
+
+
+  UnloadFont(*((Font*)AS_PTR(font_ptr).ptr));
+  SEAL_FREE(AS_PTR(font_ptr).ptr);
+  return SEAL_VALUE_NULL;
+}
+seal_value __seal_raylib_draw_text(seal_byte argc, seal_value *argv)
+{
+  static const char *FUNC_NAME = "draw_text";
+
+  seal_value font_ptr, text, x, y, font_size, spacing, r, g, b, a;
+  seal_parse_args(MOD_NAME,
+                  FUNC_NAME,
+                  argc,
+                  argv,
+                  10,
+                  PARAM_TYPES(
+                    SEAL_PTR,
+                    SEAL_STRING,
+                    SEAL_NUMBER, SEAL_NUMBER,
+                    SEAL_NUMBER,
+                    SEAL_NUMBER,
+                    SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER),
+                    &font_ptr, FONT_NAME, &text, &x, &y, &font_size, &spacing, &r, &g, &b, &a
+                  );
+
+  DrawTextEx(*((Font*)AS_PTR(font_ptr).ptr), AS_STRING(text), vec2(AS_NUM(x), AS_NUM(y)), AS_NUM(font_size),
+             AS_NUM(spacing), color(AS_NUM(r), AS_NUM(g), AS_NUM(b), AS_NUM(a)));
+
+  return SEAL_VALUE_NULL;
+}
+
 seal_value seal_init_mod()
 {
   seal_value mod = {
@@ -286,9 +437,11 @@ seal_value seal_init_mod()
   MOD_REGISTER_FUNC(mod, __seal_raylib_get_fps, "get_fps", 0, false);
 
   MOD_REGISTER_FUNC(mod, __seal_raylib_is_key_pressed, "is_key_pressed", 1, false);
+  MOD_REGISTER_FUNC(mod, __seal_raylib_is_key_pressed_repeat, "is_key_pressed_repeat", 1, false);
   MOD_REGISTER_FUNC(mod, __seal_raylib_is_key_down, "is_key_down", 1, false);
   MOD_REGISTER_FUNC(mod, __seal_raylib_is_key_released, "is_key_released", 1, false);
   MOD_REGISTER_FUNC(mod, __seal_raylib_is_key_up, "is_key_up", 1, false);
+  MOD_REGISTER_FUNC(mod, __seal_raylib_get_char_pressed, "get_char_pressed", 0, false);
   MOD_REGISTER_FUNC(mod, __seal_raylib_set_exit_key, "set_exit_key", 1, false);
 
   MOD_REGISTER_FUNC(mod, __seal_raylib_is_mouse_pressed, "is_mouse_pressed", 1, false);
@@ -298,12 +451,17 @@ seal_value seal_init_mod()
   MOD_REGISTER_FUNC(mod, __seal_raylib_mouse_x, "mouse_x", 0, false);
   MOD_REGISTER_FUNC(mod, __seal_raylib_mouse_y, "mouse_y", 0, false);
 
-  MOD_REGISTER_FUNC(mod, __seal_raylib_draw_rectangle, "draw_rectangle", 8, false);
+  MOD_REGISTER_FUNC(mod, __seal_raylib_draw_line, "draw_line", 9, false);
+  MOD_REGISTER_FUNC(mod, __seal_raylib_draw_circle, "draw_circle", 7, false);
+  MOD_REGISTER_FUNC(mod, __seal_raylib_draw_rectangle, "draw_rectangle", 11, false);
 
   MOD_REGISTER_FUNC(mod, __seal_raylib_load_texture, "load_texture", 1, false);
   MOD_REGISTER_FUNC(mod, __seal_raylib_unload_texture, "unload_texture", 1, false);
+  MOD_REGISTER_FUNC(mod, __seal_raylib_draw_texture, "draw_texture", 16, false);
 
-  MOD_REGISTER_FUNC(mod, __seal_raylib_draw_texture, "draw_texture", 7, false);
+  MOD_REGISTER_FUNC(mod, __seal_raylib_load_font, "load_font", 2, false);
+  MOD_REGISTER_FUNC(mod, __seal_raylib_unload_font, "unload_font", 1, false);
+  MOD_REGISTER_FUNC(mod, __seal_raylib_draw_text, "draw_text", 10, false);
 
   return mod;
 }
