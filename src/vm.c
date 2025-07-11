@@ -678,96 +678,119 @@ void eval_vm(vm_t* vm, struct local_frame* lf)
     case OP_GET_FIELD:
       right = POP(vm);
       left  = POP(vm);
-      if (IS_MAP(left)) {
-        if (IS_STRING(right)) {
-          struct sh_entry *e = shashmap_search(AS_MAP(left)->map, AS_STRING(right));
-          if (e == NULL || e->key == NULL) {
-            /* VM_ERROR("\'%s\' key is not found", AS_STRING(right)); */
-            PUSH(vm, SEAL_VALUE_NULL);
-          } else {
-            PUSH(vm, e->val);
-          }
 
-          gc_decref(left);
-          gc_decref(right);
-          break;
-        }
-      }
+      switch (VAL_TYPE(left)) {
+      case SEAL_MAP: {
+        if (!IS_STRING(right))
+          VM_ERROR("map indices must be strings, not \'%s\'", seal_type_name(VAL_TYPE(right)));
 
-      if (IS_MOD(left)) {
-        if (IS_STRING(right)) {
-          struct h_entry *e = hashmap_search(AS_MOD(left)->globals, AS_STRING(right));
-          if (e == NULL || e->key == NULL)
-            VM_ERROR("\'%s\' key is not found", AS_STRING(right));
-
+        struct sh_entry *e = shashmap_search(AS_MAP(left)->map, AS_STRING(right));
+        if (e == NULL || e->key == NULL) {
+          /* VM_ERROR("\'%s\' key is not found", AS_STRING(right)); */
+          PUSH(vm, SEAL_VALUE_NULL);
+        } else {
           PUSH(vm, e->val);
-          gc_decref(left);
-          gc_decref(right);
-          break;
         }
-      }
 
-      if (!IS_LIST(left) && !IS_STRING(left))
-        VM_ERROR("subscript requires list or string as base");
-      if (!IS_INT(right))
-        VM_ERROR("subscript requires int as field");
-      if (AS_INT(right) < 0)
-        VM_ERROR("cannot index negative");
-      if (IS_STRING(left)) {
-        if (AS_INT(right) >= left.as.string->size)
-          VM_ERROR("index exceed size");
+        break;
+      }
+      case SEAL_MOD: {
+        if (!IS_STRING(right))
+          VM_ERROR("module indices must be strings, not \'%s\'", seal_type_name(VAL_TYPE(right)));
+
+        struct h_entry *e = hashmap_search(AS_MOD(left)->globals, AS_STRING(right));
+        if (e == NULL || e->key == NULL)
+          VM_ERROR("\'%s\' module has no field named \'%s\'", AS_MOD(left)->name, AS_STRING(right));
+
+        PUSH(vm, e->val);
+
+        break;
+      }
+      case SEAL_STRING: {
+        if (!IS_INT(right))
+          VM_ERROR("string indices must be integers, not \'%s\'", seal_type_name(VAL_TYPE(right)));
+
+        if (AS_INT(right) >= left.as.string->size || AS_INT(right) < 0)
+          VM_ERROR("string index out of range");
+
         char *c = SEAL_CALLOC(2, sizeof(char));
         c[0] = AS_STRING(left)[AS_INT(right)];
         c[1] = '\0';
         PUSH(vm, SEAL_VALUE_STRING(c));
-      } else {
-        if (AS_INT(right) >= AS_LIST(left)->size)
-          VM_ERROR("index exceed size");
-        PUSH(vm, AS_LIST(left)->mems[AS_INT(right)]);
+
+        break;
       }
+      case SEAL_LIST: {
+        if (!IS_INT(right))
+          VM_ERROR("list indices must be integers, not \'%s\'", seal_type_name(VAL_TYPE(right)));
+
+        if (AS_INT(right) >= AS_LIST(left)->size || AS_INT(right) < 0)
+          VM_ERROR("list index out of range");
+
+        PUSH(vm, AS_LIST(left)->mems[AS_INT(right)]);
+
+        break;
+      }
+      default:
+        VM_ERROR("cannot index \'%s\'", seal_type_name(VAL_TYPE(left)));
+        break;
+      }
+
       gc_decref(left);
       gc_decref(right);
+
       break;
     case OP_SET_FIELD:
       right = POP(vm);
       left  = POP(vm);
-      if (IS_MAP(left)) {
-        if (IS_STRING(right)) {
-          struct sh_entry *e = shashmap_search(AS_MAP(left)->map, AS_STRING(right));
-          if (e == NULL)
-            VM_ERROR("cannot insert, hashmap is full");
-          if (e->key != NULL)
-            gc_decref(e->val);
-          else
-            AS_MAP(left)->map->filled++;
 
-          e->val = POP(vm);
+      switch (VAL_TYPE(left)) {
+      case SEAL_MAP: {
+        if (!IS_STRING(right))
+          VM_ERROR("map indices must be strings, not \'%s\'", seal_type_name(VAL_TYPE(right)));
 
+        struct sh_entry *e = shashmap_search(AS_MAP(left)->map, AS_STRING(right));
+        if (e == NULL)
+          VM_ERROR("cannot insert, map is full");
 
+        if (e->key != NULL)
+          gc_decref(e->val);
+        else
+          AS_MAP(left)->map->filled++;
 
-          e->key = AS_STRING(right);
-          e->hash = shash_str(AS_STRING(right));
-          e->is_tombstone = true;
+        e->val = POP(vm);
 
-          PUSH(vm, e->val);
-          gc_decref(left);
-          gc_decref(right);
-          break;
-        }
+        e->key = AS_STRING(right);
+        e->hash = shash_str(AS_STRING(right));
+        e->is_tombstone = true;
+
+        PUSH(vm, e->val);
+
+        break;
+      }
+      case SEAL_LIST: {
+        if (!IS_INT(right))
+          VM_ERROR("list indices must be integers, not \'%s\'", seal_type_name(VAL_TYPE(right)));
+
+        if (AS_INT(right) >= AS_LIST(left)->size || AS_INT(right) < 0)
+          VM_ERROR("list index out of range");
+
+        gc_decref(AS_LIST(left)->mems[AS_INT(right)]);
+        PUSH(vm, AS_LIST(left)->mems[AS_INT(right)] = POP(vm));
+
+        break;
+      }
+      case SEAL_STRING: case SEAL_MOD:
+        VM_ERROR("%ss are immutable", seal_type_name(VAL_TYPE(left)));
+        break;
+      default:
+        VM_ERROR("cannot index \'%s\'", seal_type_name(VAL_TYPE(left)));
+        break;
       }
 
-      if (!IS_LIST(left))
-        VM_ERROR("subscript assign requires only list as base");
-      if (!IS_INT(right))
-        VM_ERROR("subscript requires int as field");
-      if (AS_INT(right) < 0)
-        VM_ERROR("cannot index negative");
-      if (AS_INT(right) >= AS_LIST(left)->size)
-        VM_ERROR("index exceed size");
-      gc_decref(AS_LIST(left)->mems[AS_INT(right)]);
-      PUSH(vm, AS_LIST(left)->mems[AS_INT(right)] = POP(vm));
       gc_decref(left);
       gc_decref(right);
+
       break;
     case OP_IN:
       right = POP(vm);
