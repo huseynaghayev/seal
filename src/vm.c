@@ -24,13 +24,13 @@
 #define JUMP(lf, addr) (lf->ip = &lf->bytecodes[lf->label_pool[addr]])
 #define GET_CONST(lf, i) (lf->const_pool[i])
 #define VM_ERROR(...) do { \
-  int i = -1, line = -1; \
-  while (++i < lf->linfo_size) { \
-    if (lf->ip - lf->bytecodes < lf->linfo[i].offset) \
+  int ___i = -1, ___line = -1; \
+  while (++___i < lf->linfo_size) { \
+    if (lf->ip - lf->bytecodes < lf->linfo[___i].offset) \
       break; \
-    line = lf->linfo[i].line; \
+    ___line = lf->linfo[___i].line; \
   } \
-  fprintf(stderr, "seal: file: \'%s\', line %d\n", lf->file_name, line); \
+  fprintf(stderr, "seal: file: \'%s\', line %d\n", lf->file_name, ___line); \
   fprintf(stderr, __VA_ARGS__); \
   fprintf(stderr, "\n"); \
   exit(EXIT_FAILURE); \
@@ -262,10 +262,10 @@ static void RUN_FILE(const char *path, hashmap_t *globals)
   eval_vm(&vm, &main_frame);
   *(globals) = vm.globals;
   set_all_functions_global(globals);
-  SEAL_FREE(vm.stack);
-  SEAL_FREE(vm.bytecodes);
-  SEAL_FREE(vm.label_ptr);
-  SEAL_FREE(vm.const_pool_ptr);
+  //SEAL_FREE(vm.stack);
+  //SEAL_FREE(vm.bytecodes);
+  //SEAL_FREE(vm.label_ptr);
+  //SEAL_FREE(vm.const_pool_ptr);
 }
 
 svalue_t insert_mod_cache(struct local_frame *lf, const char *name)
