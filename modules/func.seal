@@ -9,24 +9,46 @@
 
 define map(func, list)
     res = []
-    for i in list
-        push(res, func(i))
+    for item in list
+        push(res, func(item))
 
     return res
 
 
 define filter(func, list)
     res = []
-    for i in list
-        if func(i)
-            push(res, i)
+    for item in list
+        if func(item)
+            push(res, item)
 
     return res
 
 
 define reduce(func, list, init)
     acc = init
-    for i in list
-        acc = func(acc, i)
+    for item in list
+        acc = func(acc, item)
 
     return acc
+
+
+define any(func, list)
+    i = 0
+    while i < len(list)
+        if func(list[i])
+            return true
+
+        i += 1
+
+    return false
+
+
+define all(func, list)
+    i = 0
+    while i < len(list)
+        if not func(list[i])
+            return false
+
+        i += 1
+
+    return true
