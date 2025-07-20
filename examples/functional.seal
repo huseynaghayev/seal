@@ -13,10 +13,20 @@ squared_arr = map(
     arr
 )
 
+
 define is_even(n)
+    return n % 2 == 0
+
+
+// filter: if function returns true on applied item,
+// push to list and return it
+even_nums = filter(is_even, squared_arr)
     
 
-squared_arr = map(
-    define(x) x * x, // pass lambda-function to function
-    arr
+sum = reduce(
+    define(a, b) a + b, // pass lambda-function to function
+    even_nums, // the list to reduce
+    0 // initial value for reduction
 )
+
+print(sum) // 220

@@ -4,4 +4,15 @@ list = []
 for c in 'seal'
     push(list, c)
 
+
+popped = pop(list) // 'l'
+
+removed = remove(list, 1) // 'e'
+
+print(list) // ['s', 'a']
+
+insert(list, 1, removed) // insert removed again
+
+push(list, popped) // push popped again
+
 print(list) // ['s', 'e', 'a', 'l']
