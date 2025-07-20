@@ -14,5 +14,7 @@ svalue_t __seal_str(seal_byte argc, svalue_t* argv);
 svalue_t __seal_bool(seal_byte argc, svalue_t* argv);
 svalue_t __seal_push(seal_byte argc, svalue_t* argv);
 svalue_t __seal_pop(seal_byte argc, svalue_t* argv);
+svalue_t __seal_insert(seal_byte argc, svalue_t *argv);
+svalue_t __seal_remove(seal_byte argc, svalue_t *argv);
 
 #endif /* SEAL_BUILTINS_H */

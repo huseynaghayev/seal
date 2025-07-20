@@ -275,3 +275,51 @@ svalue_t __seal_pop(seal_byte argc, svalue_t* argv)
   gc_decref_nofree(popped);
   return popped;
 }
+svalue_t __seal_insert(seal_byte argc, svalue_t *argv)
+{
+  static const char *FUNC_NAME = "insert";
+
+  svalue_t list, idx, e;
+  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 3, PARAM_TYPES(SEAL_LIST, SEAL_INT, SEAL_ANY), &list, &idx, &e);
+
+
+  struct seal_list *l = AS_LIST(list);
+  if (l->size >= l->cap) {
+    l->mems = SEAL_REALLOC(l->mems, sizeof(svalue_t) * (l->cap *= 2));
+  }
+
+  int clamped_idx = AS_INT(idx) < 0 ? 0 : (AS_INT(idx) > l->size ? l->size : AS_INT(idx));
+  
+  for (int i = l->size; i > clamped_idx; i--)
+    l->mems[i] = l->mems[i - 1];
+
+  l->size++;
+
+  l->mems[clamped_idx] = e;
+  gc_incref(e);
+
+  return SEAL_VALUE_NULL;
+}
+svalue_t __seal_remove(seal_byte argc, svalue_t *argv)
+{
+  static const char *FUNC_NAME = "remove";
+
+  svalue_t list, idx;
+  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 2, PARAM_TYPES(SEAL_LIST, SEAL_INT), &list, &idx);
+
+  struct seal_list *l = AS_LIST(list);
+  svalue_t removed;
+
+  int clamped_idx = AS_INT(idx) < 0 ? 0 : (AS_INT(idx) >= l->size ? l->size - 1 : AS_INT(idx));
+
+  removed = l->mems[clamped_idx];
+  
+  for (int i = clamped_idx; i < l->size; i++)
+    l->mems[i] = l->mems[i + 1];
+
+  l->size--;
+
+  gc_decref_nofree(removed);
+
+  return removed;
+}
