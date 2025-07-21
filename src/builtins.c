@@ -189,7 +189,7 @@ svalue_t __seal_str(seal_byte argc, svalue_t* argv)
   svalue_t arg;
   seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_NULL | SEAL_INT | SEAL_FLOAT | SEAL_STRING | SEAL_BOOL), &arg);
 
-  svalue_t res;
+  svalue_t res = SEAL_VALUE_NULL;
   char *s;
   int len;
 
@@ -201,13 +201,13 @@ svalue_t __seal_str(seal_byte argc, svalue_t* argv)
     break;
   case SEAL_INT:
     len = snprintf(NULL, 0, "%lld", AS_INT(arg));
-    s = malloc(len * sizeof(char));
+    s = malloc((len + 1) * sizeof(char));
     sprintf(s, "%lld", AS_INT(arg));
     res = SEAL_VALUE_STRING(s);
     break;
   case SEAL_FLOAT:
     len = snprintf(NULL, 0, "%g", AS_FLOAT(arg));
-    s = malloc(len * sizeof(char));
+    s = malloc((len + 1) * sizeof(char));
     sprintf(s, "%g", AS_FLOAT(arg));
     res = SEAL_VALUE_STRING(s);
     break;
