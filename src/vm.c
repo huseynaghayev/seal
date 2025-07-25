@@ -487,6 +487,9 @@ void eval_vm(vm_t* vm, struct local_frame* lf)
     case OP_DIV:
       right = POP(vm);
       left  = POP(vm);
+      if (IS_NUM(right) && AS_NUM(right) == 0.0) {
+        VM_ERROR("division by zero");
+      }
       BIN_OP(vm, left, right, /);
       break;
     case OP_MOD:
