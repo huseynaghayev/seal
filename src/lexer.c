@@ -465,6 +465,9 @@ static char* lexer_get_lexeme(lexer_t* lexer, int lexeme_type, int str_sur)
             case 'n':
               c = '\n';
               break;
+            case 'r':
+              c = '\r';
+              break;
             case 't':
               c = '\t';
               break;

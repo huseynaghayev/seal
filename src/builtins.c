@@ -20,6 +20,9 @@ static void __print_string_no_escseq(const char *s)
     case '\n':
       printf("%s", "\\n");
       break;
+    case '\r':
+      printf("%s", "\\r");
+      break;
     case '\t':
       printf("%s", "\\t");
       break;
