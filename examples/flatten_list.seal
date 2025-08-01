@@ -1,0 +1,24 @@
+// flatten_list.seal
+
+include func: reduce
+
+
+define flatten(main, xs)
+    if typeof xs == "list"
+        for x in xs
+            flatten(main, x)
+    else
+        push(main, xs)
+
+    return main
+
+
+list = [[1, 2], [[3], 4], [[[5]]]] // nested list
+
+print(
+    reduce(
+        flatten, // pass the function
+        list, // pass the list to be flatted
+        [] // list to store them
+    )
+)
