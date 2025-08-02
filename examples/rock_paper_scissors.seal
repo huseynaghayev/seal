@@ -1,0 +1,93 @@
+include random: srand, rand
+include date: time
+include string: upper
+
+
+define Player(is_bot)
+    player = {
+        is_bot = is_bot,
+        pick = null
+    }
+
+
+    player.choose = define(self, choice)
+        self.pick = choice
+
+
+    return player
+
+
+define Game()
+    game = {
+        players = [
+            Player(false), // this is you
+            Player(true)   // this is bot
+        ],
+        scores = [
+            0, // your score
+            0  // bot's score
+        ],
+        choices = {
+            R = 0,
+            P = 1,
+            S = 2
+        }
+    }
+
+
+    game.choice_as_string = define(choice)
+        if choice == 0
+            return "Rock"
+        if choice == 1
+            return "Paper"
+        if choice == 2
+            return "Scissors"
+
+        return null
+
+
+    game.select = define(self)
+        for player in self.players
+            if player.is_bot
+                player..choose(rand() % 3)
+            else
+                print("\nOptions:\n\"R\" for rock, \"P\" for paper, \"S\" for scissors")
+                while (c = upper(scan()[0])) != "R" and c != "P" and c != "S"
+                    print(c + " is not a valid option")
+
+                player..choose(self.choices[c])
+
+
+    game.fight = define(self)
+        your_pick = self.players[0].pick
+        bot_pick  = self.players[1].pick
+        if your_pick == bot_pick
+            print("Tie, no one gets a point")
+            return
+
+        player_won = ((your_pick == self.choices.R and bot_pick == self.choices.S) or
+                      (your_pick == self.choices.P and bot_pick == self.choices.R) or
+                      (your_pick == self.choices.S and bot_pick == self.choices.P))
+
+        print("You: " + self.choice_as_string(your_pick) + ", " +
+              "Bot: " + self.choice_as_string(bot_pick)  + "\n" +
+              (if player_won then "You" else "Bot") + " won")
+        
+
+        self.scores[if player_won then 0 else 1] += 1
+        print("You: " + str(self.scores[0]) + " vs Bot: " + str(self.scores[1]))
+
+
+    return game
+
+        
+define main()
+    srand(time())
+    game = Game()
+
+    while true
+        game..select()
+        game..fight()
+
+
+main()
