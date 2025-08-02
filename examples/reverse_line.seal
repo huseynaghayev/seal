@@ -1,0 +1,9 @@
+// reverse.seal
+// This program reverses the input text character by character
+
+while (line = scan()) != ''
+    reversed = ''
+    for i in len(line)
+        reversed += line[len(line) - i - 1]
+
+    print(reversed)
