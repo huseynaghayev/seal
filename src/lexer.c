@@ -68,6 +68,11 @@ inline void init_lexer(lexer_t* lexer, const char* file_path)
 
 inline void lexer_get_tokens(lexer_t* lexer)
 {
+  /* ignore shebang */
+  if (lexer_peek(lexer) == '#' && lexer_peek_offset(lexer, 1) == '!')
+    while (!lexer_is_end(lexer) && lexer_peek(lexer) != '\n')
+      lexer_advance(lexer);
+
   while (!lexer_is_end(lexer)) {
     lexer_get_token(lexer);
   }
