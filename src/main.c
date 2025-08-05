@@ -4,6 +4,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "vm.h"
+#include "gc.h"
 
 #define USAGE(prog_name) (fprintf(stdout, "seal: usage: %s filename.seal\n", prog_name))
 #define PRINT_FLAGS() (fprintf(stderr, "seal: flags: -pt (print tokens), -pa (print AST), -po (print opcodes), -pb (print bytes), -pc (print constant pool)\n"))
@@ -41,9 +42,6 @@ int main(int argc, char** argv)
       PRINT_CONST_POOL = true;
     } else if (strcmp(argv[i], "-ps") == 0) {
       PRINT_STACK = true;
-    }else {
-      PRINT_FLAGS();
-      return EXIT_FAILURE;
     }
   }
   const char* file_path = argv[1];
@@ -88,6 +86,18 @@ int main(int argc, char** argv)
     .linfo_size = cout.bc.l_size,
     .file_name = file_path,
   };
+  /* add 'args' global variable as command line args' */
+  svalue_t list_args = SEAL_VALUE_LIST();
+  gc_incref(list_args);
+  for (int i = 1; i < argc; i++) {
+    char *alloc_s = SEAL_CALLOC(strlen(argv[i]) + 1, sizeof(char));
+    strcpy(alloc_s, argv[i]);
+    svalue_t seal_str = SEAL_VALUE_STRING(alloc_s);
+    gc_incref(seal_str);
+    LIST_PUSH(list_args, seal_str);
+  }
+  hashmap_insert(&vm.globals, "args", list_args);
+
   eval_vm(&vm, &main_frame);
   if (PRINT_STACK)
     print_stack(&vm);
