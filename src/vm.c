@@ -400,6 +400,7 @@ void init_vm(vm_t* vm, cout_t* cout)
   REGISTER_BUILTIN_FUNC(&vm->globals, __seal_pop, "pop", 1, false);
   REGISTER_BUILTIN_FUNC(&vm->globals, __seal_insert, "insert", 3, false);
   REGISTER_BUILTIN_FUNC(&vm->globals, __seal_remove, "remove", 2, false);
+  REGISTER_BUILTIN_FUNC(&vm->globals, __seal_format, "format", 1, true);
 
 
   __seal_type_null = SEAL_VALUE_STRING_STATIC(seal_type_name(SEAL_NULL));

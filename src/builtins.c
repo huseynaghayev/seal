@@ -123,6 +123,7 @@ static void __print_single(svalue_t s)
     printf("UNRECOGNIZED DATA TYPE TO PRINT ");
   }
 }
+
 svalue_t __seal_print(seal_byte argc, svalue_t* argv)
 {
   for (int i = 0; i < argc; i++) {
@@ -136,6 +137,7 @@ svalue_t __seal_print(seal_byte argc, svalue_t* argv)
 
   return SEAL_VALUE_NULL;
 }
+
 svalue_t __seal_scan(seal_byte argc, svalue_t* argv)
 {
   static char buf[BUFSIZ];
@@ -148,6 +150,7 @@ svalue_t __seal_scan(seal_byte argc, svalue_t* argv)
   strcpy(s, buf);
   return SEAL_VALUE_STRING(s);
 }
+
 svalue_t __seal_exit(seal_byte argc, svalue_t* argv)
 {
   static const char *FUNC_NAME = "exit";
@@ -158,6 +161,7 @@ svalue_t __seal_exit(seal_byte argc, svalue_t* argv)
   exit(AS_INT(exit_code));
   return SEAL_VALUE_NULL;
 }
+
 svalue_t __seal_len(seal_byte argc, svalue_t* argv)
 {
   static const char *FUNC_NAME = "len";
@@ -167,6 +171,7 @@ svalue_t __seal_len(seal_byte argc, svalue_t* argv)
 
   return SEAL_VALUE_INT(IS_STRING(it) ? it.as.string->size : AS_LIST(it)->size);
 }
+
 svalue_t __seal_int(seal_byte argc, svalue_t* argv)
 {
   static const char *FUNC_NAME = "int";
@@ -176,6 +181,7 @@ svalue_t __seal_int(seal_byte argc, svalue_t* argv)
 
   return SEAL_VALUE_INT(IS_STRING(arg) ? atoi(AS_STRING(arg)) : AS_NUM(arg));
 }
+
 svalue_t __seal_float(seal_byte argc, svalue_t* argv)
 {
   static const char *FUNC_NAME = "float";
@@ -185,6 +191,7 @@ svalue_t __seal_float(seal_byte argc, svalue_t* argv)
 
   return SEAL_VALUE_FLOAT(IS_STRING(arg) ? atof(AS_STRING(arg)) : AS_NUM(arg));
 }
+
 svalue_t __seal_str(seal_byte argc, svalue_t* argv)
 {
   static const char *FUNC_NAME = "str";
@@ -232,6 +239,7 @@ svalue_t __seal_str(seal_byte argc, svalue_t* argv)
 
   return res;
 }
+
 svalue_t __seal_bool(seal_byte argc, svalue_t* argv)
 {
   static const char *FUNC_NAME = "bool";
@@ -252,6 +260,7 @@ svalue_t __seal_bool(seal_byte argc, svalue_t* argv)
       IS_PTR(arg) ? AS_PTR(arg).ptr != NULL :
       false);
 }
+
 svalue_t __seal_push(seal_byte argc, svalue_t* argv)
 {
   static const char *FUNC_NAME = "push";
@@ -264,6 +273,7 @@ svalue_t __seal_push(seal_byte argc, svalue_t* argv)
 
   return SEAL_VALUE_NULL;
 }
+
 svalue_t __seal_pop(seal_byte argc, svalue_t* argv)
 {
   static const char *FUNC_NAME = "pop";
@@ -278,6 +288,7 @@ svalue_t __seal_pop(seal_byte argc, svalue_t* argv)
   gc_decref_nofree(popped);
   return popped;
 }
+
 svalue_t __seal_insert(seal_byte argc, svalue_t *argv)
 {
   static const char *FUNC_NAME = "insert";
@@ -303,6 +314,7 @@ svalue_t __seal_insert(seal_byte argc, svalue_t *argv)
 
   return SEAL_VALUE_NULL;
 }
+
 svalue_t __seal_remove(seal_byte argc, svalue_t *argv)
 {
   static const char *FUNC_NAME = "remove";
@@ -325,4 +337,88 @@ svalue_t __seal_remove(seal_byte argc, svalue_t *argv)
   gc_decref_nofree(removed);
 
   return removed;
+}
+
+svalue_t __seal_format(seal_byte argc, svalue_t *argv)
+{
+  static const char *FUNC_NAME = "format";
+
+  svalue_t fmt;
+  if (!IS_STRING((fmt = argv[0]))) {
+      MOD_ERROR(MOD_NAME, FUNC_NAME, "first argument must be string");
+  }
+  
+  const char *formatter = AS_STRING(fmt);
+  char* result = SEAL_CALLOC(1, sizeof(char));
+  int size = 0;
+  int arg_counter = 1;
+  int arg_format = argc - 1;
+  for (; *formatter != '\0'; formatter++) {
+    if (*formatter != '%' || *formatter == '%' && *(formatter + 1) == '%') {
+      size++;
+      result = (char*)SEAL_REALLOC(result, (size + 1) * sizeof(char));
+      result[size - 1] = *formatter;
+      result[size] = '\0';
+      if (*formatter == '%') formatter++;
+    } else {
+      formatter++; /* skip formatter after % (for now) */
+      if (arg_format == 0) {
+        MOD_ERROR(MOD_NAME, FUNC_NAME, "more formatters than arguments");
+      }
+      int len;
+      svalue_t arg = argv[arg_counter];
+      arg_counter++;
+      arg_format--;
+      switch (VAL_TYPE(arg)) {
+        case SEAL_NULL: {
+          size += 4;
+          result = (char*)SEAL_REALLOC(result, (size + 1) * sizeof(char));
+          strcat(result, "null");
+          break;
+        }
+        case SEAL_INT: {
+          len = snprintf(NULL, 0, "%lld", AS_INT(arg));
+          size += len;
+          result = (char*)SEAL_REALLOC(result, (size + 1) * sizeof(char));
+          char buffer[len];
+          sprintf(buffer, "%lld", AS_INT(arg));
+          strcat(result, buffer);
+          break;
+        }
+        case SEAL_FLOAT: {
+          len = snprintf(NULL, 0, "%g", AS_FLOAT(arg));
+          size += len;
+          result = (char*)SEAL_REALLOC(result, (size + 1) * sizeof(char));
+          char buffer[len];
+          sprintf(buffer, "%f", AS_FLOAT(arg));
+          strcat(result, buffer);
+          break;
+        }
+        case SEAL_STRING: {
+          size += strlen(AS_STRING(arg));
+          result = (char*)SEAL_REALLOC(result, (size + 1) * sizeof(char));
+          strcpy(result, AS_STRING(arg));
+          break;
+        }
+        case SEAL_BOOL: {
+          const char* val = AS_BOOL(arg) ? "true" : "false";
+          size += strlen(val);
+          result = (char*)SEAL_REALLOC(result, (size + 1) * sizeof(char));
+          strcat(result, val);
+          break;
+        }
+        default: {
+          MOD_ERROR(MOD_NAME, FUNC_NAME, "cannot format \'%s\'", seal_type_name(VAL_TYPE(arg)));
+        }
+        result[size] = '\0';
+      }
+    }
+  }
+  if (arg_format > 0) {
+    MOD_ERROR(MOD_NAME, FUNC_NAME, "too many arguments");
+  }
+
+  result[size] = '\0';
+  svalue_t final = SEAL_VALUE_STRING(result);
+  return final;
 }
