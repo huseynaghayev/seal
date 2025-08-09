@@ -397,7 +397,7 @@ svalue_t __seal_format(seal_byte argc, svalue_t *argv)
         case SEAL_STRING: {
           size += strlen(AS_STRING(arg));
           result = (char*)SEAL_REALLOC(result, (size + 1) * sizeof(char));
-          strcpy(result, AS_STRING(arg));
+          strcat(result, AS_STRING(arg));
           break;
         }
         case SEAL_BOOL: {
