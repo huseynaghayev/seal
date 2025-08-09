@@ -5,7 +5,7 @@ static const char *MOD_NAME = "date";
 
 seal_value __seal_date_time(seal_byte argc, seal_value *argv)
 {
-  static const char *FUNC_NAME = "ascii";
+  static const char *FUNC_NAME = "time";
 
   seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 0, NULL);
 
