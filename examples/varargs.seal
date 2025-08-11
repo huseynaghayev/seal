@@ -1,0 +1,11 @@
+define sum(...nums) // '...' must be the last parameter followed by a name
+    s = 0
+    for num in nums
+        s += num
+
+    return s
+
+
+print(sum())    // 0
+print(sum(1))   // 1
+print(sum(1, 2, 3, 4, 5)) // 15

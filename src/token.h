@@ -34,6 +34,7 @@ enum {
   TOK_DOLLAR  ,   // $
   TOK_PERIOD  ,   // .
   TOK_DPERIOD ,   // ..
+  TOK_ELLIP   ,   // ...
   TOK_COLON   ,   // :
   TOK_COMMA   ,   // ,
   TOK_PLUS    ,   // +
@@ -120,6 +121,7 @@ static inline const char* token_type_name(int type)
     case TOK_DOLLAR : return "TOK_DOLLAR";
     case TOK_PERIOD : return "TOK_PERIOD";
     case TOK_DPERIOD: return "TOK_DPERIOD";
+    case TOK_ELLIP  : return "TOK_ELLIP";
     case TOK_COLON  : return "TOK_COLON";
     case TOK_COMMA  : return "TOK_COMMA";
     case TOK_PLUS   : return "TOK_PLUS";
@@ -196,6 +198,7 @@ static inline const char* htoken_type_name(int type)
     case TOK_DOLLAR : return "$";
     case TOK_PERIOD : return ".";
     case TOK_DPERIOD: return "..";
+    case TOK_ELLIP  : return "...";
     case TOK_COLON  : return ":";
     case TOK_COMMA  : return ",";
     case TOK_PLUS   : return "+";

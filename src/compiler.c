@@ -676,10 +676,10 @@ static void compile_func_def(cout_t* cout, ast_t* node, struct scope *s)
     .type = SEAL_FUNC,
     .as.func = {
       .type = FUNC_USERDEF,
-      .is_vararg = false,
+      .is_vararg = node->func_def.is_variadic,
       .name = node->func_def.name,
       .as.userdef = {
-        .argc = node->func_def.param_size,
+        .argc = node->func_def.param_size - node->func_def.is_variadic,
         .globals = NULL,
         .file_name = cout->file_name,
       }

@@ -658,11 +658,24 @@ void eval_vm(vm_t* vm, struct local_frame* lf)
           .linfo_size = AS_USERDEF_FUNC(func).linfo_size,
           .file_name = AS_USERDEF_FUNC(func).file_name,
         };
-        for (int i = 0; i < argc; i++) {
-          SET_LOCAL((&func_lf), i, argv[i]);
+        if (IS_FUNC_VARARG(func)) {
+          int i;
+          for (i = 0; i < FUNC_ARGC(func); i++) {
+            SET_LOCAL((&func_lf), i, argv[i]);
+          }
+          svalue_t vargs = SEAL_VALUE_LIST();
+          for (int j = i; j < argc; j++) {
+            LIST_PUSH(vargs, argv[j]);
+          }
+          gc_incref(vargs);
+          SET_LOCAL((&func_lf), i, vargs);
+        } else {
+          for (int i = 0; i < argc; i++) {
+            SET_LOCAL((&func_lf), i, argv[i]);
+          }
         }
         eval_vm(vm, &func_lf);
-        for (int i = 0; i < func.as.func.as.userdef.local_size; i++) {
+        for (int i = 0; i < AS_USERDEF_FUNC(func).local_size; i++) {
           gc_decref(locals[i]);
         }
       }

@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#define VERSION "0.0.2"
+#define VERSION "0.1.0"
 
 #define SEAL_MALLOC(size)       malloc(size)
 #define SEAL_CALLOC(n, size)    calloc(n, size)

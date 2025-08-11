@@ -116,6 +116,7 @@ typedef struct ast {
       const char* name;
       const char** param_names;
       size_t param_size;
+      bool is_variadic;
       struct ast* comp;
     } func_def;
     /* block control */
@@ -403,10 +404,11 @@ static void print_ast(ast_t* node)
       print_ast(node->_for.comp);
       break;
     case AST_FUNC_DEF:
-      printf("%d: %s: \'%s\', parameter size: %zu%s\n",
+      printf("%d: %s: \'%s\', is variadic: %d, parameter size: %zu%s\n",
               node->line,
               hast_type_name(node->type),
               node->func_def.name,
+              node->func_def.is_variadic,
               node->func_def.param_size,
               node->func_def.param_size > 0 ? ", parameters:" : "");
       for (int i = 0; i < node->func_def.param_size; i++) {

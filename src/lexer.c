@@ -146,7 +146,10 @@ static void lexer_get_token(lexer_t* lexer)
       if (lexer_is_digit(lexer_peek(lexer)))
         tok = lexer_get_digit(lexer, LEXEME_FRACTION_BEGIN_DIGIT);
       else if (lexer_match(lexer, '.'))
-        tok = create_token(TOK_DPERIOD, NULL, lexer->line);
+        if (lexer_match(lexer, '.'))
+          tok = create_token(TOK_ELLIP, NULL, lexer->line);
+        else
+          tok = create_token(TOK_DPERIOD, NULL, lexer->line);
       else
         tok = create_token(TOK_PERIOD, NULL, lexer->line);
       break;

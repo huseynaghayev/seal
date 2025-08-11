@@ -457,7 +457,8 @@ static ast_t* parser_parse_func_def(parser_t* parser, bool can_be_global)
   ast_t* ast = static_create_ast(AST_FUNC_DEF, parser_line(parser));
   ast->func_def.param_size = 0;
 
-  bool is_anonym = true;
+  bool is_anonym   = true;
+  bool is_variadic = false;
   if (can_be_global && parser_match(parser, TOK_ID))
     is_anonym = false;
 
@@ -466,13 +467,23 @@ static ast_t* parser_parse_func_def(parser_t* parser, bool can_be_global)
   parser_eat(parser, TOK_LPAREN);
 
   if (!parser_match(parser, TOK_RPAREN)) {
+    if (parser_match(parser, TOK_ELLIP)) {
+      parser_advance(parser);
+      is_variadic = true;
+    }
+
     ast->func_def.param_size = 1;
     ast->func_def.param_names = SEAL_CALLOC(1, sizeof(char*));
     ast->func_def.param_names[0] = parser_eat(parser, TOK_ID)->val;
   }
 
-  while (!parser_match(parser, TOK_RPAREN)) {
+  while (!is_variadic && !parser_match(parser, TOK_RPAREN)) {
     parser_eat(parser, TOK_COMMA); // ',' separator
+
+    if (parser_match(parser, TOK_ELLIP)) {
+      parser_advance(parser);
+      is_variadic = true;
+    }
 
     const char* param = parser_eat(parser, TOK_ID)->val;
     kill_if_duplicated_name(parser, param, ast->func_def.param_names, ast->func_def.param_size);
@@ -482,6 +493,7 @@ static ast_t* parser_parse_func_def(parser_t* parser, bool can_be_global)
     ast->func_def.param_names[ast->func_def.param_size - 1] = param;
   }
 
+  ast->func_def.is_variadic = is_variadic;
   parser_eat(parser, TOK_RPAREN);
 
   if (parser_match(parser, TOK_NEWL)) {
