@@ -155,10 +155,18 @@ svalue_t __seal_exit(seal_byte argc, svalue_t* argv)
 {
   static const char *FUNC_NAME = "exit";
 
-  svalue_t exit_code;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_INT), &exit_code);
+  int exit_code = 0;
+  if (argc > 1) {
+    MOD_ERROR(MOD_NAME, FUNC_NAME, "at most 1 argument");
+  }
+  if (argc == 1) {
+    if (!IS_INT(argv[0])) {
+      MOD_ERROR(MOD_NAME, FUNC_NAME, "exit code must be integer");
+    }
+    exit_code = AS_INT(argv[0]);
+  }
 
-  exit(AS_INT(exit_code));
+  exit(exit_code);
   return SEAL_VALUE_NULL;
 }
 
