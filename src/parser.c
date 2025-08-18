@@ -227,6 +227,9 @@ static ast_t* parser_parse_list(parser_t* parser)
   while (parser_match(parser, TOK_COMMA)) {
     parser_eat(parser, TOK_COMMA);
 
+    if (parser_match(parser, TOK_RBRACK))
+      break;
+
     ast->list.mem_size++;
     ast->list.mems = SEAL_REALLOC(ast->list.mems, ast->list.mem_size * sizeof(ast_t*));
     ast->list.mems[ast->list.mem_size - 1] = parser_parse_expr(parser);
@@ -257,6 +260,9 @@ static ast_t* parser_parse_map(parser_t* parser)
   }
   while (parser_match(parser, TOK_COMMA)) {
     parser_eat(parser, TOK_COMMA);
+
+    if (parser_match(parser, TOK_RBRACE))
+      break;
 
     // no duplicate allowed
     const char* field_name = parser_eat(parser, TOK_ID)->val;
