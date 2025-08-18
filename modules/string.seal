@@ -77,3 +77,29 @@ define swapcase(s)
             res += char(ascii(c) + 32)
 
     return res
+
+
+define startwith(s, b)
+    if (bl = len(b)) > len(s) then return false
+
+    i = 0
+    while i < bl
+        if s[i] != b[i]
+            return false
+
+        i += 1
+
+    return true
+
+
+define endwith(s, e)
+    if (el = len(e)) > (sl = len(s)) then return false
+
+    i = 0
+    while i < el
+        if s[sl - i - 1] != e[el - i - 1]
+            return false
+
+        i += 1
+
+    return true
