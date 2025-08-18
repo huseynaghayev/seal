@@ -24,12 +24,19 @@
   hashmap_insert(AS_MOD(mod)->globals, str, func); \
 } while (0)
 
+#define MOD_REGISTER_SYM(mod, name, val) do { \
+  hashmap_insert(AS_MOD(mod)->globals, name, val); \
+} while (0)
+
 #define MOD_ERROR(mod_name, func_name, ...) do { \
   fprintf(stderr, "seal: at module \'%s\': function \'%s\'\n", mod_name, func_name); \
   fprintf(stderr, __VA_ARGS__); \
   fprintf(stderr, "\n"); \
   exit(1); \
 } while (0)
+
+#define SEAL_PARSE_ARGS(typec, typev, ...) \
+  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, typec, typev, __VA_ARGS__)
 
 void seal_parse_args(const char *mod_name,
                     const char *func_name,
