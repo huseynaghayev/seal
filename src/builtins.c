@@ -140,6 +140,14 @@ svalue_t __seal_print(seal_byte argc, svalue_t* argv)
 
 svalue_t __seal_scan(seal_byte argc, svalue_t* argv)
 {
+  static const char *FUNC_NAME = "scan";
+
+  if (argc > 1) {
+    MOD_ERROR("at most 1 argument, got %d", argc);
+  }
+  if (argc == 1) {
+    __print_single(argv[0]);
+  }
   static char buf[BUFSIZ];
   size_t len = 0;
   while ((buf[len] = getchar()) != EOF && buf[len] != '\n') {
@@ -157,7 +165,7 @@ svalue_t __seal_exit(seal_byte argc, svalue_t* argv)
 
   int exit_code = 0;
   if (argc > 1) {
-    MOD_ERROR("at most 1 argument");
+    MOD_ERROR("at most 1 argument, got %d", argc);
   }
   if (argc == 1) {
     if (!IS_INT(argv[0])) {

@@ -389,7 +389,7 @@ void init_vm(vm_t* vm, cout_t* cout)
   // vm->lf[0] = (struct local_frame) { .ip = vm->bytecodes, .caller = NULL };
   hashmap_init(&vm->globals, 256);
   REGISTER_BUILTIN_FUNC(&vm->globals, __seal_print, "print", 0, true);
-  REGISTER_BUILTIN_FUNC(&vm->globals, __seal_scan, "scan", 0, false);
+  REGISTER_BUILTIN_FUNC(&vm->globals, __seal_scan, "scan", 0, true);
   REGISTER_BUILTIN_FUNC(&vm->globals, __seal_exit, "exit", 0, true);
   REGISTER_BUILTIN_FUNC(&vm->globals, __seal_len, "len", 1, false);
   REGISTER_BUILTIN_FUNC(&vm->globals, __seal_int, "int", 1, false);
