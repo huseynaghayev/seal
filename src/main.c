@@ -75,6 +75,7 @@ int main(int argc, char** argv)
   vm_t vm;
   init_vm(&vm, &cout);
   svalue_t locals[cout.main_scope_local_size];
+  memset(locals, 0, sizeof(locals));
   struct local_frame main_frame = {
     .locals = locals,
     .bytecodes = vm.bytecodes,
