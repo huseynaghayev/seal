@@ -396,7 +396,7 @@ void init_vm(vm_t* vm, cout_t* cout)
   REGISTER_BUILTIN_FUNC(&vm->globals, __seal_float, "float", 1, false);
   REGISTER_BUILTIN_FUNC(&vm->globals, __seal_str, "str", 1, false);
   REGISTER_BUILTIN_FUNC(&vm->globals, __seal_bool, "bool", 1, false);
-  REGISTER_BUILTIN_FUNC(&vm->globals, __seal_push, "push", 2, false);
+  REGISTER_BUILTIN_FUNC(&vm->globals, __seal_push, "push", 2, true);
   REGISTER_BUILTIN_FUNC(&vm->globals, __seal_pop, "pop", 1, false);
   REGISTER_BUILTIN_FUNC(&vm->globals, __seal_insert, "insert", 3, false);
   REGISTER_BUILTIN_FUNC(&vm->globals, __seal_remove, "remove", 2, false);

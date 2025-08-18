@@ -157,11 +157,11 @@ svalue_t __seal_exit(seal_byte argc, svalue_t* argv)
 
   int exit_code = 0;
   if (argc > 1) {
-    MOD_ERROR(MOD_NAME, FUNC_NAME, "at most 1 argument");
+    MOD_ERROR("at most 1 argument");
   }
   if (argc == 1) {
     if (!IS_INT(argv[0])) {
-      MOD_ERROR(MOD_NAME, FUNC_NAME, "exit code must be integer");
+      MOD_ERROR("exit code must be integer");
     }
     exit_code = AS_INT(argv[0]);
   }
@@ -175,7 +175,7 @@ svalue_t __seal_len(seal_byte argc, svalue_t* argv)
   static const char *FUNC_NAME = "len";
 
   svalue_t it;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_STRING | SEAL_LIST), &it);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_STRING | SEAL_LIST), &it);
 
   return SEAL_VALUE_INT(IS_STRING(it) ? it.as.string->size : AS_LIST(it)->size);
 }
@@ -185,7 +185,7 @@ svalue_t __seal_int(seal_byte argc, svalue_t* argv)
   static const char *FUNC_NAME = "int";
 
   svalue_t arg;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_STRING | SEAL_NUMBER), &arg);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_STRING | SEAL_NUMBER), &arg);
 
   return SEAL_VALUE_INT(IS_STRING(arg) ? atoi(AS_STRING(arg)) : AS_NUM(arg));
 }
@@ -195,7 +195,7 @@ svalue_t __seal_float(seal_byte argc, svalue_t* argv)
   static const char *FUNC_NAME = "float";
 
   svalue_t arg;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_STRING | SEAL_NUMBER), &arg);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_STRING | SEAL_NUMBER), &arg);
 
   return SEAL_VALUE_FLOAT(IS_STRING(arg) ? atof(AS_STRING(arg)) : AS_NUM(arg));
 }
@@ -205,7 +205,7 @@ svalue_t __seal_str(seal_byte argc, svalue_t* argv)
   static const char *FUNC_NAME = "str";
 
   svalue_t arg;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_NULL | SEAL_INT | SEAL_FLOAT | SEAL_STRING | SEAL_BOOL), &arg);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_NULL | SEAL_INT | SEAL_FLOAT | SEAL_STRING | SEAL_BOOL), &arg);
 
   svalue_t res = SEAL_VALUE_NULL;
   char *s;
@@ -253,7 +253,7 @@ svalue_t __seal_bool(seal_byte argc, svalue_t* argv)
   static const char *FUNC_NAME = "bool";
 
   svalue_t arg;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_ANY), &arg);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_ANY), &arg);
 
   return SEAL_VALUE_BOOL(
       IS_NULL(arg) ? false :
@@ -273,11 +273,14 @@ svalue_t __seal_push(seal_byte argc, svalue_t* argv)
 {
   static const char *FUNC_NAME = "push";
 
-  svalue_t list, e;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 2, PARAM_TYPES(SEAL_LIST, SEAL_ANY), &list, &e);
-
-  LIST_PUSH(list, e);
-  gc_incref(e);
+  svalue_t list;
+  if (!IS_LIST(list = argv[0]))
+    MOD_ERROR("first argument must be list");
+  
+  for (int i = 1; i < argc; i++) {
+    LIST_PUSH(list, argv[i]);
+    gc_incref(argv[i]);
+  }
 
   return SEAL_VALUE_NULL;
 }
@@ -287,7 +290,7 @@ svalue_t __seal_pop(seal_byte argc, svalue_t* argv)
   static const char *FUNC_NAME = "pop";
 
   svalue_t list;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_LIST), &list);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_LIST), &list);
 
   if (AS_LIST(argv[0])->size == 0)
     BUILTIN_ERROR("cannot pop empty list");
@@ -302,7 +305,7 @@ svalue_t __seal_insert(seal_byte argc, svalue_t *argv)
   static const char *FUNC_NAME = "insert";
 
   svalue_t list, idx, e;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 3, PARAM_TYPES(SEAL_LIST, SEAL_INT, SEAL_ANY), &list, &idx, &e);
+  SEAL_PARSE_ARGS(3, PARAM_TYPES(SEAL_LIST, SEAL_INT, SEAL_ANY), &list, &idx, &e);
 
 
   struct seal_list *l = AS_LIST(list);
@@ -328,7 +331,7 @@ svalue_t __seal_remove(seal_byte argc, svalue_t *argv)
   static const char *FUNC_NAME = "remove";
 
   svalue_t list, idx;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 2, PARAM_TYPES(SEAL_LIST, SEAL_INT), &list, &idx);
+  SEAL_PARSE_ARGS(2, PARAM_TYPES(SEAL_LIST, SEAL_INT), &list, &idx);
 
   struct seal_list *l = AS_LIST(list);
   svalue_t removed;
@@ -353,7 +356,7 @@ svalue_t __seal_format(seal_byte argc, svalue_t *argv)
 
   svalue_t fmt;
   if (!IS_STRING((fmt = argv[0]))) {
-      MOD_ERROR(MOD_NAME, FUNC_NAME, "first argument must be string");
+      MOD_ERROR("first argument must be string");
   }
   
   const char *formatter = AS_STRING(fmt);
@@ -371,7 +374,7 @@ svalue_t __seal_format(seal_byte argc, svalue_t *argv)
     } else {
       formatter++; /* skip formatter after % (for now) */
       if (arg_format == 0) {
-        MOD_ERROR(MOD_NAME, FUNC_NAME, "more formatters than arguments");
+        MOD_ERROR("more formatters than arguments");
       }
       int len;
       svalue_t arg = argv[arg_counter];
@@ -416,14 +419,14 @@ svalue_t __seal_format(seal_byte argc, svalue_t *argv)
           break;
         }
         default: {
-          MOD_ERROR(MOD_NAME, FUNC_NAME, "cannot format \'%s\'", seal_type_name(VAL_TYPE(arg)));
+          MOD_ERROR("cannot format \'%s\'", seal_type_name(VAL_TYPE(arg)));
         }
         result[size] = '\0';
       }
     }
   }
   if (arg_format > 0) {
-    MOD_ERROR(MOD_NAME, FUNC_NAME, "too many arguments");
+    MOD_ERROR("too many arguments");
   }
 
   result[size] = '\0';

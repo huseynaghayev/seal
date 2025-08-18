@@ -28,8 +28,8 @@
   hashmap_insert(AS_MOD(mod)->globals, name, val); \
 } while (0)
 
-#define MOD_ERROR(mod_name, func_name, ...) do { \
-  fprintf(stderr, "seal: at module \'%s\': function \'%s\'\n", mod_name, func_name); \
+#define MOD_ERROR(...) do { \
+  fprintf(stderr, "seal: at module \'%s\': function \'%s\'\n", MOD_NAME, FUNC_NAME); \
   fprintf(stderr, __VA_ARGS__); \
   fprintf(stderr, "\n"); \
   exit(1); \

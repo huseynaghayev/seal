@@ -1,8 +1,8 @@
 #include "moddef.h"
 
 
-void seal_parse_args(const char *mod_name,
-                     const char *func_name,
+void seal_parse_args(const char *MOD_NAME,
+                     const char *FUNC_NAME,
                      seal_byte argc,
                      svalue_t *argv,
                      seal_byte typec,
@@ -10,7 +10,7 @@ void seal_parse_args(const char *mod_name,
                      ...)
 {
   if (argc != typec)
-    MOD_ERROR(mod_name, func_name, "expected %d argument%s, got %d", typec, typec != 1 ? "s" : "", argc);
+    MOD_ERROR("expected %d argument%s, got %d", typec, typec != 1 ? "s" : "", argc);
 
   va_list vargs;
   va_start(vargs, typev);
@@ -23,18 +23,14 @@ void seal_parse_args(const char *mod_name,
 
     int type = VAL_TYPE(argv[i]);
     if (!(type & typev[i])) {
-      MOD_ERROR(mod_name,
-                func_name,
-                "expected argument %d to be \'%s\', got \'%s\'",
+      MOD_ERROR("expected argument %d to be \'%s\', got \'%s\'",
                 i,
                 typev[i] == SEAL_PTR ? va_arg(vargs, const char*) : seal_type_name(typev[i]),
                 seal_type_name(type));
     } else if (type == SEAL_PTR) {
       const char *ptr_name = va_arg(vargs, const char*);
       if (!STR_EQ(ptr_name, AS_PTR(*ps).name))
-        MOD_ERROR(mod_name,
-                  func_name,
-                  "expected argument %d to be \'%s\', got \'%s\'",
+        MOD_ERROR("expected argument %d to be \'%s\', got \'%s\'",
                   i,
                   AS_PTR(*ps).name,
                   ptr_name);
