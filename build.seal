@@ -1,0 +1,71 @@
+#!/usr/bin/env seal
+
+include os
+include string: startwith
+
+
+CC  = "gcc"
+OUT = "seal"
+DIR = "src"
+OBJ = "obj"
+FLAGS = "-std=c99"
+ODEF  = "-O2"
+
+
+define error(arg)
+    print(format("unknown flag: %s", arg))
+    print(format("proper use: %s (--windows, -O{0..3})", args[0]))
+    exit(1)
+
+i = 1
+while i < len(args)
+    arg = args[i]
+    if arg == "--windows"
+        CC = "x86_64-w64-mingw32-gcc"
+    else if startwith(arg, "-O")
+        print(typeof arg[2])
+        if !(arg[2] in "0123")
+            error(arg)
+
+        ODEF = arg
+    else
+        error(arg)
+
+    i += 1
+
+print(format("compiling with \'%s\' optimization...", ODEF))
+FLAGS += " " + ODEF
+
+if not os.exist(OBJ)
+    os.mkdir(OBJ)
+
+
+objs = ""
+
+for file in os.readdir(DIR)
+    l = len(file)
+    if l < 2 then skip
+
+    if file[l - 1] == "c" and file[l - 2] == "."
+        obj_name = ""
+        for c in file
+            if c == "." then stop
+            obj_name += c
+
+        obj_name += ".o"
+        objs += OBJ + "/" + obj_name + " "
+
+        print(format("compiling \'%s\' to \'%s\'...", file, obj_name))
+        os.system(
+            format(
+                "%s -c %s/%s -I%s -o %s/%s %s",
+                CC, DIR, file, DIR, OBJ, obj_name, FLAGS
+            )
+        )
+        print(format("\'%s\' compiled", file))
+
+print("linking...")
+os.system(format("%s %s -o %s %s", CC, objs, OUT, FLAGS))
+print(format("removing \'%s\' directory...", OBJ))
+os.rmdir(OBJ, true)
+print("done")
