@@ -3,12 +3,13 @@
 
 static const char *MOD_NAME = "string";
 
+
 seal_value __seal_string_ascii(seal_byte argc, seal_value *argv)
 {
   static const char *FUNC_NAME = "ascii";
 
   seal_value str;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_STRING), &str);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_STRING), &str);
 
   return SEAL_VALUE_INT((seal_int) *AS_STRING(str));
 }
@@ -17,7 +18,7 @@ seal_value __seal_string_char(seal_byte argc, seal_value *argv)
   static const char *FUNC_NAME = "char";
 
   seal_value i;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_INT), &i);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_INT), &i);
 
   char *c = SEAL_CALLOC(2, sizeof(char));
   c[0] = AS_INT(i);

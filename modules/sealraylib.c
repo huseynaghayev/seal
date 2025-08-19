@@ -5,6 +5,7 @@
 #define vec2(x, y) ((Vector2) { x, y })
 #define rec(x, y, w, h) ((Rectangle) { x, y, w, h })
 
+
 static const char *MOD_NAME  = "raylib";
 static const char *TEX_NAME  = "Texture2D*";
 static const char *FONT_NAME = "Font*";
@@ -18,7 +19,7 @@ seal_value __seal_raylib_init_window(seal_byte argc, seal_value *argv)
   static const char *FUNC_NAME = "init_window";
 
   seal_value w, h, title;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 3, PARAM_TYPES(SEAL_NUMBER, SEAL_NUMBER, SEAL_STRING), &w, &h, &title);
+  SEAL_PARSE_ARGS(3, PARAM_TYPES(SEAL_NUMBER, SEAL_NUMBER, SEAL_STRING), &w, &h, &title);
 
   InitWindow(AS_NUM(w), AS_NUM(h), AS_STRING(title));
 
@@ -26,20 +27,11 @@ seal_value __seal_raylib_init_window(seal_byte argc, seal_value *argv)
 }
 seal_value __seal_raylib_close_window(seal_byte argc, seal_value *argv)
 {
-  static const char *FUNC_NAME = "close_window";
-
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 0, NULL);
-
   CloseWindow();
-
   return SEAL_VALUE_NULL;
 }
 seal_value __seal_raylib_window_should_close(seal_byte argc, seal_value *argv)
 {
-  static const char *FUNC_NAME = "window_should_close";
-
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 0, NULL);
-
   return SEAL_VALUE_BOOL(WindowShouldClose());
 }
 
@@ -49,7 +41,7 @@ seal_value __seal_raylib_clear_background(seal_byte argc, seal_value *argv)
   static const char *FUNC_NAME = "clear_background";
 
   seal_value r, g, b;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 3, PARAM_TYPES(SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER), &r, &g, &b);
+  SEAL_PARSE_ARGS(3, PARAM_TYPES(SEAL_NUMBER, SEAL_NUMBER, SEAL_NUMBER), &r, &g, &b);
 
   ClearBackground((Color) { AS_NUM(r), AS_NUM(g), AS_NUM(b) });
 
@@ -57,22 +49,12 @@ seal_value __seal_raylib_clear_background(seal_byte argc, seal_value *argv)
 }
 seal_value __seal_raylib_begin_drawing(seal_byte argc, seal_value *argv)
 {
-  static const char *FUNC_NAME = "begin_drawing";
-
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 0, NULL);
-
   BeginDrawing();
-
   return SEAL_VALUE_NULL;
 }
 seal_value __seal_raylib_end_drawing(seal_byte argc, seal_value *argv)
 {
-  static const char *FUNC_NAME = "end_drawing";
-
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 0, NULL);
-
   EndDrawing();
-
   return SEAL_VALUE_NULL;
 }
 
@@ -82,7 +64,7 @@ seal_value __seal_raylib_set_fps(seal_byte argc, seal_value *argv)
   static const char *FUNC_NAME = "set_fps";
 
   seal_value fps;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_INT), &fps);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_INT), &fps);
 
   SetTargetFPS(AS_INT(fps));
 
@@ -90,18 +72,10 @@ seal_value __seal_raylib_set_fps(seal_byte argc, seal_value *argv)
 }
 seal_value __seal_raylib_delta_time(seal_byte argc, seal_value *argv)
 {
-  static const char *FUNC_NAME = "delta_time";
-
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 0, NULL);
-
   return SEAL_VALUE_FLOAT(GetFrameTime());
 }
 seal_value __seal_raylib_get_fps(seal_byte argc, seal_value *argv)
 {
-  static const char *FUNC_NAME = "get_fps";
-
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 0, NULL);
-
   return SEAL_VALUE_INT(GetFPS());
 }
 
@@ -111,7 +85,7 @@ seal_value __seal_raylib_is_key_pressed(seal_byte argc, seal_value *argv)
   static const char *FUNC_NAME = "is_key_pressed";
 
   seal_value key;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_INT), &key);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_INT), &key);
 
   return SEAL_VALUE_BOOL(IsKeyPressed(AS_INT(key)));
 }
@@ -120,7 +94,7 @@ seal_value __seal_raylib_is_key_pressed_repeat(seal_byte argc, seal_value *argv)
   static const char *FUNC_NAME = "is_key_pressed_repeat";
 
   seal_value key;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_INT), &key);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_INT), &key);
 
   return SEAL_VALUE_BOOL(IsKeyPressedRepeat(AS_INT(key)));
 }
@@ -129,7 +103,7 @@ seal_value __seal_raylib_is_key_down(seal_byte argc, seal_value *argv)
   static const char *FUNC_NAME = "is_key_down";
 
   seal_value key;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_INT), &key);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_INT), &key);
 
   return SEAL_VALUE_BOOL(IsKeyDown(AS_INT(key)));
 }
@@ -138,7 +112,7 @@ seal_value __seal_raylib_is_key_released(seal_byte argc, seal_value *argv)
   static const char *FUNC_NAME = "is_key_released";
 
   seal_value key;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_INT), &key);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_INT), &key);
 
   return SEAL_VALUE_BOOL(IsKeyReleased(AS_INT(key)));
 }
@@ -147,16 +121,12 @@ seal_value __seal_raylib_is_key_up(seal_byte argc, seal_value *argv)
   static const char *FUNC_NAME = "is_key_up";
 
   seal_value key;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_INT), &key);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_INT), &key);
 
   return SEAL_VALUE_BOOL(IsKeyUp(AS_INT(key)));
 }
 seal_value __seal_raylib_get_char_pressed(seal_byte argc, seal_value *argv)
 {
-  static const char *FUNC_NAME = "get_char_pressed";
-
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 0, NULL);
-
   return SEAL_VALUE_INT(GetCharPressed());
 }
 seal_value __seal_raylib_set_exit_key(seal_byte argc, seal_value *argv)
@@ -164,7 +134,7 @@ seal_value __seal_raylib_set_exit_key(seal_byte argc, seal_value *argv)
   static const char *FUNC_NAME = "set_exit_key";
 
   seal_value key;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_INT), &key);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_INT), &key);
 
   SetExitKey(AS_INT(key));
 
@@ -177,7 +147,7 @@ seal_value __seal_raylib_is_mouse_pressed(seal_byte argc, seal_value *argv)
   static const char *FUNC_NAME = "is_mouse_pressed";
 
   seal_value button;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_INT), &button);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_INT), &button);
 
   return SEAL_VALUE_BOOL(IsMouseButtonPressed(AS_INT(button)));
 }
@@ -186,7 +156,7 @@ seal_value __seal_raylib_is_mouse_down(seal_byte argc, seal_value *argv)
   static const char *FUNC_NAME = "is_mouse_down";
 
   seal_value button;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_INT), &button);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_INT), &button);
 
   return SEAL_VALUE_BOOL(IsMouseButtonDown(AS_INT(button)));
 }
@@ -195,7 +165,7 @@ seal_value __seal_raylib_is_mouse_released(seal_byte argc, seal_value *argv)
   static const char *FUNC_NAME = "is_mouse_released";
 
   seal_value button;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_INT), &button);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_INT), &button);
 
   return SEAL_VALUE_BOOL(IsMouseButtonReleased(AS_INT(button)));
 }
@@ -204,24 +174,16 @@ seal_value __seal_raylib_is_mouse_up(seal_byte argc, seal_value *argv)
   static const char *FUNC_NAME = "is_mouse_up";
 
   seal_value button;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_INT), &button);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_INT), &button);
 
   return SEAL_VALUE_BOOL(IsMouseButtonUp(AS_INT(button)));
 }
 seal_value __seal_raylib_mouse_x(seal_byte argc, seal_value *argv)
 {
-  static const char *FUNC_NAME = "mouse_x";
-
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 0, NULL);
-
   return SEAL_VALUE_INT(GetMouseX());
 }
 seal_value __seal_raylib_mouse_y(seal_byte argc, seal_value *argv)
 {
-  static const char *FUNC_NAME = "mouse_y";
-
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 0, NULL);
-
   return SEAL_VALUE_INT(GetMouseY());
 }
 
@@ -339,7 +301,7 @@ seal_value __seal_raylib_load_texture(seal_byte argc, seal_value *argv)
   static const char *FUNC_NAME = "load_texture";
 
   seal_value path;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_STRING), &path);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_STRING), &path);
 
   Texture2D *tex_ptr = SEAL_CALLOC(1, sizeof(Texture2D));
   *tex_ptr = LoadTexture(AS_STRING(path));
@@ -351,7 +313,7 @@ seal_value __seal_raylib_unload_texture(seal_byte argc, seal_value *argv)
   static const char *FUNC_NAME = "unload_texture";
 
   seal_value tex_ptr;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_PTR), &tex_ptr, TEX_NAME);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_PTR), &tex_ptr, TEX_NAME);
 
   UnloadTexture(*((Texture2D*)AS_PTR(tex_ptr).ptr));
   SEAL_FREE(AS_PTR(tex_ptr).ptr);
@@ -396,7 +358,7 @@ seal_value __seal_raylib_load_font(seal_byte argc, seal_value *argv)
   static const char *FUNC_NAME = "load_font";
 
   seal_value path, size;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 2, PARAM_TYPES(SEAL_STRING, SEAL_INT), &path, &size);
+  SEAL_PARSE_ARGS(2, PARAM_TYPES(SEAL_STRING, SEAL_INT), &path, &size);
 
   Font *font_ptr = SEAL_CALLOC(1, sizeof(Font));
   *font_ptr = LoadFontEx(AS_STRING(path), AS_INT(size), NULL, 0);
@@ -408,7 +370,7 @@ seal_value __seal_raylib_unload_font(seal_byte argc, seal_value *argv)
   static const char *FUNC_NAME = "unload_font";
 
   seal_value font_ptr;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_PTR), &font_ptr, FONT_NAME);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_PTR), &font_ptr, FONT_NAME);
 
 
   UnloadFont(*((Font*)AS_PTR(font_ptr).ptr));

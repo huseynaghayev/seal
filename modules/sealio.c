@@ -4,33 +4,36 @@
 static const char *MOD_NAME = "io";
 static const char *FILE_NAME = "FILE*";
 
+
 seal_value __seal_io_open(seal_byte argc, seal_value *argv)
 {
   static const char *FUNC_NAME = "open";
 
   seal_value path, file_mode;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 2, PARAM_TYPES(SEAL_STRING, SEAL_STRING), &path, &file_mode);
+  SEAL_PARSE_ARGS(2, PARAM_TYPES(SEAL_STRING, SEAL_STRING), &path, &file_mode);
 
   FILE *fp = fopen(AS_STRING(path), AS_STRING(file_mode));
 
   return fp ? SEAL_VALUE_PTR(fp, FILE_NAME) : SEAL_VALUE_NULL;
 }
+
 seal_value __seal_io_close(seal_byte argc, seal_value *argv)
 {
   static const char *FUNC_NAME = "close";
 
   seal_value file_ptr;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_PTR), &file_ptr, FILE_NAME);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_PTR), &file_ptr, FILE_NAME);
   fclose(AS_PTR(file_ptr).ptr);
 
   return SEAL_VALUE_NULL;
 }
+
 seal_value __seal_io_read(seal_byte argc, seal_value *argv)
 {
   static const char *FUNC_NAME = "read";
 
   seal_value file_ptr;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 1, PARAM_TYPES(SEAL_PTR), &file_ptr, FILE_NAME);
+  SEAL_PARSE_ARGS(1, PARAM_TYPES(SEAL_PTR), &file_ptr, FILE_NAME);
 
   FILE *file = AS_PTR(file_ptr).ptr;
 
@@ -49,19 +52,20 @@ seal_value __seal_io_read(seal_byte argc, seal_value *argv)
 		return SEAL_VALUE_STRING(content);
 	}
 }
+
 seal_value __seal_io_write(seal_byte argc, seal_value *argv)
 {
   static const char *FUNC_NAME = "write";
 
   seal_value file_ptr, to_write;
-  seal_parse_args(MOD_NAME, FUNC_NAME, argc, argv, 2, PARAM_TYPES(SEAL_PTR, SEAL_STRING), &file_ptr, FILE_NAME, &to_write);
+  SEAL_PARSE_ARGS(2, PARAM_TYPES(SEAL_PTR, SEAL_STRING), &file_ptr, FILE_NAME, &to_write);
 
   FILE *file = AS_PTR(file_ptr).ptr;
 
   fputs(AS_STRING(to_write), file);
-
   return SEAL_VALUE_NULL;
 }
+
 seal_value seal_init_mod()
 {
   seal_value mod = {
