@@ -10,6 +10,7 @@ DIR = "src"
 OBJ = "obj"
 FLAGS = "-std=c99"
 ODEF  = "-O2"
+OS  = "Linux"
 
 
 define error(arg)
@@ -22,8 +23,8 @@ while i < len(args)
     arg = args[i]
     if arg == "--windows"
         CC = "x86_64-w64-mingw32-gcc"
+        OS = "Windows"
     else if startwith(arg, "-O")
-        print(typeof arg[2])
         if !(arg[2] in "0123")
             error(arg)
 
@@ -33,7 +34,7 @@ while i < len(args)
 
     i += 1
 
-print(format("compiling with \'%s\' optimization...", ODEF))
+print(format("compiling for \'%s\' with \'%s\' optimization...", OS, ODEF))
 FLAGS += " " + ODEF
 
 if not os.exist(OBJ)
