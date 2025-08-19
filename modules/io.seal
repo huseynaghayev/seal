@@ -6,6 +6,7 @@
  * Language: Seal
  * Created: 2025-06-21
  */
+
 include sealio as io
 
 
@@ -17,21 +18,39 @@ define File(path, mode)
 
     file = { 
         mode = mode,
-        path = path
+        path = path,
+        handler = fp,
+        closed = false
     }
 
-    file.handler = fp
+    file.readable = define(self)
+        return (not self.closed) and (self.mode[0] == 'r' or (len(self.mode) > 1 and self.mode[1] == '+'))
+
+    file.writable = define(self)
+        return (not self.closed) and (self.mode[0] in 'wa' or (len(self.mode) > 1 and self.mode[1] == '+'))
 
     file.read = define(self)
+        if not self..readable()
+            return null
+
         return io.read(self.handler)
 
     file.close = define(self)
+        if self.closed then return
+        self.closed = true
         io.close(self.handler)
 
     file.write = define(self, stream)
+        if not self..writable()
+            return false
+
         io.write(self.handler, stream)
+        return true
 
     file.readlines = define(self)
+        if not self..readable()
+            return null
+
         lines = []
         line = ''
         for c in self..read()
