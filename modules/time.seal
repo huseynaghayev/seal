@@ -1,13 +1,13 @@
-/* Date Module
+/* Time Module
  * Provides time functions.
- * Includes symbols: time
  *
  * Author: Huseyn Aghayev
  * Language: Seal
  * Created: 2025-07-02
  */
 
-include sealdate as date
+include sealtime as time
 
 
-$time = date.time
+$now   = time.now
+$sleep = time.sleep
