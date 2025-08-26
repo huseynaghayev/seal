@@ -1,0 +1,132 @@
+program = { statement } ;
+
+statement = compound statement
+          | simple statement
+          ;
+
+compound statement = while statement
+                   | for statement
+                   | if statement
+                   | simple statement
+                   ;
+
+simple statement = "skip"
+                 | "stop"
+                 | "return" , [ expression ]
+                 | "include" , identifier , (
+                     [ "as" , identifier ] ,
+                     [ ":" , identifier , { identifier } ]
+                 )
+                 | expression
+                 ;
+
+while statement = "while" , expression ,
+                      ( "do" , simple statement
+                      | NEWLINE , INDENT ,
+                          compound statement ,
+                      DEDENT
+                      )
+                ;
+
+do while statement = "do" ,
+                         ( simple statement , "while"
+                         | NEWLINE , INDENT ,
+                             compound statement ,
+                         DEDENT , "while" , expression
+                         )
+                   ;
+
+for statement = "for" , identifier , "in" , expression ,
+                    ( "do" , simple statement
+                    | NEWLINE , INDENT ,
+                        compound statement ,
+                    DEDENT
+                    )
+              ;
+
+if statement = "if" , expression ,
+                   ( "then" , simple statement
+                   | NEWLINE , INDENT ,
+                       compound statement ,
+                   DEDENT
+                   ) [ "else" , (if statement | simple statement
+                                | NEWLINE , INDENT ,
+                                    compound statement ,
+                                DEDENT
+                                ) ]
+             ;
+
+expression = anonymous function definition
+           | assignment
+           | ternary
+           | logical or
+           ;
+
+anonymous function definition = "define" , "( " , parameters , ")" , ( expression
+                                    | compound statement )
+                              ;
+parameters = identifier , { "," , identifier } ;
+
+ternary = "if" , expression , "then" , expression , "else" , expression ;
+
+logical or  = logical and , { "or" , logical and } ;
+logical and = in check , { "and" , in check } ;
+in check    = bitwise or , { "in" , bitwise or } ;
+bitwise or  = xor , { "|" , xor } ;
+xor         = bitwise and , { "^" , bitwise and } ;
+bitwise and = equality , { "&" , equality } ;
+equality    = comparison , { ( "==" | "!=" ) , comparison } ;
+comparison  = shift , { ( ">" | ">=" | "<" | "<=" ) , shift } ;
+shift       = term , { ( "<<" | ">>" ) , term } ;
+term        = factor , { ( "+" | "-" ) , factor } ;
+factor      = unary , { ( "*" | "/" | "%" ) , unary } ;
+unary       = [ "!" | "not" | "-" | "+" | "typeof" | "~" ] , unary
+            | primary
+            ;
+
+primary = [ "$" ] , identifier
+        | "(" , expression , ")"
+        | list
+        | map
+        | integer
+        | floating
+        | string
+        | "true"
+        | "false"
+        | "null"
+        | ternary
+        ;
+
+assignment = identifier , "=" , expression ;
+
+list = "[" , [ elements ] , "]" ;
+elements = expression , { "," , expression } , [ "," ] ;
+
+map = "{" , [ pairs ] , "}" ;
+pairs = pair , { "," pair } , [ "," ] ;
+pair  = identifier , "=" , expression ;
+
+
+
+string   = """" , { character | escape sequence } , """" (* fix this later *)
+character = ? any character except " ?
+
+floating = [ integer ] , "." integer ;
+integer  = digit , { digit } ;
+
+digit = "0"
+      | "1"
+      | "2"
+      | "3"
+      | "4"
+      | "5"
+      | "6"
+      | "7"
+      | "8"
+      | "9"
+      ;
+
+
+NEWLINE = ? newline characters ?
+INDENT  = ? indentation ?
+DEDENT  = ? dedentation ?
