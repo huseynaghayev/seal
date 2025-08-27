@@ -1,0 +1,83 @@
+/* Time Module
+ * Provides OS-related functions.
+ *
+ * Author: Huseyn Aghayev
+ * Language: Seal
+ * Created: 2025-08-18
+ */
+
+include sealos as os
+
+
+$system   = os.system
+$getenv   = os.getenv
+$unsetenv = os.unsetenv
+$getcwd   = os.getcwd
+$chdir    = os.chdir
+$readdir  = os.readdir
+$remove   = os.remove
+$rename   = os.rename
+$isfile   = os.isfile
+$isdir    = os.isdir
+$name     = os.name
+$arch     = os.arch
+
+
+define exist(path)
+    return isfile(path) or isdir(path)
+
+
+define setenv(name, value, ...vargs)
+    if len(vargs) > 1
+        print(format('\'setenv\' function can take at most 3 arguments, %d gotten', len(vargs) + 2))
+        exit(1)
+    
+    if len(vargs) > 0
+        if typeof vargs[0] != 'bool'
+            print('\'setenv\' function: 3rd argument must be bool, got', typeof vargs[0])
+            exit(1)
+        
+        return os.setenv(name, value, vargs[0])
+    else
+        return os.setenv(name, value, true)
+
+
+define mkdir(path, ...vargs)
+    if not vargs
+        mode = '777'
+    else if len(vargs) > 1
+        print(format('\'mkdir\' function can get at most 2 arguments, %d gotten', len(vargs) + 1))
+        exit(1)
+    else if typeof (mode = vargs[0]) != 'string'
+        print('\'mkdir\' function: 2nd argument must be number in string, got', typeof mode)
+        exit(1)
+
+    return os.mkdir(path, mode)
+
+
+define rmdir(path, ...vargs)
+    if not vargs
+        return os.rmdir(path)
+
+    if len(vargs) > 1
+        print(format('\'rmdir\' function can get at most 2 arguments, %d gotten', len(vargs) + 1))
+        exit(1)
+
+    if typeof (rec = vargs[0]) != 'bool'
+        print('\'rmdir\' function: 2nd argument must be bool, got', typeof rec)
+        exit(1)
+
+    if not isdir(path)
+        return false
+
+    if not rec
+        return os.rmdir(path)
+
+    for file in readdir(path)
+        full_path = format("%s/%s", path, file)
+        if isdir(full_path)
+            rmdir(full_path, true)
+        else
+            remove(full_path)
+
+    return os.rmdir(path)
