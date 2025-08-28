@@ -1,0 +1,13 @@
+*.seal
+seal
+vgcore*
+TODO.txt
+!examples/*.seal
+*.exe
+seal_visitor
+*.swp
+*.so
+*.dll
+!modules/*.seal
+*.json
+*.txt
