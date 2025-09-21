@@ -39,7 +39,10 @@
 
 #define SEAL_BOOL bool
 
+#define SEAL_BYTE unsigned char
 
+
+typedef SEAL_BYTE    seal_byte;
 typedef SEAL_INTEGER seal_int;
 typedef SEAL_FLOAT   seal_float;
 typedef SEAL_BOOL    seal_bool;
