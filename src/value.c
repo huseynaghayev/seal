@@ -44,7 +44,9 @@ struct seal_string *string_new(const char *s, bool collect, bool dup)
 /* list */
 struct seal_list *list_new(int cap)
 {
-    struct seal_list *list = SEAL_MALLOC(sizeof(struct seal_list) + cap * sizeof(struct seal_value));
+    struct seal_list *list = SEAL_MALLOC(
+            sizeof(struct seal_list) + cap * sizeof(struct seal_value)
+        );
 
     if (!list)
         return NULL;
@@ -91,7 +93,9 @@ struct seal_hashmap *hashmap_new(int cap, bool collect)
     return map;
 }
 
-struct h_entry *hashmap_searchlen(struct seal_hashmap *map, const char *key, int len)
+struct h_entry *hashmap_searchlen(struct seal_hashmap *map,
+                                  const char *key,
+                                  int len)
 {
     unsigned int idx = (len < 0 ? hash(key) : hashswl(key, len)) % map->cap;
     struct h_entry *tombstone = NULL;
@@ -107,7 +111,9 @@ struct h_entry *hashmap_searchlen(struct seal_hashmap *map, const char *key, int
             } else {
                 return tombstone != NULL ? tombstone : e;
             }
-        } else if (len < 0 ? strcmp(e->key, key) == 0 : strncmp(e->key, key, len) == 0) {
+        } else if (len < 0 ?
+                   strcmp(e->key, key) == 0 :
+                   strncmp(e->key, key, len) == 0) {
             return e;
         }
         idx = (idx + 1) % map->cap;
@@ -116,7 +122,9 @@ struct h_entry *hashmap_searchlen(struct seal_hashmap *map, const char *key, int
     return NULL;
 }
 
-int hashmap_insert(struct seal_hashmap *map, const char *key, struct seal_value val)
+int hashmap_insert(struct seal_hashmap *map,
+                   const char *key,
+                   struct seal_value val)
 {
     if ((float)map->len / (float)map->cap >= HASHMAP_LOAD_FACTOR) {
         int old_cap = map->cap;
@@ -147,7 +155,10 @@ int hashmap_insert(struct seal_hashmap *map, const char *key, struct seal_value 
     return is_new;
 }
 
-int hashmap_insert_e(struct seal_hashmap *map, struct h_entry *entry, const char *key, struct seal_value val)
+int hashmap_insert_e(struct seal_hashmap *map,
+                     struct h_entry *entry,
+                     const char *key,
+                     struct seal_value val)
 {
     struct h_entry e = {
         hash(key),
