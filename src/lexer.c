@@ -64,7 +64,9 @@ static const char *const token_names[] = {
 #define isspace(c) ((c) == ' ' || (c) == '\t' || (c) == '\n' || (c) == '\r')
 
 /* token */
-#define toklit(type, val) (struct token) { type, val, 0 }
+#define toklit(type, val) (struct token) { type, val, l->line } /* 'l'
+                                                                 * is lexer
+                                                                 */
 #define tokword(type)     toklit(type, token_names[type - FIRST_WORD_TOKEN])
 #define tokchar(type)     toklit(type, NULL)
 
@@ -287,14 +289,17 @@ static struct token nexttoken(struct lexer *l)
     while (!iseof(l)) {
         c = advance(l);
         switch (c) {
-        case '\n': case '\r':
+        case '\n': case '\r': {
             newline(l);
             resetilvl(l);
             l->tkaftercom = false;
             if (!l->seen_word || isinparen(l)) {
                 continue;
             }
-            return TNEWLINE;
+            struct token t = TNEWLINE;
+            t.line--;
+            return t;
+        }
         case ' ': case '\t':
             if (!l->seen_word)
                 l->cur_indent++;
