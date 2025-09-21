@@ -106,12 +106,6 @@ static const char *const token_names[] = {
 
 #define popilvl(l) (/*(l)->indent_stk[*/--(l)->indent_count/*]*/)
 
-/* comment ignoring */
-#define skiplcom(l) do { \
-    while (!iseof(l) && advance(l) != '\n'); \
-    newline(l); \
-} while (0)
-
 /* parenthesis */
 #define isinparen(l)     ((l)->paren_count > 0)
 #define isfirstparen(l)  ((l)->paren_count == 1)
@@ -133,6 +127,28 @@ static const char *const token_names[] = {
     char popped = (l)->paren_stk[l->paren_count]; \
     if ((p) - popped > 2) \
         lerror(l, "\'%c\' does not balance \'%c\'", (p), popped); \
+} while (0)
+
+/* comment ignoring */
+#define skiplcom(l) do { \
+    while (!iseof(l) && advance(l) != '\n'); \
+    newline(l); \
+} while (0)
+
+#define skipccom(l) do { \
+    int line = (l)->line; \
+    while (!iseof(l)) { \
+        if (matchadv(l, '\n')) { \
+            newline(l); continue; \
+        } \
+        if (cur(l) == '*' && peek(l, 1) == '/') \
+            break; \
+        advance(l); \
+    } \
+    if (!matchadv(l, '*') || !matchadv(l, '/')) \
+        lerrorln(l, line, "unterminated comment block"); \
+    if (!(l)->seen_word && !isinparen(l)) \
+        (l)->tkaftercom = true; \
 } while (0)
 
 /* caching tokens */
@@ -274,6 +290,7 @@ static struct token nexttoken(struct lexer *l)
         case '\n': case '\r':
             newline(l);
             resetilvl(l);
+            l->tkaftercom = false;
             if (!l->seen_word || isinparen(l)) {
                 continue;
             }
@@ -336,6 +353,9 @@ static struct token nexttoken(struct lexer *l)
             if (matchadv(l, '/')) {
                 skiplcom(l);
                 continue;
+            } else if (matchadv(l, '*')) {
+                skipccom(l);
+                continue;
             }
             return chr1or2tk(l, c, '=', TK_DIV_ASSIGN);
         case '%':
@@ -395,7 +415,12 @@ static struct token handletoken(struct lexer *l)
             return TNEWLINE;
 
         return t;
-    } else if (t.type == TK_NEWLINE) {
+    } else {
+        if (l->tkaftercom)
+            lerror(l, "token after comment block not allowed");
+    }
+
+    if (t.type == TK_NEWLINE) {
         l->seen_word = false;
     } else {
         l->seen_word = true;

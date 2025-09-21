@@ -50,7 +50,7 @@ struct token {
 
 #define MAX_PAREN_LEVEL    64
 #define MAX_INDENT_LEVEL   32
-#define MAX_CACHED_TK_SIZE 32
+#define MAX_CACHED_TK_SIZE 32 // fix
 
 struct lexer {
     jmp_buf fail_point; /* used for REPL */
@@ -68,6 +68,7 @@ struct lexer {
     struct token cachedtks[MAX_CACHED_TK_SIZE];
     int cachedtk_len;
     bool seen_word;
+    bool tkaftercom; /* if any token comes after comment block */
 };
 
 struct token lexer_get_token(struct lexer *l);
