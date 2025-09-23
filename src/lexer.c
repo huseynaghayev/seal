@@ -18,7 +18,7 @@
 /* order is reserved */
 static const char *const token_names[] = {
     "if", "then", "else",
-    "while", "do", "in",
+    "while", "do", "for", "in",
     "skip", "stop",
     "define", "return", "include",
     "null", "true", "false",

@@ -18,7 +18,7 @@
  */
 enum {
     TK_IF = FIRST_WORD_TOKEN, TK_THEN, TK_ELSE, /* if, then, else */
-    TK_WHILE, TK_DO, TK_IN, /* while, do, in */
+    TK_WHILE, TK_DO, TK_FOR, TK_IN, /* while, do, for, in */
     TK_SKIP, TK_STOP, /* skip, stop */
     TK_DEFINE, TK_RETURN, TK_INCLUDE, /* define, return, include */
     TK_NULL, TK_TRUE, TK_FALSE, /* null, true, false */
