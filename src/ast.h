@@ -8,11 +8,11 @@
 enum {
     AST_NOP,  /* indicates end of node (no operation) */
     /* values */
-    AST_NULL, /* null */
-    AST_INT, AST_FLOAT, AST_BOOL, /* numerics */
+    AST_NULL, AST_TRUE, AST_FALSE, /* null, true, false */
+    AST_INT, AST_FLOAT, /* numerics */
     AST_STRING, AST_LIST, AST_MAP, /* references */
-    AST_FUNC_DEF, /* function definition */
     AST_NAME, /* name */
+    AST_FUNC_DEF, /* function definition */
     AST_FUNC_CALL, /* function call (a()) */
     AST_METH_CALL, /* method call (a->b) */
     AST_INDEX, /* a[0] */
@@ -103,8 +103,7 @@ struct ast {
         /* values */
         seal_int    i; /* integer */
         seal_float  f; /* floating point */
-        seal_bool   b; /* boolean */
-        const char *s; /* used for both string and name */
+        const char *s; /* string */
 
         struct { /* list (array) */
             struct ast **items;
@@ -116,6 +115,12 @@ struct ast {
             struct ast **vals;
             size_t size;
         } m;
+
+        struct {
+            const char *s;
+            int global;
+            int safe;
+        } name;
 
         struct { /* function definition */
             const char *name; /* if NULL ptr, then anonymous */
