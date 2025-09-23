@@ -36,6 +36,10 @@ static const char *const token_names[] = {
     "+=", "-=",
 };
 
+/* typedef */
+typedef struct token token;
+typedef struct lexer lexer;
+
 #define lerrorln(l, ln, ...) ( \
     fprintf(stderr, "line %d: ", ln), \
     fprintf(stderr, __VA_ARGS__), \
@@ -64,9 +68,9 @@ static const char *const token_names[] = {
 #define isspace(c) ((c) == ' ' || (c) == '\t' || (c) == '\n' || (c) == '\r')
 
 /* token */
-#define toklit(type, val) (struct token) { type, val, l->line } /* 'l'
-                                                                 * is lexer
-                                                                 */
+#define toklit(type, val) (token) { type, val, l->line } /* 'l'
+                                                          * is lexer
+                                                          */
 #define tokword(type)     toklit(type, token_names[type - FIRST_WORD_TOKEN])
 #define tokchar(type)     toklit(type, NULL)
 
@@ -171,12 +175,14 @@ static const char *const token_names[] = {
 
 
 /* string interning */
-static const char *internstr(struct lexer *l, const char *start, size_t len)
+static const char *internstr(lexer *l, const char *start, size_t len)
 {
     struct h_entry *intern;
     intern = hashmap_searchlen(l->lexemes, start, len);
     if (nullhentry(intern)) {
         const char *dupped = string_duplen(start, len);
+        /* TODO */
+        /* index this to integer for constant table lookup in compiling */
         hashmap_insert(l->lexemes, dupped, (struct seal_value) {0});
         return dupped;
     } else {
@@ -184,7 +190,7 @@ static const char *internstr(struct lexer *l, const char *start, size_t len)
     }
 }
 
-static const char *get_number(struct lexer *l)
+static const char *get_number(lexer *l)
 {
     size_t len = 1;
     const char *start = &cur(l) - 1;
@@ -248,7 +254,7 @@ end:
     return internstr(l, start, len);
 }
 
-static const char *get_string(struct lexer *l, char cterm)
+static const char *get_string(lexer *l, char cterm)
 {
     size_t len = 0;
     const char *start = &cur(l);
@@ -263,7 +269,7 @@ static const char *get_string(struct lexer *l, char cterm)
     return internstr(l, start, len);
 }
 
-static struct token get_idtk(struct lexer *l)
+static token get_idtk(lexer *l)
 {
     size_t len = 1;
     const char *start = &cur(l) - 1; /* for advancing one char before call */
@@ -283,7 +289,7 @@ static struct token get_idtk(struct lexer *l)
     return toklit(TK_ID, internstr(l, start, len));
 }
 
-static struct token nexttoken(struct lexer *l)
+static token nexttoken(lexer *l)
 {
     char c;
     while (!iseof(l)) {
@@ -296,7 +302,7 @@ static struct token nexttoken(struct lexer *l)
             if (!l->seen_word || isinparen(l)) {
                 continue;
             }
-            struct token t = TNEWLINE;
+            token t = TNEWLINE;
             t.line--;
             return t;
         }
@@ -399,9 +405,9 @@ static struct token nexttoken(struct lexer *l)
     return TEOF;
 }
 
-static struct token handletoken(struct lexer *l)
+static token handletoken(lexer *l)
 {
-    struct token t;
+    token t;
 
     if (hascache(l)) {
         popcachedtk(l, &t);
@@ -456,13 +462,13 @@ static struct token handletoken(struct lexer *l)
     return t;
 }
 
-struct token lexer_get_token(struct lexer *l)
+struct token lexer_get_token(lexer *l)
 {
     struct token t = handletoken(l);
     return l->tokcur = t;
 }
 
-void lexer_reset(struct lexer *l)
+void lexer_reset(lexer *l)
 {
     l->i = 0;
     l->line = l->col = 1;
@@ -475,7 +481,7 @@ void lexer_reset(struct lexer *l)
     l->indent_stk[0] = 0;
 }
 
-void lexer_init(struct lexer *l, const char *src)
+void lexer_init(lexer *l, const char *src)
 {
     l->src = src;
     l->lexemes = hashmap_Nnew(LEXEME_START_CAP);
