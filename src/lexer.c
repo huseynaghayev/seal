@@ -190,7 +190,7 @@ static const char *internstr(lexer *l, const char *start, size_t len)
     }
 }
 
-static const char *get_number(lexer *l)
+static struct token get_number(lexer *l)
 {
     size_t len = 1;
     const char *start = &cur(l) - 1;
@@ -251,7 +251,7 @@ static const char *get_number(lexer *l)
         advance(l); len++;
     }
 end:
-    return internstr(l, start, len);
+    return toklit(mode == NUM_FLT ? TK_FLOAT : TK_INT, internstr(l, start, len));
 }
 
 static const char *get_string(lexer *l, char cterm)
@@ -320,7 +320,7 @@ static token nexttoken(lexer *l)
                 return tokword(TK_DPERIOD);
             }
             if (isnum(cur(l)))
-                return toklit(TK_FLOAT, get_number(l));
+                return get_number(l);
             return tokchar(c);
         case '=':
             return chr1or2tk(l, c, '=', TK_EQ);
@@ -390,7 +390,7 @@ static token nexttoken(lexer *l)
             return tokchar(c);
         default:
             if (isnum(c))
-                return toklit(TK_INT, get_number(l));
+                return get_number(l);
             if (isidchr(c)) /* check this after number checking */
                 return get_idtk(l);
             lerror(l, "unrecognized character: \'%c\'", c);
@@ -424,6 +424,9 @@ static token handletoken(lexer *l)
         }
         if (l->tokcur.type != -1 && l->tokcur.type != TK_NEWLINE)
             return TNEWLINE;
+
+        if (hascache(l))
+            popcachedtk(l, &t);
 
         return t;
     } else {
