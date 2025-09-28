@@ -447,12 +447,12 @@ static token handletoken(lexer *l)
             cachetk(l, t);
             return TINDENT;
         } else if (curilvl(l) < previlvl(l)) {
-            cachetk(l, t);
             do {
                 popilvl(l);
                 cachetk(l, TDEDENT);
                 cachetk(l, TNEWLINE);
             } while (hasilvl(l) && curilvl(l) != previlvl(l));
+            cachetk(l, t);
 
             if (!hasilvl(l))
                 lerror(l, "mismatch unindentation");
