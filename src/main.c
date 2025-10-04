@@ -6,6 +6,7 @@
 #endif
 
 #include "lexer.h"
+#include "parser.h"
 
 #define SRC_SIZE 512
 
@@ -18,18 +19,25 @@
 int main(int argc, char **argv)
 {
     struct lexer l;
+    struct parser p;
+    struct ast *a;
     lexer_init(&l, NULL);
     struct token t;
 
     if (argc > 1) {
         FILE *fp = fopen(argv[1], "r"); 
         char buf[SRC_SIZE];
-        buf[fread(buf, 1, SRC_SIZE, fp) - 1] = '\0';
+        int read = fread(buf, 1, SRC_SIZE - 1, fp);
+        //printf("%d\n", read);
+        buf[read] = '\0';
         fclose(fp);
         l.src = buf;
+        parser_init(&p, &l);
         if (setjmp(l.fail_point) == 0) {
+            /*
             while (1) {
                 t = lexer_get_token(&l);
+                printf("%d ", t.line);
                 if (t.type < FIRST_WORD_TOKEN) {
                     printf("%c\n", t.type);
                 } else {
@@ -40,6 +48,15 @@ int main(int argc, char **argv)
                     break;
             }
             dump_cache(&l);
+            for (int i = 0; i < l.lexemes->cap; i++) {
+                if (l.lexemes->entries[i].key)
+                    SEAL_FREE((void*)l.lexemes->entries[i].key);
+            }
+            SEAL_FREE(l.lexemes->entries);
+            SEAL_FREE(l.lexemes);
+            */
+            a = parse(&p);
+            dump_ast(a, 0);
         } else {
             return 1;
         }
@@ -67,6 +84,8 @@ repl:
 #endif
 
     l.src = input;
+    parser_init(&p, &l);
+    /*
     while (1) {
         t = lexer_get_token(&l);
         if (t.type < FIRST_WORD_TOKEN) {
@@ -78,6 +97,11 @@ repl:
         if (t.type == TK_EOF)
             break;
     }
+    */
+    /* parse */
+    a = parse(&p);
+    dump_ast(a, 0);
+    arena_free(p.a);
 #if USE_GNU_READL
     free(input);
 #endif
