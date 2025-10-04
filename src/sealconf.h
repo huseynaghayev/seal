@@ -21,6 +21,7 @@
 /* full version */
 #define SEAL_VERSION SEAL_VERSION_MAJOR "." SEAL_VERSION_MINOR "." SEAL_VERSION_PATCH
 
+#define SEAL_DEBUG 1
 
 #define SEAL_MALLOC(size)    malloc(size)
 #define SEAL_CALLOC(n, size) calloc(n, size)
