@@ -151,6 +151,11 @@ void dump_ast(struct ast *node, int i)
         break;
     case AST_LOGBIN:
         print("logical ");
+    case AST_UNARY:
+        print("unary: op: %s\n", imop_name(node->as.unary.op));
+        print("unary expr:\n");
+        dump_ast(node->as.unary.e, i + TAB);
+        break;
     case AST_BINARY:
         print("binary: op: %s\n", imop_name(node->as.bin.op));
         print("binary left:\n");
@@ -171,6 +176,31 @@ void dump_ast(struct ast *node, int i)
         }
         print("function body:\n");
         dump_ast(node->as.func.body, i + TAB);
+        break;
+    case AST_FUNC_CALL: case AST_METH_CALL:
+        print("%s call: size: %zu, main:\n",
+              node->type == AST_FUNC_CALL
+              ? "function"
+              : "method",
+              node->as.call.argc);
+        dump_ast(node->as.call.f, i + TAB);
+        print("arguments:\n");
+        while (node->as.call.argv) {
+            dump_ast(node->as.call.argv, i + TAB);
+            node->as.call.argv = node->as.call.argv->next;
+        }
+        break;
+    case AST_INDEX:
+        print("index: main:\n");
+        dump_ast(node->as.index.m, i + TAB);
+        print("index: index:\n");
+        dump_ast(node->as.index.i, i + TAB);
+        break;
+    case AST_FIELD:
+        print("field: main:\n");
+        dump_ast(node->as.field.m, i + TAB);
+        print("field: field:\n");
+        dump_ast(node->as.field.f, i + TAB);
         break;
     default:
         print("define that first mf!\n");
