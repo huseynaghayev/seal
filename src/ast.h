@@ -65,7 +65,7 @@ enum { /* immediate operations (for parsing) */
     /* unaries */
     IMOP_POSTFIX_INC, /* a++ */
     IMOP_POSTFIX_DEC, /* a-- */
-    IMOP_PREFIX_INC,  /* --b */
+    IMOP_PREFIX_INC,  /* ++b */
     IMOP_PREFIX_DEC,  /* --a */
     /* unary plus is not defined,
      * because writing +a does not make any sense
@@ -99,6 +99,7 @@ enum { /* immediate operations (for parsing) */
 
 struct ast {
     int type;
+    struct ast *next;
     union {
         /* values */
         seal_int    i; /* integer */
@@ -106,13 +107,17 @@ struct ast {
         const char *s; /* string */
 
         struct { /* list (array) */
-            struct ast **items;
+            struct ast *items; /* linked */
             size_t size;
         } l;
 
+        struct { /* pair of map (linked) */
+            const char *key;
+            struct ast *val;
+        } pair;
+
         struct { /* map (hashmap) */
-            const char **keys;
-            struct ast **vals;
+            struct ast *pairs; /* linked to 'k' struct */
             size_t size;
         } m;
 
@@ -124,14 +129,14 @@ struct ast {
 
         struct { /* function definition */
             const char *name; /* if NULL ptr, then anonymous */
-            const char **params; /* parameter names */
+            struct ast *params; /* parameter name (stored in string, linked) */
             size_t psize;
             struct ast *body;
         } func;
 
         struct { /* used for both function and method calls */
             struct ast *f;
-            struct ast **argv;
+            struct ast *argv; /* linked */
             size_t argc;
         } call;
 
@@ -147,7 +152,7 @@ struct ast {
 
        /* compound statements */
        struct { /* compound statement */
-           struct ast **stmts;
+           struct ast *stmts; /* linked */
            size_t size;
        } comp;
 
@@ -168,7 +173,7 @@ struct ast {
        } whilestmt;
 
        struct { /* for */
-           const char *it;
+           const char *it; /* TODO: key, value pairs */
            struct ast *ited;
            struct ast *body;
        } forstmt;
@@ -204,5 +209,6 @@ struct ast {
     } as;
 };
 
+void dump_ast(struct ast *node, int i);
 
 #endif /* AST_H */
