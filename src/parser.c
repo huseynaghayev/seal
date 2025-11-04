@@ -30,6 +30,9 @@
    right-to-left
    if <expr> then <expr> else <expr> (ternary)
    = *= /= %= += -= <<= >>= &= ^= |=  (assignment)
+------------------------------------------
+   left-to-right
+   , (comma)
 */
 
 
@@ -54,8 +57,8 @@ static inline token adv(parser *p)
 #define curtype(p)  (ttype(cur(p)))
 #define nexttype(p) (ttype(next(p)))
 
-#define match(p, t)     (ttype(cur(p)) == (t))
-#define matchnext(p, t) (ttype(next(p)) == (t))
+#define match(p, t)     (curtype(p) == (t))
+#define matchnext(p, t) (nexttype(p) == (t))
 #define matchadv(p, t)  (match(p, t) ? adv(p), 1 : 0)
 #define iseof(p) (match(p, TK_EOF))
 
@@ -79,9 +82,9 @@ static inline token eat(parser *p, int t)
                t < FIRST_WORD_TOKEN
                    ? (char[2]) { t, '\0' }
                    : tkname(t),
-               ttype(cur(p)) < FIRST_WORD_TOKEN
-                   ? (char[2]) { ttype(cur(p)), '\0' }
-                   : tkname(ttype(cur(p))));
+               curtype(p) < FIRST_WORD_TOKEN
+                   ? (char[2]) { curtype(p), '\0' }
+                   : tkname(curtype(p)));
 
     return adv(p);
 }
@@ -584,7 +587,7 @@ static ast *parse_call(parser *p, int meth)
     c->as.call.argc = 0;
     eat(p, '(');
     while (!match(p, ')')) {
-        c->as.func.psize++;
+        c->as.call.argc++;
         ast *a = parse_expr(p);
         if (!head) {
             head = tail = a;
@@ -667,6 +670,7 @@ static ast *parse_unary(parser *p)
     token t = cur(p);
     switch (ttype(t)) {
     case '+':
+        adv(p);
         return parse_unary(p);
     case '-':
         op = IMOP_UNARY_MINUS;
@@ -694,7 +698,7 @@ static ast *parse_unary(parser *p)
     u->as.unary.op = op;
     u->as.unary.e  = reqlval ? parse_postfix(p) : parse_unary(p);
 
-    if (!islval(u->as.unary.e))
+    if (reqlval && !islval(u->as.unary.e))
         perror(p, t,
                "\'%s\' operator requires assignable value",
                val(t));
@@ -787,12 +791,36 @@ static ast *parse_ternary(parser *p)
     return t;
 }
 
+static ast *parse_assign(parser *p)
+{
+    ast *l = parse_bin(p, MAX_PREC);
+    int op;
+    if (match(p, '=')) {
+        op = IMOP_ASSIGN;
+    } else if (curtype(p) > TK_MUL_ASSIGN && curtype(p) < TK_OR_ASSIGN) {
+        op = IMOP_ASSIGN + (curtype(p) - TK_MUL_ASSIGN + 1);
+    } else {
+        return l;
+    }
+    if (!islval(l)) {
+        return l;
+    }
+
+    adv(p);
+    ast *a = ast_new(p, AST_ASSIGN);
+    a->as.assign.op = op;
+    a->as.assign.var = l;
+    a->as.assign.val = parse_expr(p);
+
+    return a;
+}
+
 static ast *parse_expr(parser *p)
 {
     if (match(p, TK_IF))
         return parse_ternary(p);
 
-    return parse_bin(p, MAX_PREC);
+    return parse_assign(p);
 }
 
 

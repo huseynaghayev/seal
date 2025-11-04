@@ -34,10 +34,10 @@ enum {
     TK_SHL, TK_SHR, /* <<, >> */
     TK_INC, TK_DEC, /* prefix/postfix operators (++, --) */
     /* compound assignment operators */
-    TK_OR_ASSIGN, TK_XOR_ASSIGN, TK_AND_ASSIGN, /* |=, ^=, &= */
-    TK_SHL_ASSIGN, TK_SHR_ASSIGN, /* <<=, >>= */
     TK_MUL_ASSIGN, TK_DIV_ASSIGN, TK_MOD_ASSIGN, /* *=, /=, %= */
     TK_ADD_ASSIGN, TK_SUB_ASSIGN, /* +=, -= */
+    TK_SHL_ASSIGN, TK_SHR_ASSIGN, /* <<=, >>= */
+    TK_AND_ASSIGN, TK_XOR_ASSIGN, TK_OR_ASSIGN, /* &=, ^=, |= */
 };
 
 

@@ -95,6 +95,9 @@ enum { /* immediate operations (for parsing) */
     IMOP_ADD_ASSIGN, IMOP_SUB_ASSIGN,
     IMOP_SHL_ASSIGN, IMOP_SHR_ASSIGN,
     IMOP_AND_ASSIGN, IMOP_XOR_ASSIGN, IMOP_OR_ASSIGN,
+
+    /* comma */
+    IMOP_COMMA
 };
 
 struct ast {

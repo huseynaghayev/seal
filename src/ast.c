@@ -139,7 +139,7 @@ void dump_ast(struct ast *node, int i)
         dump_ast(node->as.retstmt.val, i + TAB);
         break;
     case AST_INCLUDE:
-        print("include \'%s\'", node->as.inclstmt.fname);
+        print("include \'%s\'\n", node->as.inclstmt.fname);
         break;
     case AST_TERNARY:
         print("ternary: cond:\n");
@@ -201,6 +201,12 @@ void dump_ast(struct ast *node, int i)
         dump_ast(node->as.field.m, i + TAB);
         print("field: field:\n");
         dump_ast(node->as.field.f, i + TAB);
+        break;
+    case AST_ASSIGN:
+        print("%s assigning to:\n", imop_name(node->as.unary.op));
+        dump_ast(node->as.assign.var, i + TAB);
+        print("assigned value:\n");
+        dump_ast(node->as.assign.val, i + TAB);
         break;
     default:
         print("define that first mf!\n");
