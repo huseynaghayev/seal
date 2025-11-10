@@ -132,6 +132,7 @@ static ast __NODE_FALSE = { .type = AST_FALSE };
 static ast *ast_new(parser *p, int type)
 {
     ast *a = arena_alloc(&p->a, sizeof(ast));
+    *a = (ast) {0};
     a->type = type;
     return a;
 }
@@ -426,7 +427,7 @@ static ast *parse_int(parser *p)
     const char *lit = val(adv(p));
     seal_int val = 0;
 
-    if (*lit == '0' && !(lit[1] >= '0' && lit[1] <= '9')) {
+    if (*lit == '0' && lit[1] != '\0' && !(lit[1] >= '0' && lit[1] <= '9')) {
         /* not base 10 */
         int base;
         lit++; /* skip */

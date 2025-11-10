@@ -8,6 +8,8 @@
 #include "lexer.h"
 #include "parser.h"
 
+#define STREAM_SIZE 4096
+static char STREAM[STREAM_SIZE];
 #define SRC_SIZE 512
 
 #define dump_cache(l) do { \
@@ -26,14 +28,13 @@ int main(int argc, char **argv)
 
     if (argc > 1) {
         FILE *fp = fopen(argv[1], "r"); 
-        char buf[SRC_SIZE];
-        int read = fread(buf, 1, SRC_SIZE - 1, fp);
+        int read = fread(STREAM, 1, STREAM_SIZE - 1, fp);
         //printf("%d\n", read);
-        buf[read] = '\0';
+        STREAM[read] = '\0';
         fclose(fp);
-        l.src = buf;
-        parser_init(&p, &l);
+        l.src = STREAM;
         if (setjmp(l.fail_point) == 0) {
+            parser_init(&p, &l);
             /*
             while (1) {
                 t = lexer_get_token(&l);

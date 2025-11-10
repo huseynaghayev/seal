@@ -363,6 +363,7 @@ static token nexttoken(lexer *l)
         case '/':
             if (matchadv(l, '/')) {
                 skiplcom(l);
+                l->i--; /* to get newline */
                 continue;
             } else if (matchadv(l, '*')) {
                 skipccom(l);

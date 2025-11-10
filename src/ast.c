@@ -149,13 +149,13 @@ void dump_ast(struct ast *node, int i)
         print("ternary: else:\n");
         dump_ast(node->as.ternary.e, i + TAB);
         break;
-    case AST_LOGBIN:
-        print("logical ");
     case AST_UNARY:
         print("unary: op: %s\n", imop_name(node->as.unary.op));
         print("unary expr:\n");
         dump_ast(node->as.unary.e, i + TAB);
         break;
+    case AST_LOGBIN:
+        print("logical ");
     case AST_BINARY:
         print("binary: op: %s\n", imop_name(node->as.bin.op));
         print("binary left:\n");
