@@ -117,17 +117,6 @@ static ast __NODE_FALSE = { .type = AST_FALSE };
     atype(a) == AST_RETURN  || \
     atype(a) == AST_INCLUDE \
 )
-#define apush(arr, size, node) ( \
-    (arr)[(size)] = ast_new( \
-    (arr)[(size)++] = (node) \
-)
-#define listpush(a, node) \
-    apush((a)->as.l.items, (a)->as.l.size, node)
-
-#define mappush(a, key, node) ( \
-    (a)->as.m.keys[(a)->as.m.size] = (key), \
-    (a)->as.m.vals[(a)->as.m.size++] = (node) \
-)
 
 static ast *ast_new(parser *p, int type)
 {
@@ -650,7 +639,7 @@ static ast *parse_postfix(parser *p)
             node->as.call.f = main;
             main = node;
             break;
-        case TK_INC: TK_DEC:
+        case TK_INC: case TK_DEC:
             if (!islval(main))
                 perror(p, cur(p),
                        "\'%s\' operator requires assignable value",
