@@ -218,6 +218,8 @@ static ast *parse_else(parser *p)
         indent(p);
             e->as.elsestmt.body = parse_stmts(p);
         dedent(p);
+    } else { /* inline else */
+        e->as.elsestmt.body = parse_inlstmt(p);
     }
     deccondlvl(p);
     return e;

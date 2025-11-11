@@ -118,6 +118,9 @@ typedef struct lexer lexer;
 #define isopenparentk(t) ( \
     (t).type == '(' || (t).type == '[' || (t).type == '{' \
 )
+#define isclosingparentk(t) ( \
+    (t).type == ')' || (t).type == ']' || (t).type == '}' \
+)
 
 #define parenpush(l, p) do { \
     if ((l)->paren_count >= MAX_PAREN_LEVEL) \
@@ -137,8 +140,12 @@ typedef struct lexer lexer;
 
 /* comment ignoring */
 #define skiplcom(l) do { \
-    while (!iseof(l) && advance(l) != '\n'); \
-    newline(l); \
+    while (!iseof(l)) { \
+        if (!match(l, '\n')) \
+            advance(l); \
+        else \
+            break; \
+    } \
 } while (0)
 
 #define skipccom(l) do { \
@@ -363,7 +370,6 @@ static token nexttoken(lexer *l)
         case '/':
             if (matchadv(l, '/')) {
                 skiplcom(l);
-                l->i--; /* to get newline */
                 continue;
             } else if (matchadv(l, '*')) {
                 skipccom(l);
@@ -440,7 +446,7 @@ static token handletoken(lexer *l)
     } else {
         l->seen_word = true;
 
-        if (isinparen(l) && !(isfirstparen(l) && isopenparentk(t)))
+        if (isclosingparentk(t) || (isinparen(l) && !(isfirstparen(l) && isopenparentk(t))))
             return t;
 
         if (curilvl(l) > previlvl(l)) {
