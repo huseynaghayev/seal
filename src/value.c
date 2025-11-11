@@ -75,7 +75,7 @@ static unsigned int hashswl(const char *key, int len)
 
 #define hash(k) hashswl(key, -1)
 
-#define hentrynew(k, v) (struct h_entry) { hash(k), k, v, true }
+#define hentrynew(k, v) (struct h_entry) { hash(k), (k), strlen(k), (v), true }
 
 struct seal_hashmap *hashmap_new(int cap, bool collect)
 {
@@ -113,7 +113,7 @@ struct h_entry *hashmap_searchlen(struct seal_hashmap *map,
             }
         } else if (len < 0 ?
                    strcmp(e->key, key) == 0 :
-                   strncmp(e->key, key, len) == 0) {
+                   e->keysize == len && strncmp(e->key, key, len) == 0) {
             return e;
         }
         idx = (idx + 1) % map->cap;
@@ -160,12 +160,7 @@ int hashmap_insert_e(struct seal_hashmap *map,
                      const char *key,
                      struct seal_value val)
 {
-    struct h_entry e = {
-        hash(key),
-        key,
-        val,
-        true
-    };
+    struct h_entry e = hentrynew(key, val);
 
     bool is_new = entry->key == NULL;
     if (is_new)

@@ -34,7 +34,6 @@ int main(int argc, char **argv)
         fclose(fp);
         l.src = STREAM;
         if (setjmp(l.fail_point) == 0) {
-            parser_init(&p, &l);
             /*
             while (1) {
                 t = lexer_get_token(&l);
@@ -56,6 +55,7 @@ int main(int argc, char **argv)
             SEAL_FREE(l.lexemes->entries);
             SEAL_FREE(l.lexemes);
             */
+            parser_init(&p, &l);
             a = parse(&p);
             dump_ast(a, 0);
         } else {

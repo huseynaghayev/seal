@@ -78,6 +78,7 @@ struct seal_list *list_new(int cap);
 struct h_entry {
     int hash;
     const char *key;
+    int keysize;
     struct seal_value val;
     bool is_tomb;
 };

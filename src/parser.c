@@ -200,6 +200,7 @@ static ast *parse_if(parser *p, int ternary)
             i->as.ifstmt.body = stmt;
         }
     } else {
+        i->as.ifstmt.cond = cond;
         newl(p);
         indent(p);
             i->as.ifstmt.body = parse_stmts(p);
@@ -275,7 +276,7 @@ static ast *parse_for(parser *p)
     inclooplvl(p);
     declooplvl(p);
     /* TODO */
-    return NULL;
+    return NODE_NOP;
 }
 
 static ast *parse_inlstmt(parser *p)
@@ -482,6 +483,7 @@ static ast *parse_string(parser *p)
 
 static ast *parse_func_def(parser *p)
 {
+    incfunclvl(p);
     ast *f = ast_new(p, AST_FUNC_DEF);
     eat(p, TK_DEFINE);
 
@@ -513,14 +515,16 @@ static ast *parse_func_def(parser *p)
         r->as.retstmt.val = parse_expr(p);
         f->as.func.body = r;
 
+        decfunclvl(p);
         return f;
     }
 
-    eat(p, TK_NEWLINE);
-    eat(p, TK_INDENT);
+    newl(p);
+    indent(p);
         f->as.func.body = parse_stmts(p);
-    eat(p, TK_DEDENT);
+    dedent(p);
 
+    decfunclvl(p);
     return f;
 }
 
@@ -571,7 +575,10 @@ static ast *parse_primary(parser *p)
         main = parse_func_def(p);
         break;
     default:
-        perror(p, cur(p), "invalid expression: \'%s\'", val(cur(p)));
+        perror(p, cur(p), "invalid expression: \'%s\'",
+           curtype(p) < FIRST_WORD_TOKEN
+               ? (char[2]) { curtype(p), '\0' }
+               : val(cur(p)));
     }
     
     return main;
