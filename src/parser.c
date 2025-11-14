@@ -143,6 +143,7 @@ static ast *ast_new(parser *p, int type)
 
 /* forward declarations */
 static ast *parse_expr(parser *p);
+static ast *parse_ternary(parser *p);
 static ast *parse_statement(parser *p, int inl);
 static ast *parse_inlstmt(parser *p);
 #define parse_stmt(p) (parse_statement(p, false))
@@ -283,7 +284,7 @@ static ast *parse_statement(parser *p, int inl)
 {
     switch (curtype(p)) {
     case TK_IF:
-        if (inl) goto error;
+        if (inl) return parse_ternary(p);
         return parse_if(p, true);
     case TK_WHILE:
         if (inl) goto error;
