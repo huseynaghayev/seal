@@ -142,7 +142,7 @@ static ast *ast_new(parser *p, int type)
 #define inblock(p) (incond(p) || inloop(p) || infunc(p))
 
 /* forward declarations */
-static ast *parse_expr(parser *p);
+static ast *parse_expr(parser *p, int comma);
 static ast *parse_ternary(parser *p);
 static ast *parse_statement(parser *p, int inl);
 static ast *parse_inlstmt(parser *p);
@@ -156,7 +156,7 @@ static ast *parse_return(parser *p)
     ast *r = ast_new(p, AST_RETURN);
     eat(p, TK_RETURN);
     r->as.retstmt.val =
-        match(p, TK_NEWLINE) ? NODE_NULL : parse_expr(p);
+        match(p, TK_NEWLINE) ? NODE_NULL : parse_expr(p, true);
     return r;
 }
 
@@ -175,7 +175,7 @@ static ast *parse_if(parser *p, int ternary)
     ast *cond;
     ast *stmt;
     eat(p, TK_IF);
-    cond = parse_expr(p);
+    cond = parse_expr(p, true);
     if (matchadv(p, TK_THEN)) {
         stmt = parse_inlstmt(p);
         if (match(p, TK_ELSE) && ternary && !isinlstmt(stmt->as.comp.stmts)) {
@@ -183,7 +183,7 @@ static ast *parse_if(parser *p, int ternary)
             i->type = AST_TERNARY;
             i->as.ternary.c = cond;
             i->as.ternary.t = stmt->as.comp.stmts;
-            i->as.ternary.e = parse_expr(p);
+            i->as.ternary.e = parse_ternary(p);
             return i;
         } else {
             i->as.ifstmt.cond = cond;
@@ -231,7 +231,7 @@ static ast *parse_while(parser *p)
     inclooplvl(p);
     ast *w = ast_new(p, AST_WHILE);
     eat(p, TK_WHILE);
-    w->as.whilestmt.cond = parse_expr(p);
+    w->as.whilestmt.cond = parse_expr(p, true);
     if (matchadv(p, TK_DO)) {
         w->as.whilestmt.body = parse_inlstmt(p);
     } else {
@@ -258,7 +258,7 @@ static ast *parse_dowhile(parser *p)
         dedent(p);
     }
     eat(p, TK_WHILE);
-    w->as.whilestmt.cond = parse_expr(p);
+    w->as.whilestmt.cond = parse_expr(p, true);
     declooplvl(p);
     return w;
 }
@@ -284,7 +284,7 @@ static ast *parse_statement(parser *p, int inl)
 {
     switch (curtype(p)) {
     case TK_IF:
-        if (inl) return parse_ternary(p);
+        if (inl) return parse_expr(p, true);
         return parse_if(p, true);
     case TK_WHILE:
         if (inl) goto error;
@@ -313,7 +313,7 @@ static ast *parse_statement(parser *p, int inl)
     case TK_EOF:
         return NODE_NOP;
     default:
-        return parse_expr(p);
+        return parse_expr(p, true);
     }
 error:
     unexpected(p, cur(p));
@@ -361,7 +361,7 @@ static ast *parse_list(parser *p)
     eat(p, '[');
     while (!match(p, ']')) {
         l->as.l.size++;
-        ast *i = parse_expr(p);
+        ast *i = parse_expr(p, false);
         if (!head) {
             head = tail = i;
         } else {
@@ -387,7 +387,7 @@ static ast *parse_map(parser *p)
         m->as.m.size++;
         const char *key = eatval(p, TK_ID);
         eat(p, '=');
-        ast *val = parse_expr(p);
+        ast *val = parse_expr(p, false);
         ast *pair = ast_new(p, -1);
         pair->as.pair.key = key;
         pair->as.pair.val = val;
@@ -504,7 +504,7 @@ static ast *parse_func_def(parser *p)
     /* lambda */
     if (!match(p, TK_NEWLINE)) {
         ast *r = ast_new(p, AST_RETURN);
-        r->as.retstmt.val = parse_expr(p);
+        r->as.retstmt.val = parse_expr(p, true);
         f->as.func.body = r;
 
         decfunclvl(p);
@@ -526,7 +526,7 @@ static ast *parse_primary(parser *p)
     switch (curtype(p)) {
     case '(':
         adv(p);
-        main = parse_expr(p);
+        main = parse_expr(p, true);
         eat(p, ')');
         break;
     case '[':
@@ -588,7 +588,7 @@ static ast *parse_call(parser *p, int meth)
     eat(p, '(');
     while (!match(p, ')')) {
         c->as.call.argc++;
-        ast *a = parse_expr(p);
+        ast *a = parse_expr(p, false);
         if (!head) {
             head = tail = a;
         } else {
@@ -620,7 +620,7 @@ static ast *parse_postfix(parser *p)
             adv(p);
             node = ast_new(p, AST_INDEX);
             node->as.index.m = main;
-            node->as.index.i = parse_expr(p);
+            node->as.index.i = parse_expr(p, true);
             main = node;
             eat(p, ']');
             break;
@@ -779,21 +779,24 @@ static ast *parse_bin(parser *p, int max_prec)
 
 static ast *parse_ternary(parser *p)
 {
-    ast *t = ast_new(p, AST_TERNARY);
+    if (matchadv(p, TK_IF)) {
+        ast *t = ast_new(p, AST_TERNARY);
 
-    eat(p, TK_IF);
-    t->as.ternary.c = parse_expr(p);
-    eat(p, TK_THEN);
-    t->as.ternary.t = parse_expr(p);
-    eat(p, TK_ELSE);
-    t->as.ternary.e = parse_expr(p);
+        t->as.ternary.c = parse_bin(p, MAX_PREC);
+        eat(p, TK_THEN);
+        t->as.ternary.t = parse_expr(p, true);
+        eat(p, TK_ELSE);
+        t->as.ternary.e = parse_ternary(p);
 
-    return t;
+        return t;
+    }
+
+    return parse_bin(p, MAX_PREC);
 }
 
 static ast *parse_assign(parser *p)
 {
-    ast *l = parse_bin(p, MAX_PREC);
+    ast *l = parse_ternary(p);
     int op;
     if (match(p, '=')) {
         op = IMOP_ASSIGN;
@@ -810,15 +813,28 @@ static ast *parse_assign(parser *p)
     ast *a = ast_new(p, AST_ASSIGN);
     a->as.assign.op = op;
     a->as.assign.var = l;
-    a->as.assign.val = parse_expr(p);
+    a->as.assign.val = parse_assign(p);
 
     return a;
 }
 
-static ast *parse_expr(parser *p)
+static ast *parse_comma(parser *p)
 {
-    if (match(p, TK_IF))
-        return parse_ternary(p);
+    ast *e = parse_assign(p);
+    while (matchadv(p, ',')) {
+        ast *c = ast_new(p, AST_BINARY);
+        c->as.bin.op = IMOP_COMMA;
+        c->as.bin.l = e;
+        c->as.bin.r = parse_assign(p);
+        e = c;
+    }
+    return e;
+}
+
+static ast *parse_expr(parser *p, int comma)
+{
+    if (comma)
+        return parse_comma(p);
 
     return parse_assign(p);
 }

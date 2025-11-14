@@ -196,7 +196,7 @@ struct ast {
            struct ast *e;
        } unary;
 
-       struct { /* used for both binary and logical binary expressions */
+       struct { /* used for binary, logical binary and comma expressions */
            int op;
            struct ast *l, *r;
        } bin;

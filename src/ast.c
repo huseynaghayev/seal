@@ -44,6 +44,7 @@ static const char *const IMOP_NAMES[] = {
     "+=", "-=",//IMOP_ADD_ASSIGN, IMOP_SUB_ASSIGN,
     "<<=", ">>=",//IMOP_SHL_ASSIGN, IMOP_SHR_ASSIGN,
     "&=", "^=", "|=",//IMOP_AND_ASSIGN, IMOP_XOR_ASSIGN, IMOP_OR_ASSIGN,
+    ","//IMOP_COMMA
 };
 
 #define imop_name(t) (IMOP_NAMES[(t)])
