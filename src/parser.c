@@ -268,6 +268,7 @@ static ast *parse_for(parser *p)
     inclooplvl(p);
     declooplvl(p);
     /* TODO */
+    perror(p, cur(p), "for loop is not implemented");
     return NODE_NOP;
 }
 

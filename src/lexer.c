@@ -478,7 +478,7 @@ struct token lexer_get_token(lexer *l)
     return l->tokcur = t;
 }
 
-void lexer_reset(lexer *l)
+void lexer_reset(struct lexer *l)
 {
     l->i = 0;
     l->line = l->col = 1;
@@ -489,9 +489,11 @@ void lexer_reset(lexer *l)
     l->cachedtk_len = 0;
     l->seen_word = false;
     l->indent_stk[0] = 0;
+    l->seen_word = false;
+    l->tkaftercom = false;
 }
 
-void lexer_init(lexer *l, const char *src)
+void lexer_init(struct lexer *l, const char *src)
 {
     l->src = src;
     l->lexemes = hashmap_Nnew(LEXEME_START_CAP);
