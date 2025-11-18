@@ -476,11 +476,24 @@ static ast *parse_string(parser *p)
 
 static ast *parse_func_def(parser *p)
 {
+    /*
+     * define $Hello()
+     *     this is global
+     * define hello()
+     *     this is local
+     * define()
+     *     this is anonymous
+     */
     incfunclvl(p);
     ast *f = ast_new(p, AST_FUNC_DEF);
     eat(p, TK_DEFINE);
 
-    f->as.func.name = match(p, TK_ID) ? val(adv(p)) : NULL;
+    if (matchadv(p, '$')) {
+        f->as.func.global = true;
+        f->as.func.name = val(eat(p, TK_ID));
+    } else {
+        f->as.func.name = match(p, TK_ID) ? val(adv(p)) : NULL;
+    }
 
     ast *head = NULL;
     ast *tail = NULL;

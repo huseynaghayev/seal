@@ -132,8 +132,9 @@ struct ast {
 
         struct { /* function definition */
             const char *name; /* if NULL ptr, then anonymous */
+            int global;
             struct ast *params; /* parameter name (stored in string, linked) */
-            size_t psize;
+            int psize;
             struct ast *body;
         } func;
 

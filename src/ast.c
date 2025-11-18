@@ -165,7 +165,10 @@ void dump_ast(struct ast *node, int i)
         dump_ast(node->as.bin.r, i + TAB);
         break;
     case AST_FUNC_DEF:
-        print("function: %s, size: %zu\n",
+        print("function: %s%s, size: %d\n",
+              node->as.func.global
+              ? "$"
+              : "",
               node->as.func.name
               ? node->as.func.name
               : "<anonymous>",
