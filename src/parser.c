@@ -783,6 +783,9 @@ static ast *parse_bin(parser *p, int max_prec)
         adv(p);
         ast *b = ast_new(p, AST_BINARY);
         b->as.bin.op = pr->op;
+        if (pr->op == IMOP_AND || pr->op == IMOP_OR)
+            b->type = AST_LOGBIN;
+
         b->as.bin.l = l;
         b->as.bin.r = parse_bin(p, pr->prec - 1);
         l = b;
@@ -836,7 +839,7 @@ static ast *parse_comma(parser *p)
 {
     ast *e = parse_assign(p);
     while (matchadv(p, ',')) {
-        ast *c = ast_new(p, AST_BINARY);
+        ast *c = ast_new(p, AST_COMMA);
         c->as.bin.op = IMOP_COMMA;
         c->as.bin.l = e;
         c->as.bin.r = parse_assign(p);

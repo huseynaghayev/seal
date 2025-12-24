@@ -59,6 +59,7 @@ enum {
     AST_ASSIGN,  /* right-to-left
                     = *= /= %= += -= <<= >>= &= ^= |=
                  */
+    AST_COMMA
 };
 
 enum { /* immediate operations (for parsing) */

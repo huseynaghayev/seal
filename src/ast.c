@@ -156,7 +156,8 @@ void dump_ast(struct ast *node, int i)
         dump_ast(node->as.unary.e, i + TAB);
         break;
     case AST_LOGBIN:
-        print("logical ");
+        print("logical");
+    case AST_COMMA:
     case AST_BINARY:
         print("binary: op: %s\n", imop_name(node->as.bin.op));
         print("binary left:\n");
