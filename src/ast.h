@@ -103,6 +103,7 @@ enum { /* immediate operations (for parsing) */
 
 struct ast {
     int type;
+    int line;
     struct ast *next;
     union {
         /* values */
@@ -214,6 +215,8 @@ struct ast {
     } as;
 };
 
+#if SEAL_DEBUG
 void dump_ast(struct ast *node, int i);
+#endif
 
 #endif /* AST_H */

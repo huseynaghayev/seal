@@ -123,6 +123,7 @@ static ast *ast_new(parser *p, int type)
     ast *a = arena_alloc(&p->a, sizeof(ast));
     *a = (ast) {0};
     a->type = type;
+    a->line = cur(p).line;
     return a;
 }
 

@@ -496,7 +496,8 @@ void lexer_reset(struct lexer *l)
 void lexer_init(struct lexer *l, const char *src)
 {
     l->src = src;
-    l->lexemes = hashmap_Nnew(LEXEME_START_CAP);
+    if (!l->lexemes)
+        l->lexemes = hashmap_Nnew(LEXEME_START_CAP);
     lexer_reset(l);
 }
 

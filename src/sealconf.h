@@ -40,10 +40,12 @@
 
 #define SEAL_BOOL bool
 
-#define SEAL_BYTE unsigned char
+#define SEAL_BYTE  unsigned char
+#define SEAL_SHORT unsigned short int
 
 
 typedef SEAL_BYTE    seal_byte;
+typedef SEAL_SHORT   seal_short;
 typedef SEAL_INTEGER seal_int;
 typedef SEAL_FLOAT   seal_float;
 typedef SEAL_BOOL    seal_bool;
@@ -52,5 +54,13 @@ typedef SEAL_BOOL    seal_bool;
 
 #define HASHMAP_LOAD_FACTOR 0.7f
 
+#if SEAL_DEBUG
+    #include <assert.h>
+    #define SEAL_ASSERT(expr) assert(expr)
+#else
+    #define SEAL_ASSERT(expr) ((void)0)
+#endif
+
+#define SEAL_LOCAL_MAX 256  /* must be <=256 */
 
 #endif /* SEAL_CONF_H */
