@@ -250,13 +250,15 @@ static ast *parse_dowhile(parser *p)
     inclooplvl(p);
     ast *w = ast_new(p, AST_DOWHILE);
     eat(p, TK_DO);
-    if (!matchadv(p, TK_NEWLINE)) {
+    if (!match(p, TK_NEWLINE)) {
         w->as.whilestmt.body = parse_inlstmt(p);
     } else {
         newl(p);
         indent(p);
             w->as.whilestmt.body = parse_stmts(p);
         dedent(p);
+        /* eat additional newline produced by "after dedentation rule" */
+        newl(p);
     }
     eat(p, TK_WHILE);
     w->as.whilestmt.cond = parse_expr(p, true);
