@@ -122,6 +122,19 @@ struct h_entry *hashmap_searchlen(struct seal_hashmap *map,
     return NULL;
 }
 
+static void hashmap_insert_nocheck(struct seal_hashmap *map,
+                                   struct h_entry *e)
+{
+    unsigned int idx = e->hash % map->cap;
+
+    while (map->entries[idx].key != NULL) {
+        idx = (idx + 1) % map->cap;
+    }
+
+    map->entries[idx] = *e;
+    map->len++;
+}
+/* FIX: OPTIMIZE IT, DO NOT MAKE IT RECURSIVE WHEN RESIZING */
 int hashmap_insert(struct seal_hashmap *map,
                    const char *key,
                    struct seal_value val)
@@ -135,9 +148,9 @@ int hashmap_insert(struct seal_hashmap *map,
         map->entries = SEAL_CALLOC(map->cap, sizeof(struct h_entry));
 
         for (int i = 0; i < old_cap; i++) {
-            struct h_entry e = old_entries[i];
-            if (e.key)
-                hashmap_insert(map, e.key, e.val);
+            struct h_entry *e = &old_entries[i];
+            if (e->key)
+                hashmap_insert_nocheck(map, e);
         }
         SEAL_FREE(old_entries);
     }

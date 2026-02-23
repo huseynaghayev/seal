@@ -17,6 +17,35 @@
 #define SEAL_TFUNCTION  7
 
 
+#define SEAL_IS_NULL(v) ((v).type == SEAL_TNULL)
+#define SEAL_IS_BOOL(v) ((v).type == SEAL_TBOOL)
+#define SEAL_IS_INT(v)  ((v).type == SEAL_TINT)
+#define SEAL_IS_FLOAT(v)  ((v).type == SEAL_TFLOAT)
+#define SEAL_IS_STRING(v) ((v).type == SEAL_TSTRING)
+#define SEAL_IS_LIST(v) ((v).type == SEAL_TLIST)
+#define SEAL_IS_MAP(v)  ((v).type == SEAL_TMAP)
+#define SEAL_IS_FUNC(v) ((v).type == SEAL_TFUNCTION)
+
+#define SEAL_AS_BOOL(v) ((v).as.boolean)
+#define SEAL_AS_INT(v)  ((v).as.integer)
+#define SEAL_AS_FLOAT(v)  ((v).as.floating)
+#define SEAL_AS_STRING(v) ((v).as.string)
+#define SEAL_AS_STRINGVAL(v) (SEAL_AS_STRING(v)->val)
+#define SEAL_AS_LIST(v) ((v).as.list)
+#define SEAL_AS_MAP(v)  ((v).as.map)
+#define SEAL_AS_FUNC(v) ((v).as.func)
+
+#define SEAL_VAL(t, f, v) ((struct seal_value) { .type = t, .as.f = v })
+#define SEAL_VNULL ((struct seal_value) { SEAL_TNULL })
+#define SEAL_VBOOL(v)  SEAL_VAL(SEAL_TBOOL, boolean, v)
+#define SEAL_VINT(v)   SEAL_VAL(SEAL_TINT, integer, v)
+#define SEAL_VFLOAT(v) SEAL_VAL(SEAL_TFLOAT, floating, v)
+#define SEAL_VSTRING(v) SEAL_VAL(SEAL_TSTRING, string, v)
+#define SEAL_VLIST(v) SEAL_VAL(SEAL_TLIST, list, v)
+#define SEAL_VMAP(v)  SEAL_VAL(SEAL_TMAP, map, v)
+#define SEAL_VFUNC(v) SEAL_VAL(SEAL_TFUNCTION, func, v)
+
+
 /* forward declarations */
 struct seal_string;
 struct seal_list;
@@ -28,9 +57,9 @@ struct seal_value {
     /* ... */
     int type;
     union {
-        seal_int       integer;
-        seal_float     floating;
-        seal_bool      boolean;
+        seal_int   integer;
+        seal_float floating;
+        seal_bool  boolean;
         struct seal_string  *string;
         struct seal_list    *list;
         struct seal_hashmap *map;
@@ -76,7 +105,7 @@ struct seal_list *list_new(int cap);
 #define nullhentry(e) ((e) == NULL || (e)->key == NULL)
 
 struct h_entry {
-    int hash;
+    unsigned int hash;
     const char *key;
     int keysize;
     struct seal_value val;
@@ -95,6 +124,7 @@ struct h_entry *hashmap_searchlen(struct seal_hashmap *map,
                                   const char *key,
                                   int len);
 
+/* key must be owned carefully outside */
 int hashmap_insert(struct seal_hashmap *map,
                    const char *key,
                    struct seal_value val);
@@ -113,12 +143,29 @@ int hashmap_free(struct seal_hashmap *map, bool free_key, bool collect);
 
 #define hashmap_search(map, key) hashmap_searchlen(map, key, -1)
 
+struct seal_state;
+typedef void (*seal_Cfunction) (struct seal_state *S);
+
 /* function */
+
+#define FUNCTION_TYPE_SEAL 0
+#define FUNCTION_TYPE_C  1
+
 struct seal_func {
-    const char *name;  /* NULL ptr if anonymous */
-    seal_byte *body;   /* bytecode */
-    seal_byte psize;   /* number of parameters */
-    seal_byte locsize; /* local size */
+    int type;
+    union {
+        /* Seal function */
+        struct {
+            const char *name;  /* NULL ptr if anonymous */
+            seal_byte psize;   /* number of parameters */
+            struct chunk *c; /* chunk */
+        } s;
+        /* C function */
+        struct {
+            const char *name;  /* NULL ptr if anonymous */
+            seal_Cfunction f; /* C function pointer */
+        } c;
+    } as;
 };
 
 struct seal_func *func_new(const char *name,
