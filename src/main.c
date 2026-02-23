@@ -1,14 +1,14 @@
 #include <stdio.h>
+#include <sys/stat.h> /* S_ISDIR, S_ISREG */
 #include "sealconf.h"
 #if USE_GNU_READL
     #include <readline/readline.h>
     #include <readline/history.h>
 #endif
 
-#include "lexer.h"
-#include "parser.h"
+#include "state.h"
 
-#define STREAM_SIZE 4096
+#define STREAM_SIZE 8192
 static char STREAM[STREAM_SIZE];
 #define SRC_SIZE 512
 
@@ -18,95 +18,80 @@ static char STREAM[STREAM_SIZE];
     } \
 } while (0)
 
+#define clear() (printf("\033[2J\033[H"))
+
 int main(int argc, char **argv)
 {
-    struct lexer l;
-    struct parser p;
-    struct ast *a;
-    lexer_init(&l, NULL);
-    struct token t;
-
+    seal_state *S;
     if (argc > 1) {
         FILE *fp = fopen(argv[1], "r"); 
+        struct stat path_stat;
+        if (!fp) {
+            fprintf(stderr, "seal: cannot open %s: No such file or directory\n", argv[1]);
+            return 1;
+        } else if (stat(argv[1], &path_stat),
+                   (S_ISDIR(path_stat.st_mode))) {
+            fprintf(stderr, "seal: cannot read %s: Is a directory\n", argv[1]);
+            fclose(fp);
+            return 1;
+        } else if (!S_ISREG(path_stat.st_mode)) {
+            fprintf(stderr, "seal: cannot read %s: Is unusual type\n", argv[1]);
+            fclose(fp);
+            return 1;
+        }
         int read = fread(STREAM, 1, STREAM_SIZE - 1, fp);
         //printf("%d\n", read);
         STREAM[read] = '\0';
         fclose(fp);
-        l.src = STREAM;
-        if (setjmp(l.fail_point) == 0) {
-            /*
-            while (1) {
-                t = lexer_get_token(&l);
-                printf("%d ", t.line);
-                if (t.type < FIRST_WORD_TOKEN) {
-                    printf("%c\n", t.type);
-                } else {
-                    printf("%s ", tkname(t.type));
-                    printf("%s\n", t.val);
-                }
-                if (t.type == TK_EOF)
-                    break;
-            }
-            dump_cache(&l);
-            for (int i = 0; i < l.lexemes->cap; i++) {
-                if (l.lexemes->entries[i].key)
-                    SEAL_FREE((void*)l.lexemes->entries[i].key);
-            }
-            SEAL_FREE(l.lexemes->entries);
-            SEAL_FREE(l.lexemes);
-            */
-            parser_init(&p, &l);
-            a = parse(&p);
-            dump_ast(a, 0);
+        S = seal_state_new();
+        if (setjmp(S->l.fail_point) == 0) {
+            seal_evalstr(S, STREAM);
         } else {
+            seal_state_free(S);
             return 1;
         }
+        seal_state_free(S);
         return 0;
     }
 
+    S = seal_state_new();
 #if USE_GNU_READL
     char *input;
 #else
     char input[SRC_SIZE];
 #endif
 
-    setjmp(l.fail_point);
-repl:
-    lexer_reset(&l);
+    setjmp(S->l.fail_point);
 
+repl:
 #if USE_GNU_READL
     if ((input = readline("> ")) != NULL)
         if (*input)
             add_history(input);
 #else
     printf("> ");
-    if (fgets(input, SRC_SIZE, stdin) == NULL)
+    if (fgets(input, SRC_SIZE, stdin) == NULL) {
+        putchar('\n');
+        seal_state_free(S);
         return 0;
-#endif
-
-    l.src = input;
-    parser_init(&p, &l);
-    /*
-    while (1) {
-        t = lexer_get_token(&l);
-        if (t.type < FIRST_WORD_TOKEN) {
-            printf("%c\n", t.type);
-        } else {
-            printf("%s ", tkname(t.type));
-            printf("%s\n", t.val);
-        }
-        if (t.type == TK_EOF)
-            break;
     }
-    */
-    /* parse */
-    a = parse(&p);
-    dump_ast(a, 0);
-    arena_free(p.a);
+#endif
+    input[strlen(input) - 1] = '\0';
+    if (strcmp(input, "clear") == 0) {
+        clear();
+        goto repl;
+    } else if (strcmp(input, "exit") == 0) {
+        seal_state_free(S);
+        return 0;
+    }
+
+    seal_evalstr(S, input);
+
 #if USE_GNU_READL
     free(input);
 #endif
     goto repl;
 
+    seal_state_free(S);
     return 0;
 }
