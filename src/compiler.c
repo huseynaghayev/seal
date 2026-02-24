@@ -36,6 +36,7 @@ static void compile_node(proto *p, ast *n, scope *s);
 
 /* macros */
 #define tnode(n) ((n)->type)
+#define emitn(p, b) (emit(p, b, NULL))
 #define emit16(p, i, n) ( \
     emit(p, (i) >> 8, n), \
     emit(p, (i), n) \
@@ -352,7 +353,14 @@ static void compile_binary(proto *p, ast *n, scope *s)
 
 static void compile_logbin(proto *p, ast *n, scope *s)
 {
-    SEAL_ASSERT(0);
+    compile_node(p, n->as.bin.l, s);
+    emitn(p, OP_DUP);
+    emitn(p, n->as.bin.op == IMOP_AND ? OP_JFALSE : OP_JTRUE);
+    int jump = p->code_size;
+    emit16dummy(p);
+    emitn(p, OP_POP);
+    compile_node(p, n->as.bin.r, s);
+    jmpreplace16cur(p, jump); 
 }
 
 static void compile_ternary(proto *p, ast *n, scope *s)
@@ -402,12 +410,12 @@ static void compile_comma(proto *p, ast *n, scope *s)
 static void compile_if(proto *p, ast *n, scope *s)
 {
     compile_node(p, n->as.ifstmt.cond, s);
-    emit(p, OP_JFALSE, NULL);
+    emitn(p, OP_JFALSE);
     int next_jump = p->code_size;
     emit16dummy(p);
     compile_node(p, n->as.ifstmt.body, s);
     if (n->as.ifstmt.haselse) {
-        emit(p, OP_JMP, NULL);
+        emitn(p, OP_JMP);
         int end_jump = p->code_size;
         emit16dummy(p);
         jmpreplace16cur(p, next_jump);
@@ -426,12 +434,12 @@ static void compile_while(proto *p, ast *n, scope *s)
 {
     int begin_pos = p->code_size;
     compile_node(p, n->as.whilestmt.cond, s);
-    emit(p, OP_JFALSE, NULL);
+    emitn(p, OP_JFALSE);
     int end_jump = p->code_size;
     emit16dummy(p);
     compile_node(p, n->as.whilestmt.body, s);
 
-    emit(p, OP_JMP, NULL);
+    emitn(p, OP_JMP);
     int begin_jump = p->code_size;
     emit16dummy(p);
     jmpreplace16(p, begin_pos, begin_jump);
@@ -444,7 +452,7 @@ static void compile_dowhile(proto *p, ast *n, scope *s)
     compile_node(p, n->as.whilestmt.body, s);
 
     compile_node(p, n->as.whilestmt.cond, s);
-    emit(p, OP_JTRUE, NULL);
+    emitn(p, OP_JTRUE);
     int begin_jump = p->code_size;
     emit16dummy(p);
     jmpreplace16(p, begin_pos, begin_jump);
@@ -581,7 +589,7 @@ struct chunk compile(struct ast *n)
     scope s = {0};
     s.h = hashmap_Nnew(SEAL_LOCAL_MAX);
     compile_node(&p, n, &s);
-    emit(&p, OP_HALT, NULL);
+    emitn(&p, OP_HALT);
 
     c.code = p.code;
     c.code_size = p.code_size;
