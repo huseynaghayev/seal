@@ -2,7 +2,6 @@
 #include "core.h"
 #include "parser.h"
 #include "compiler.h"
-#include "vm.h"
 
 
 #define GLOBALS_START_SIZE 64
