@@ -365,7 +365,17 @@ static void compile_logbin(proto *p, ast *n, scope *s)
 
 static void compile_ternary(proto *p, ast *n, scope *s)
 {
-    SEAL_ASSERT(0);
+    compile_node(p, n->as.ternary.c, s);
+    emitn(p, OP_JFALSE);
+    int else_jump = p->code_size;
+    emit16dummy(p);
+    compile_node(p, n->as.ternary.t, s);
+    emitn(p, OP_JMP);
+    int end_jump = p->code_size;
+    emit16dummy(p);
+    jmpreplace16cur(p, else_jump);
+    compile_node(p, n->as.ternary.e, s);
+    jmpreplace16cur(p, end_jump);
 }
 
 static void compile_assign(proto *p, ast *n, scope *s)
