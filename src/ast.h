@@ -66,7 +66,7 @@ enum { /* immediate operations (for parsing) */
     /* unaries */
     IMOP_POSTFIX_INC, /* a++ */
     IMOP_POSTFIX_DEC, /* a-- */
-    IMOP_PREFIX_INC,  /* ++b */
+    IMOP_PREFIX_INC,  /* ++a */
     IMOP_PREFIX_DEC,  /* --a */
     /* unary plus is not defined,
      * because writing +a does not make any sense

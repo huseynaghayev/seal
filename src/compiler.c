@@ -380,6 +380,7 @@ static void compile_ternary(proto *p, ast *n, scope *s)
 
 static void compile_assign(proto *p, ast *n, scope *s)
 {
+    /* TODO: compile all assign types */
     SEAL_ASSERT(n->as.assign.op == IMOP_ASSIGN);
     SEAL_ASSERT(n->as.assign.var->type == AST_NAME);
 
@@ -490,7 +491,9 @@ static void compile_return(proto *p, ast *n, scope *s)
 
 static void compile_include(proto *p, ast *n)
 {
-    SEAL_ASSERT(0);
+    emit(p, OP_INCLUDE, n);
+    int i = get_string_idx(p, n->as.inclstmt.fname);
+    emit16(p, i, n);
 }
 
 static void compile_node(proto *p, ast *n, scope *s)
@@ -687,6 +690,8 @@ static const OpSpec op_specs[] = {
     [OP_SETGLOBAL] = { "set global", 2 },
     [OP_GETLOCAL]  = { "get local" , 1 },
     [OP_SETLOCAL]  = { "set local" , 1 },
+    /* other */
+    [OP_INCLUDE] = { "include", 2 }
 };
 
 void dump_chunk(struct chunk *c)
@@ -720,7 +725,7 @@ void dump_chunk(struct chunk *c)
                 printf("%d", n);
                 break;
             }
-            case OP_GETGLOBAL: case OP_GETGLOBAL_SAFE: case OP_SETGLOBAL: {
+            case OP_GETGLOBAL: case OP_GETGLOBAL_SAFE: case OP_SETGLOBAL: case OP_INCLUDE: {
                 int n = c->code[++i];
                 n <<= 8;
                 n |= c->code[++i];

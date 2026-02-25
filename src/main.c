@@ -72,8 +72,7 @@ repl:
     printf("> ");
     if (fgets(input, SRC_SIZE, stdin) == NULL) {
         putchar('\n');
-        seal_state_free(S);
-        return 0;
+        goto end;
     }
 #endif
     input[strlen(input) - 1] = '\0';
@@ -81,8 +80,7 @@ repl:
         clear();
         goto repl;
     } else if (strcmp(input, "exit") == 0) {
-        seal_state_free(S);
-        return 0;
+        goto end;
     }
 
     seal_evalstr(S, input);
@@ -92,6 +90,7 @@ repl:
 #endif
     goto repl;
 
+end:
     seal_state_free(S);
     return 0;
 }

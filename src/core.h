@@ -5,7 +5,6 @@
 #include "state.h"
 
 
-void print_val(struct seal_value *v);
 void seal_core_init(seal_state *S);
 
 

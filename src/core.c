@@ -6,7 +6,7 @@
 typedef struct seal_value value;
 
 
-void print_val(value *v)
+static void print_val(value *v)
 {
     switch (v->type) {
     case SEAL_TNULL:
