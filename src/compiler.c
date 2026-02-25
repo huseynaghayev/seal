@@ -486,7 +486,8 @@ static void compile_stop(proto *p)
 
 static void compile_return(proto *p, ast *n, scope *s)
 {
-    SEAL_ASSERT(0);
+    compile_node(p, n->as.retstmt.val, s);
+    emit(p, OP_RETURN, n);
 }
 
 static void compile_include(proto *p, ast *n)
@@ -663,6 +664,7 @@ static const OpSpec op_specs[] = {
     [OP_JFALSE]  = { "jump if false", 2 },
     [OP_JNULL]   = { "jump if null", 2 },
     [OP_CALL] = { "call", 1 },
+    [OP_RETURN]  = { "return", 0 },
     /* binaries */
     [OP_ADD] = { "add", 0 },
     [OP_SUB] = { "sub", 0 },
