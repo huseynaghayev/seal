@@ -196,7 +196,31 @@ static void compile_value(proto *p, ast *n)
 
 static void compile_list(proto *p, ast *n, scope *s)
 {
-    SEAL_ASSERT(0);
+    int size = n->as.l.size;
+    if (size == 0) {
+        emit(p, OP_NEWLIST, n);
+    } else if (size <= 0xFF) {
+        ast *l = n->as.l.items;
+        while (l) {
+            compile_node(p, l, s);
+            l = l->next;
+        }
+        emit(p, OP_MAKELIST, n);
+        emit(p, size, n);
+    } else {
+        emit(p, OP_NEWLIST, n);
+        ast *l = n->as.l.items;
+        while (size > 0) {
+            int batch = size >= 0xFF ? 0xFF : size;
+            for (int i = 0; i < batch; i++) {
+                compile_node(p, l, s);
+                l = l->next;
+            }
+            emit(p, OP_PUSHLIST, n);
+            emit(p, batch, n);
+            size -= batch;
+        }
+    }
 }
 
 static void compile_map(proto *p, ast *n, scope *s)
@@ -244,7 +268,7 @@ static void compile_func_def(proto *p, ast *n, scope *s)
 static void compile_call(proto *p, ast *n, scope *s)
 {
     SEAL_ASSERT(n->type == AST_FUNC_CALL);
-    SEAL_ASSERT(n->as.call.argc <= 255);
+    SEAL_ASSERT(n->as.call.argc <= 0xFF);
     compile_node(p, n->as.call.f, s); /* function */
 
     ast *arg = n->as.call.argv;
@@ -603,7 +627,7 @@ struct chunk compile(struct ast *n)
     scope s = {0};
     s.h = hashmap_Nnew(SEAL_LOCAL_MAX);
     compile_node(&p, n, &s);
-    emitn(&p, OP_HALT);
+    emitn(&p, OP_RETURN);
 
     c.code = p.code;
     c.code_size = p.code_size;
@@ -692,6 +716,16 @@ static const OpSpec op_specs[] = {
     [OP_SETGLOBAL] = { "set global", 2 },
     [OP_GETLOCAL]  = { "get local" , 1 },
     [OP_SETLOCAL]  = { "set local" , 1 },
+    /* lists and maps */
+    [OP_NEWLIST]  = { "new list", 0 },
+    [OP_MAKELIST] = { "make list", 1 },
+    [OP_PUSHLIST] = { "push list", 1 },
+    [OP_NEWMAP]   = { "new map", 0 },
+    [OP_MAKEMAP]  = { "make map", 1 },
+    [OP_PUSHMAP]  = { "push map", 1 },
+    [OP_GETFIELD] = { "get field", 0 },
+    [OP_GETFIELD_SAFE] = { "get field safe", 0 },
+    [OP_SETFIELD] = { "set field", 0 },
     /* other */
     [OP_INCLUDE] = { "include", 2 }
 };
@@ -708,7 +742,7 @@ void dump_chunk(struct chunk *c)
         }
         seal_byte byte = c->code[i];
         OpSpec op = op_specs[byte];
-        printf("[%2d]: %d bytes | ", i, 1 + op.operand_size);
+        printf("[%2d]: %d byte%s | ", i, 1 + op.operand_size, op.operand_size ? "s" : " ");
         printf("%s", op.name);
 
         if (op.operand_size != 0) {

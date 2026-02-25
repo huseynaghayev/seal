@@ -67,11 +67,11 @@ enum {
     OP_SETLOCAL,  /* name = val */
     /* lists and maps */
     OP_NEWLIST,  /* TOP := new empty list */
-    OP_MAKELIST, /* Push NEXT amount of elements to new empty list */
-    OP_LISTPUSH, /* Push NEXT amount of elements to list and keep list on stack */
+    OP_MAKELIST, /* Push NEXT amount of elements to newly created empty list */
+    OP_PUSHLIST, /* Push NEXT amount of elements to list and keep list on stack */
     OP_NEWMAP,   /* TOP := new empty map */
-    OP_MAKEMAP,  /* Push NEXT amount of elements to new empty map */
-    OP_MAPPUSH,  /* Push to map and keep map on stack */
+    OP_MAKEMAP,  /* Push NEXT amount of elements to newly created empty map */
+    OP_PUSHMAP,  /* Push to map and keep map on stack */
     OP_GETFIELD, /* a[b] | a.b */
     OP_GETFIELD_SAFE, /* a[b]? | a.b? */
     OP_SETFIELD, /* a[b] = POP() */
