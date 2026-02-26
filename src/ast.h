@@ -122,7 +122,7 @@ struct ast {
         } pair;
 
         struct { /* map (hashmap) */
-            struct ast *pairs; /* linked to 'k' struct */
+            struct ast *pairs; /* linked to 'pair' struct */
             size_t size;
         } m;
 

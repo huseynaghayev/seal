@@ -225,7 +225,33 @@ static void compile_list(proto *p, ast *n, scope *s)
 
 static void compile_map(proto *p, ast *n, scope *s)
 {
-    SEAL_ASSERT(0);
+    int size = n->as.m.size;
+    if (size == 0) {
+        emit(p, OP_NEWMAP, n);
+    } else if (size <= 0xFF) {
+        ast *m = n->as.m.pairs;
+        while (m) {
+            pushstringidx(p, m->as.pair.key, m);
+            compile_node(p,  m->as.pair.val, s);
+            m = m->next;
+        }
+        emit(p, OP_MAKEMAP, n);
+        emit(p, size, n);
+    } else {
+        emit(p, OP_NEWMAP, n);
+        ast *m = n->as.m.pairs;
+        while (size > 0) {
+            int batch = size >= 0xFF ? 0xFF : size;
+            for (int i = 0; i < batch; i++) {
+                pushstringidx(p, m->as.pair.key, m);
+                compile_node(p, m->as.pair.val, s);
+                m = m->next;
+            }
+            emit(p, OP_PUSHMAP, n);
+            emit(p, batch, n);
+            size -= batch;
+        }
+    }
 }
 
 static void compile_name(proto *p, ast *n, scope *s)
