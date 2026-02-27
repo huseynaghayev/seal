@@ -72,9 +72,11 @@ enum {
     OP_NEWMAP,   /* TOP := new empty map */
     OP_MAKEMAP,  /* Push NEXT amount of elements to newly created empty map */
     OP_PUSHMAP,  /* Push to map and keep map on stack */
-    OP_GETFIELD, /* a[b] | a.b */
-    OP_GETFIELD_SAFE, /* a[b]? | a.b? */
-    OP_SETFIELD, /* a[b] = POP() */
+    OP_GETFIELD, /* a.b */
+    OP_GETFIELD_SAFE, /* a.b? */
+    OP_SETFIELD, /* a.b = POP() */
+    OP_GETINDEX, /* a[b] */
+    OP_SETINDEX, /* a.b = POP() */
     /* other */
     OP_INCLUDE, /* include POOL[2NEXT] => module name */
 };

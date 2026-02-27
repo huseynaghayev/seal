@@ -309,7 +309,18 @@ static void compile_call(proto *p, ast *n, scope *s)
 
 static void compile_field(proto *p, ast *n, scope *s)
 {
-    SEAL_ASSERT(0);
+    /* n->type is either AST_INDEX or AST_FIELD */
+    if (n->type == AST_FIELD) {
+        compile_node(p, n->as.field.m, s);
+        ast *key = n->as.field.f;
+        emit(p, key->as.name.safe ? OP_GETFIELD_SAFE : OP_GETFIELD, n);
+        int i = get_string_idx(p, key->as.name.s);
+        emit16(p, i, key);
+    } else {
+        compile_node(p, n->as.index.m, s);
+        compile_node(p, n->as.index.i, s);
+        emit(p, OP_GETINDEX, n);
+    }
 }
 
 static void compile_unary(proto *p, ast *n, scope *s)
@@ -749,9 +760,11 @@ static const OpSpec op_specs[] = {
     [OP_NEWMAP]   = { "new map", 0 },
     [OP_MAKEMAP]  = { "make map", 1 },
     [OP_PUSHMAP]  = { "push map", 1 },
-    [OP_GETFIELD] = { "get field", 0 },
-    [OP_GETFIELD_SAFE] = { "get field safe", 0 },
-    [OP_SETFIELD] = { "set field", 0 },
+    [OP_GETFIELD] = { "get field", 2 },
+    [OP_GETFIELD_SAFE] = { "get field safe", 2 },
+    [OP_SETFIELD] = { "set field", 2 },
+    [OP_GETINDEX] = { "get index", 0 },
+    [OP_SETINDEX] = { "set index", 0 },
     /* other */
     [OP_INCLUDE] = { "include", 2 }
 };
@@ -787,7 +800,13 @@ void dump_chunk(struct chunk *c)
                 printf("%d", n);
                 break;
             }
-            case OP_GETGLOBAL: case OP_GETGLOBAL_SAFE: case OP_SETGLOBAL: case OP_INCLUDE: {
+            case OP_GETGLOBAL:
+            case OP_GETGLOBAL_SAFE:
+            case OP_SETGLOBAL:
+            case OP_GETFIELD:
+            case OP_GETFIELD_SAFE:
+            case OP_SETFIELD:
+            case OP_INCLUDE: {
                 int n = c->code[++i];
                 n <<= 8;
                 n |= c->code[++i];
