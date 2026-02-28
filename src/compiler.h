@@ -4,6 +4,7 @@
 
 #include "sealconf.h"
 #include "ast.h"
+#include "value.h"
 
 
 enum {
@@ -98,7 +99,7 @@ struct chunk {
 
 int get_line(struct chunk *c, int ip);
 
-struct chunk compile(struct ast *a);
+struct chunk compile(struct ast *a, struct seal_hashmap *h);
 
 #if SEAL_DEBUG
 void dump_chunk(struct chunk *c);

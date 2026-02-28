@@ -40,6 +40,29 @@ void seal_state_free(seal_state *S)
     SEAL_FREE(S);
 }
 
+static void free_chunk(struct chunk *c, int free_cp) {
+    SEAL_FREE(c->code);
+    SEAL_FREE(c->li);
+    for (int i = 0; i < c->pool_size; i++) {
+        struct seal_value v = c->pool[i];
+        if (SEAL_IS_STRING(v)) {
+            if (SEAL_AS_STRING(v)->collect) {
+                SEAL_FREE((void*)SEAL_AS_STRING(v)->val);
+            }
+            SEAL_FREE(v.as.string);
+        } else if (SEAL_IS_FUNC(v)) {
+            if (SEAL_AS_FUNC(v)->type == FUNCTION_TYPE_SEAL) {
+                free_chunk(SEAL_AS_FUNC(v)->as.s.c, true);
+            }
+            SEAL_FREE(SEAL_AS_FUNC(v));
+        }
+    }
+    SEAL_FREE(c->pool);
+
+    if (free_cp)
+        SEAL_FREE(c);
+}
+
 int seal_evalstr(seal_state *S, const char *str)
 {
     lexer_init(&S->l, str);
@@ -50,7 +73,7 @@ int seal_evalstr(seal_state *S, const char *str)
     parser_init(&p, &S->l);
     root = parse(&p);
     //dump_ast(root, 0);
-    c = compile(root);
+    c = compile(root, NULL);
     dump_chunk(&c);
     //dump_bytecode(&c);
     arena_free(p.a);
@@ -60,17 +83,7 @@ int seal_evalstr(seal_state *S, const char *str)
      * then eval
      */
 
-    SEAL_FREE(c.code);
-    SEAL_FREE(c.li);
-    for (int i = 0; i < c.pool_size; i++) {
-        if (SEAL_IS_STRING(c.pool[i])) {
-            if (SEAL_AS_STRING(c.pool[i])->collect) {
-                SEAL_FREE((void*)SEAL_AS_STRING(c.pool[i])->val);
-            }
-            SEAL_FREE(c.pool[i].as.string);
-        }
-    }
-    SEAL_FREE(c.pool);
+    free_chunk(&c, false);
 
     return 0;
 }

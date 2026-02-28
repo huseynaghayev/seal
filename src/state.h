@@ -23,13 +23,13 @@ typedef struct seal_state {
     struct lexer l;
 
     /* runtime */
-    struct seal_value *stack;
-    struct seal_value *sp;
-    struct seal_hashmap *globals;
-    struct call_info *ci_arr;
-    int ci_idx;
-    struct call_info *ci;
-    seal_byte *ip;
+    struct seal_value *stack; /* stack array */
+    struct seal_value *sp;    /* stack pointer */
+    struct seal_hashmap *globals; /* globals map */
+    struct call_info *ci_arr;     /* call info array */
+    int ci_idx;    /* call info index */
+    struct call_info *ci; /* current call info */
+    seal_byte *ip; /* instruction pointer */
 } seal_state;
 
 

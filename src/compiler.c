@@ -288,7 +288,47 @@ static void compile_name(proto *p, ast *n, scope *s)
 
 static void compile_func_def(proto *p, ast *n, scope *s)
 {
-    SEAL_ASSERT(0);
+    struct seal_hashmap *h = hashmap_Nnew(SEAL_LOCAL_MAX);
+    ast *param = n->as.func.params;
+    while (param) {
+        int idx = s->h->len;
+        hashmap_insert(h, param->as.name.s, SEAL_VINT(idx));
+        param = param->next;
+    }
+
+    struct chunk c = compile(n->as.func.body, h);
+    struct chunk *pc = SEAL_MALLOC(sizeof(c));
+    *pc = c;
+    struct seal_value f;
+    f.type = SEAL_TFUNCTION;
+    f.as.func = SEAL_MALLOC(sizeof(struct seal_func));
+    f.as.func->type = FUNCTION_TYPE_SEAL;
+    f.as.func->as.s.c = pc;
+    f.as.func->as.s.name  = n->as.func.name;
+    f.as.func->as.s.psize = n->as.func.psize;
+
+    emitconst(p, f, n);
+    if (n->as.func.name) {
+        if (n->as.func.global) {
+            int i = get_string_idx(p, n->as.func.name);
+            emit(p, OP_SETGLOBAL, n);
+            emit16(p, i, n);
+        } else {
+            h_entry *e = hashmap_search(s->h, n->as.func.name);
+            if (e == NULL) {
+                /* HASHMAP IS FULL */
+                SEAL_ASSERT(0 && "maximum amount of locals is 256");
+            }
+            if (e->key == NULL) {
+                /* VARIABLE IS NOT SET YET */
+                int idx = s->h->len;
+                hashmap_insert_e(s->h, e, n->as.func.name, SEAL_VINT(idx));
+            }
+
+            emit(p, OP_SETLOCAL, n);
+            emit(p, e->val.as.integer, n);
+        }
+    }
 }
 
 static void compile_call(proto *p, ast *n, scope *s)
@@ -657,14 +697,15 @@ static void compile_node(proto *p, ast *n, scope *s)
 
 
 /* convert this return type to pointer */
-struct chunk compile(struct ast *n)
+struct chunk compile(struct ast *n, struct seal_hashmap *h)
 {
     struct chunk c = {0};
     proto p = {0};
     scope s = {0};
-    s.h = hashmap_Nnew(SEAL_LOCAL_MAX);
+    s.h = h ? h : hashmap_Nnew(SEAL_LOCAL_MAX);
     compile_node(&p, n, &s);
-    emitn(&p, OP_RETURN);
+    if (p.code[p.code_size - 1] != OP_RETURN)
+        emitn(&p, OP_RETURN);
 
     c.code = p.code;
     c.code_size = p.code_size;
@@ -793,7 +834,25 @@ void dump_chunk(struct chunk *c)
                     n <<= 8;
                     n |= c->code[++i];
                 }
-                printf("\"%s\"", c->pool[n].as.string->val);
+                struct seal_value v = c->pool[n];
+                switch (v.type) {
+                case SEAL_TINT:
+                    printf("%lld", SEAL_AS_INT(v));
+                    break;
+                case SEAL_TFLOAT:
+                    printf("%g", SEAL_AS_FLOAT(v));
+                    break;
+                case SEAL_TSTRING:
+                    printf("\"%s\"", SEAL_AS_STRINGVAL(v));
+                    break;
+                case SEAL_TFUNCTION:
+                    printf("function %s: %p",
+                           SEAL_AS_FUNC(v)->as.s.name ? SEAL_AS_FUNC(v)->as.s.name : "",
+                           (void*)SEAL_AS_FUNC(v));
+                    dump_chunk(SEAL_AS_FUNC(v)->as.s.c);
+                    puts("END FUNCTION");
+                    break;
+                }
                 putchar(' ');
                 putchar('|');
                 putchar(' ');

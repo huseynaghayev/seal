@@ -168,10 +168,11 @@ struct seal_func {
     } as;
 };
 
+/*
 struct seal_func *func_new(const char *name,
                            seal_byte *body,
                            seal_byte psize,
                            seal_byte locsize);
-
+*/
 
 #endif /* VALUE_H */
