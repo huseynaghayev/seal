@@ -6,14 +6,19 @@
 #include "lexer.h"
 
 
-#define seal_push(S, v) (*(S)->sp++ = (v))
-#define seal_dup(S)  (*(S)->sp = *((S)->sp - 1), (S)->sp++)
-#define seal_pop(S)  (*(--((S)->sp)))
-#define seal_gettop(S)  ((S)->sp - (S)->ci->func - 1)
-#define seal_getstack(S, i) (i >= 0 ? (S)->ci->func + i + 1 : (S)->sp + i)
+#define seal_push(S, v) ((S)->stack[(S)->sp++] = (v))
+#define seal_dup(S) ( \
+    (S)->stack[(S)->sp] = (S)->stack[(S)->sp - 1], \
+    (S)->sp++ \
+)
+#define seal_pop(S)  ((S)->stack[--(S)->sp])
+#define seal_gettop(S)  ((S)->sp - (S)->ci->func_idx - 1)
+#define seal_getstack(S, i) ((S)->stack[i >= 0 ? (S)->ci->func_idx + i + 1 : (S)->sp + i])
+
+typedef int stack_idx;
 
 typedef struct call_info {
-    struct seal_value *func; /* the called function */
+    stack_idx func_idx; /* the called function stack index */
     seal_byte *ret_ip;
     int local_size;
 } call_info;
@@ -24,7 +29,7 @@ typedef struct seal_state {
 
     /* runtime */
     struct seal_value *stack; /* stack array */
-    struct seal_value *sp;    /* stack pointer */
+    stack_idx sp;    /* stack pointer */
     struct seal_hashmap *globals; /* globals map */
     struct call_info *ci_arr;     /* call info array */
     int ci_idx;    /* call info index */

@@ -13,8 +13,9 @@ seal_state *seal_state_new()
     seal_state *S = SEAL_MALLOC(sizeof(seal_state));
 
     S->stack =
-        S->sp =
             SEAL_MALLOC(sizeof(struct seal_value) * STACK_START_SIZE);
+
+    S->sp = 0;
 
     S->globals = hashmap_Nnew(GLOBALS_START_SIZE);
 
