@@ -704,8 +704,8 @@ struct chunk compile(struct ast *n, struct seal_hashmap *h)
     scope s = {0};
     s.h = h ? h : hashmap_Nnew(SEAL_LOCAL_MAX);
     compile_node(&p, n, &s);
-    if (p.code[p.code_size - 1] != OP_RETURN)
-        emitn(&p, OP_RETURN);
+    emitn(&p, OP_PUSHNULL);
+    emitn(&p, OP_RETURN);
 
     c.code = p.code;
     c.code_size = p.code_size;
