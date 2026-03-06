@@ -105,7 +105,7 @@ typedef struct lexer lexer;
 #define hasilvl(l)   ((l)->indent_count > 0)
 
 #define pushilvl(l) do { \
-    if ((l)->indent_count >= MAX_INDENT_LEVEL) \
+    if ((l)->indent_count >= SEAL_MAX_INDENT_LEVEL) \
         lerror(l, "maximum indentation level has reached"); \
     (l)->indent_stk[(l)->indent_count++] = curilvl(l); \
 } while (0)

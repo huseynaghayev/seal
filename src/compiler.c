@@ -13,6 +13,8 @@ typedef struct ast ast;
 typedef struct seal_value value;
 typedef struct h_entry h_entry;
 
+#define MAX_LOOP_DEPTH (SEAL_MAX_INDENT_LEVEL + 1) /* 1 for extra inline loop */
+
 typedef struct {
     seal_byte *code; /* instructions */
     int code_size; /* instructions size */
@@ -24,7 +26,26 @@ typedef struct {
     int li_size; /* line info size */
     int li_cap;  /* line info capacity */
     int last_seen_line; /* for constant node values */
+    struct {
+        int begin_pos;
+        signed short last_stop;
+    } loops[MAX_LOOP_DEPTH];
+    int loop_count;
 } proto;
+
+#define push_loop(p, begin) ( \
+    (p)->loops[(p)->loop_count++].begin_pos = (begin) \
+)
+
+#define push_stop(p, pos) ( \
+    (p)->loops[(p)->loop_count] = (begin) \
+)
+
+#define pop_loop(p) ( \
+    (p)->loops[--(p)->loop_count].last_stop = 0 \
+)
+
+#define cur_loop(p) ((p)->loops[(p)->loop_count - 1])
 
 typedef struct {
     struct seal_hashmap *h; /* current scope */
@@ -545,6 +566,8 @@ static void compile_if(proto *p, ast *n, scope *s)
 static void compile_while(proto *p, ast *n, scope *s)
 {
     int begin_pos = p->code_size;
+    push_loop(p, begin_pos);
+
     compile_node(p, n->as.whilestmt.cond, s);
     emitn(p, OP_JFALSE);
     int end_jump = p->code_size;
@@ -556,6 +579,8 @@ static void compile_while(proto *p, ast *n, scope *s)
     emit16dummy(p);
     jmpreplace16(p, begin_pos, begin_jump);
     jmpreplace16cur(p, end_jump);
+
+    pop_loop(p);
 }
 
 static void compile_dowhile(proto *p, ast *n, scope *s)
@@ -577,7 +602,10 @@ static void compile_for(proto *p, ast *n, scope *s)
 
 static void compile_skip(proto *p)
 {
-    SEAL_ASSERT(0);
+    emitn(p, OP_JMP);
+    int skip_jump = p->code_size;
+    emit16dummy(p);
+    jmpreplace16(p, cur_loop(p).begin_pos, skip_jump);
 }
 
 static void compile_stop(proto *p)

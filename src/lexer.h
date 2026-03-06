@@ -49,7 +49,6 @@ struct token {
 
 
 #define MAX_PAREN_LEVEL    64
-#define MAX_INDENT_LEVEL   32
 #define MAX_CACHED_TK_SIZE 32 // fix
 
 struct lexer {
@@ -62,7 +61,7 @@ struct lexer {
     int cur_indent; /* to track indentation level */
     char paren_stk[MAX_PAREN_LEVEL];
     int parenline_stk[MAX_PAREN_LEVEL];
-    int indent_stk[MAX_INDENT_LEVEL];
+    int indent_stk[SEAL_MAX_INDENT_LEVEL];
     int paren_count;
     int indent_count;
     struct token cachedtks[MAX_CACHED_TK_SIZE];
