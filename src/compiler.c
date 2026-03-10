@@ -37,10 +37,6 @@ typedef struct {
     (p)->loops[(p)->loop_count++].begin_pos = (begin) \
 )
 
-#define push_stop(p, pos) ( \
-    (p)->loops[(p)->loop_count] = (begin) \
-)
-
 #define pop_loop(p) ( \
     (p)->loops[--(p)->loop_count].last_stop = 0 \
 )
@@ -84,12 +80,28 @@ static void compile_node(proto *p, ast *n, scope *s);
 } while (0)
 
 #define jmpreplace16(p, a, b) do { \
-    short __i = (a) - ((b) + 2); \
+    SEAL_ASSERT( \
+        (a) - ((b) + 2) <= SHRT_MAX && \
+        (a) - ((b) + 2) >= SHRT_MIN \
+    ); \
+    signed short __i = (a) - ((b) + 2); \
     (p)->code[b] = __i >> 8; \
     (p)->code[(b) + 1] = __i;  \
 } while (0)
 
 #define jmpreplace16cur(p, pos) jmpreplace16(p, (p)->code_size, pos)
+
+static void backpatch_stops(proto *p)
+{
+    signed short cur = cur_loop(p).last_stop;
+    signed short prev;
+    do {
+        prev = p->code[cur] << 8;
+        prev |= p->code[cur + 1];
+        jmpreplace16(p, p->code_size, cur + cur_loop(p).begin_pos);
+        cur = prev;
+    } while (cur != 0);
+}
 
 static void emit(proto *p, seal_byte b, ast *n)
 {
@@ -580,6 +592,7 @@ static void compile_while(proto *p, ast *n, scope *s)
     jmpreplace16(p, begin_pos, begin_jump);
     jmpreplace16cur(p, end_jump);
 
+    backpatch_stops(p);
     pop_loop(p);
 }
 
@@ -610,7 +623,11 @@ static void compile_skip(proto *p)
 
 static void compile_stop(proto *p)
 {
-    SEAL_ASSERT(0);
+    emitn(p, OP_JMP);
+    int addr = p->code_size - cur_loop(p).begin_pos;
+    SEAL_ASSERT(addr <= SHRT_MAX && addr >= SHRT_MIN);
+    emit16(p, cur_loop(p).last_stop, NULL);
+    cur_loop(p).last_stop = addr;
 }
 
 static void compile_return(proto *p, ast *n, scope *s)
@@ -908,7 +925,7 @@ void dump_chunk(struct chunk *c)
                 short n = c->code[++i];
                 n <<= 8;
                 n |= c->code[++i];
-                printf("%d", n);
+                printf("%d -> [%d]", n, i + 1 + n);
                 break;
             }
             default:

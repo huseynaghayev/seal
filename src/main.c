@@ -8,7 +8,7 @@
 
 #include "state.h"
 
-#define STREAM_SIZE 8192
+#define STREAM_SIZE (1024 * 1024 * 2)
 static char STREAM[STREAM_SIZE];
 #define SRC_SIZE 512
 
