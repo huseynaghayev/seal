@@ -95,13 +95,13 @@ static void backpatch_stops(proto *p)
 {
     signed short cur = cur_loop(p).last_stop;
     signed short prev;
-    do {
+    while (cur != 0) {
         int i = cur + cur_loop(p).begin_pos;
         prev = p->code[i] << 8;
         prev |= p->code[i + 1];
         jmpreplace16(p, p->code_size, i);
         cur = prev;
-    } while (cur != 0);
+    }
 }
 
 static void emit(proto *p, seal_byte b, ast *n)
@@ -599,6 +599,7 @@ static void compile_while(proto *p, ast *n, scope *s)
 
 static void compile_dowhile(proto *p, ast *n, scope *s)
 {
+    SEAL_ASSERT(0 && "Do not use do-while loops yet");
     int begin_pos = p->code_size;
     compile_node(p, n->as.whilestmt.body, s);
 
