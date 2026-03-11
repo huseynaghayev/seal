@@ -96,9 +96,10 @@ static void backpatch_stops(proto *p)
     signed short cur = cur_loop(p).last_stop;
     signed short prev;
     do {
-        prev = p->code[cur] << 8;
-        prev |= p->code[cur + 1];
-        jmpreplace16(p, p->code_size, cur + cur_loop(p).begin_pos);
+        int i = cur + cur_loop(p).begin_pos;
+        prev = p->code[i] << 8;
+        prev |= p->code[i + 1];
+        jmpreplace16(p, p->code_size, i);
         cur = prev;
     } while (cur != 0);
 }
