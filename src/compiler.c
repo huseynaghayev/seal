@@ -857,6 +857,11 @@ static const OpSpec op_specs[] = {
     [OP_INCLUDE] = { "include", 2 }
 };
 
+const char *get_opname(int op)
+{
+    return op_specs[op].name;
+}
+
 void dump_chunk(struct chunk *c)
 {
     printf("Total bytes: %d\n", c->code_size);

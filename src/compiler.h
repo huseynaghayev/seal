@@ -102,6 +102,7 @@ int get_line(struct chunk *c, int ip);
 struct chunk compile(struct ast *a, struct seal_hashmap *h);
 
 #if SEAL_DEBUG
+const char *get_opname(int op);
 void dump_chunk(struct chunk *c);
 void dump_bytecode(struct chunk *c);
 #endif

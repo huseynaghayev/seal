@@ -50,6 +50,8 @@ int seal_getglobal(seal_state *S, const char *name); /* push value on top */
 /* push */
 #define seal_pushnull(S)  seal_push(S, SEAL_VNULL)
 #define seal_pushbool(S, b)  seal_push(S, SEAL_VBOOL(b))
+#define seal_pushtrue(S)  seal_pushbool(S, true)
+#define seal_pushfalse(S) seal_pushbool(S, false)
 #define seal_pushint(S, n)   seal_push(S, SEAL_VINT(n))
 #define seal_pushfloat(S, f) seal_push(S, SEAL_VFLOAT(f))
 

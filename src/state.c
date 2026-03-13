@@ -92,7 +92,7 @@ int seal_evalstr(seal_state *S, const char *str)
 int seal_call(seal_state *S, int argc)
 {
     struct seal_value f;
-    SEAL_ASSERT(SEAL_IS_FUNC((f = seal_getstack(S, -argc))));
+    SEAL_ASSERT(SEAL_IS_FUNC(f = seal_getstack(S, -argc)));
     S->ci++;
     S->ci_idx++;
     if (SEAL_AS_FUNC(f)->type == FUNCTION_TYPE_SEAL) {
@@ -104,7 +104,8 @@ int seal_call(seal_state *S, int argc)
     if (SEAL_AS_FUNC(f)->type == FUNCTION_TYPE_SEAL) {
         S->ip = SEAL_AS_FUNC(f)->as.s.c->code;
     } else {
-        SEAL_AS_FUNC(f)->as.c.f(S);
+        SEAL_AS_FUNC(f)->as.c.f /* function */
+            (S); /* calling */
     }
 
     return 0;
