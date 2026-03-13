@@ -21,7 +21,7 @@ seal_state *seal_state_new()
 
     S->ci_arr = SEAL_MALLOC(sizeof(struct call_info) * CALL_FRAME_START_SIZE);
     S->ci_idx = -1;
-    S->ci = NULL;
+    S->ci = S->ci_arr + S->ci_idx;
     S->ip = NULL;
 
     S->l.lexemes = NULL;
@@ -75,7 +75,7 @@ int seal_evalstr(seal_state *S, const char *str)
     root = parse(&p);
     //dump_ast(root, 0);
     c = compile(root, NULL);
-    dump_chunk(&c);
+    //dump_chunk(&c);
     //dump_bytecode(&c);
     arena_free(p.a);
 
@@ -89,7 +89,26 @@ int seal_evalstr(seal_state *S, const char *str)
     return 0;
 }
 
-int seal_call(seal_state *S, int argc);
+int seal_call(seal_state *S, int argc)
+{
+    struct seal_value f;
+    SEAL_ASSERT(SEAL_IS_FUNC((f = seal_getstack(S, -argc))));
+    S->ci++;
+    S->ci_idx++;
+    if (SEAL_AS_FUNC(f)->type == FUNCTION_TYPE_SEAL) {
+        SEAL_ASSERT(SEAL_AS_FUNC(f)->as.s.psize == argc);
+    }
+    S->ci->func_idx = S->sp - argc - 1;
+    S->ci->ret_ip = S->ip;
+
+    if (SEAL_AS_FUNC(f)->type == FUNCTION_TYPE_SEAL) {
+        S->ip = SEAL_AS_FUNC(f)->as.s.c->code;
+    } else {
+        SEAL_AS_FUNC(f)->as.c.f(S);
+    }
+
+    return 0;
+}
 
 /* return 0 if it existed, 1 if new */
 int seal_setglobal(seal_state *S, const char *name)
