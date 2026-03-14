@@ -39,7 +39,7 @@ static void print_val(value *v)
 static void core_print(seal_state *S)
 {
     int n = seal_gettop(S);
-    value *args = S->stack - n;
+    value *args = S->stack + S->sp - n;
 
     for (int i = 0; i < n; i++) {
         print_val(args + i);

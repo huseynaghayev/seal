@@ -2,6 +2,7 @@
 #include "core.h"
 #include "parser.h"
 #include "compiler.h"
+#include "vm.h"
 
 
 #define GLOBALS_START_SIZE 64
@@ -27,7 +28,7 @@ seal_state *seal_state_new()
     S->l.lexemes = NULL;
 
     // Initialize core if needed
-    //seal_core_init(S);
+    seal_core_init(S);
 
     return S;
 }
@@ -83,8 +84,27 @@ int seal_evalstr(seal_state *S, const char *str)
      * call it
      * then eval
      */
+    struct seal_value fval;
+    fval.type = SEAL_TFUNCTION;
+    struct seal_func func;
+    fval.as.func = &func;
+    SEAL_AS_FUNC(fval)->type = FUNCTION_TYPE_SEAL;
+    SEAL_AS_FUNC(fval)->as.s.name  = "main";
+    SEAL_AS_FUNC(fval)->as.s.psize = 0;
+    SEAL_AS_FUNC(fval)->as.s.c = &c;
 
-    free_chunk(&c, false);
+    stack_idx start_idx = S->sp;
+    seal_push(S, fval);
+    seal_call(S, 0);
+    if (eval(S)) { /* fail */
+        S->sp = start_idx;
+    } else { /* success */
+        S->sp--; /* ignore pushed null */
+    }
+
+
+    /* do not free needed functions */
+    //free_chunk(&c, false);
 
     return 0;
 }
@@ -92,20 +112,27 @@ int seal_evalstr(seal_state *S, const char *str)
 int seal_call(seal_state *S, int argc)
 {
     struct seal_value f;
-    SEAL_ASSERT(SEAL_IS_FUNC(f = seal_getstack(S, -argc)));
+    f = seal_getstack(S, -argc - 1);
+    SEAL_ASSERT(SEAL_IS_FUNC(f));
     S->ci++;
     S->ci_idx++;
     if (SEAL_AS_FUNC(f)->type == FUNCTION_TYPE_SEAL) {
         SEAL_ASSERT(SEAL_AS_FUNC(f)->as.s.psize == argc);
     }
     S->ci->func_idx = S->sp - argc - 1;
-    S->ci->ret_ip = S->ip;
 
     if (SEAL_AS_FUNC(f)->type == FUNCTION_TYPE_SEAL) {
+        S->ci->ret_ip = S->ip;
         S->ip = SEAL_AS_FUNC(f)->as.s.c->code;
+        S->sp += SEAL_AS_FUNC(f)->as.s.c->local_size - argc;
     } else {
         SEAL_AS_FUNC(f)->as.c.f /* function */
             (S); /* calling */
+
+        S->stack[S->ci->func_idx] = seal_getstack(S, -1);
+        S->sp = S->ci->func_idx + 1; /* always point to first empty slot */
+        S->ci--;
+        S->ci_idx--;
     }
 
     return 0;

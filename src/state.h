@@ -29,7 +29,7 @@ typedef struct seal_state {
 
     /* runtime */
     struct seal_value *stack; /* stack array */
-    stack_idx sp;    /* stack pointer */
+    stack_idx sp;    /* stack pointer, always point to first empty slot */
     struct seal_hashmap *globals; /* globals map */
     struct call_info *ci_arr;     /* call info array */
     int ci_idx;    /* call info index */

@@ -5,4 +5,8 @@
 
 int eval(seal_state *S);
 
+#if SEAL_DEBUG
+void print_stack(seal_state *S);
+#endif
+
 #endif

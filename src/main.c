@@ -7,6 +7,7 @@
 #endif
 
 #include "state.h"
+#include "vm.h"
 
 #define STREAM_SIZE (1024 * 1024 * 2)
 static char STREAM[STREAM_SIZE];
@@ -81,6 +82,9 @@ repl:
         goto repl;
     } else if (strcmp(input, "exit") == 0) {
         goto end;
+    } else if (strcmp(input, "stack") == 0) {
+        print_stack(S);
+        goto repl;
     }
 
     seal_evalstr(S, input);
