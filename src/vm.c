@@ -3,15 +3,12 @@
 #include <stdio.h>
 
 #define FETCH(S) (*(S)->ip++)
-#define GET_CONST(S, i) ( \
-        SEAL_AS_FUNC( \
-            S->stack[ \
-                S->ci->func_idx \
-            ] \
-        )->as.s.c->pool[i] \
-)
 
-#define seal_pushconst(S, i)  seal_push(S, GET_CONST(S, i));
+#define CUR_FUNC(S) SEAL_AS_FUNC((S)->stack[(S)->ci->func_idx])
+
+#define GET_CONST(S, i) (CUR_FUNC(S)->as.s.c->pool[i])
+
+#define PUSH_CONST(S, i)  seal_push(S, GET_CONST(S, i))
 
 #define IS_FALSY(v) ( \
     SEAL_IS_NULL(v) || ( \
@@ -36,12 +33,12 @@ int eval(seal_state *S)
             return 0;
         case OP_PUSH:
             idx = FETCH(S);
-            seal_pushconst(S, idx);
+            PUSH_CONST(S, idx);
             break;
         case OP_LPUSH:
             idx  = FETCH(S) << 8;
             idx |= FETCH(S);
-            seal_pushconst(S, idx);
+            PUSH_CONST(S, idx);
             break;
         case OP_PUSHNULL:
             seal_pushnull(S);
@@ -58,7 +55,7 @@ int eval(seal_state *S)
         case OP_PUSH16:
             n  = FETCH(S) << 8;
             n |= FETCH(S);
-            seal_pushint(S, FETCH(S));
+            seal_pushint(S, n);
             break;
         case OP_POP:
             seal_pop(S);
