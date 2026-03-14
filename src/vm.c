@@ -26,6 +26,7 @@ int eval(seal_state *S)
     int n;
     signed short jmp_offset;
     call_info *prev_ci;
+    struct seal_value popped;
 
     for (;;) {
         op = FETCH(S);
@@ -77,19 +78,22 @@ int eval(seal_state *S)
         case OP_JTRUE:
             jmp_offset  = FETCH(S) << 8;
             jmp_offset |= FETCH(S);
-            if (!IS_FALSY(seal_pop(S)))
+            popped = seal_pop(S);
+            if (!IS_FALSY(popped))
                 S->ip += jmp_offset;
             break;
         case OP_JFALSE:
             jmp_offset  = FETCH(S) << 8;
             jmp_offset |= FETCH(S);
-            if (IS_FALSY(seal_pop(S)))
+            popped = seal_pop(S);
+            if (IS_FALSY(popped))
                 S->ip += jmp_offset;
             break;
         case OP_JNULL:
             jmp_offset  = FETCH(S) << 8;
             jmp_offset |= FETCH(S);
-            if (SEAL_IS_NULL(seal_pop(S)))
+            popped = seal_pop(S);
+            if (SEAL_IS_NULL(popped))
                 S->ip += jmp_offset;
             break;
         case OP_CALL:
