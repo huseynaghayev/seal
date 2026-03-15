@@ -10,6 +10,7 @@
 #define is_list   SEAL_IS_LIST
 #define is_map    SEAL_IS_MAP
 #define is_func   SEAL_IS_FUNC
+#define is_num(v) (is_int(v) || is_float(v))
 
 #define as_bool   SEAL_AS_BOOL
 #define as_int    SEAL_AS_INT
@@ -19,6 +20,7 @@
 #define as_list   SEAL_AS_LIST
 #define as_map    SEAL_AS_MAP
 #define as_func   SEAL_AS_FUNC
+#define as_num(v) (is_int(v) ? as_int(v) : as_float(v))
 
 static const char *const _type_names[] = {
     [SEAL_TNULL] = "null",
@@ -31,7 +33,8 @@ static const char *const _type_names[] = {
     [SEAL_TFUNCTION] = "function"
 };
 
-#define valt_name(v) (_type_names[(v).type])
+#define vtype(v) ((v).type)
+#define valt_name(v) (_type_names[vtype(v)])
 
 #define error(S, fmt, ...) do { \
     fprintf(stderr, \
@@ -59,26 +62,20 @@ static const char *const _type_names[] = {
 
 #define get_ab(S, a, b) ((b) = seal_pop(S), (a) = seal_pop(S))
 
-/* arithmetic */
-#define int_op(S, op, a, b)   seal_pushint(S, as_int(a) op as_int(b))
-#define float_op(S, op, a, b) seal_pushfloat(S, as_float(a) op as_float(b))
-#define iorf_op(S, op, a, b)  \
-    seal_pushfloat(S, \
-        (is_int(a) ? as_int(a) : as_float(a)) op \
-        (is_int(b) ? as_int(b) : as_float(b)))
-
 #define bin_op_err(S, op, a, b) \
     error(S, \
           "\'%s\' operator does not support \'%s\' and \'%s\'", \
           #op, valt_name(a), valt_name(b)); \
 
+/* arithmetic */
+#define int_op(S, op, a, b)   seal_pushint(S, as_int(a) op as_int(b))
+#define num_op(S, op, a, b)   seal_pushfloat(S, as_num(a) op as_num(b))
+
 #define bin_op(S, op, a, b) do { \
     if (is_int(a) && is_int(b)) \
         int_op(S, op, a, b); \
-    else if (is_float(a) && is_float(b)) \
-        float_op(S, op, a, b); \
-    else if ((is_int(a) && is_float(b)) || (is_float(a) && is_int(b))) \
-        iorf_op(S, op, a, b); \
+    else if (is_num(a) && is_num(b)) \
+        num_op(S, op, a, b); \
     else \
         bin_op_err(S, op, a, b); \
 } while (0)
@@ -90,11 +87,40 @@ static const char *const _type_names[] = {
         bin_op_err(S, %, a, b); \
 } while (0)
 
+/* bitwise */
 #define onlyint_op(S, op, a, b) do { \
     if (is_int(a) && is_int(b)) \
         int_op(S, op, a, b); \
     else \
         bin_op_err(S, op, a, b); \
+} while (0)
+
+/* comparison */
+#define cmp_op(S, op, a, b) do { \
+    if (is_num(a) && is_num(b)) \
+        seal_pushbool(S, as_num(a) op as_num(b)); \
+    else if (is_str(a) && is_str(b)) \
+        seal_pushbool(S, strcmp(as_strv(a), as_strv(b)) op 0); \
+    else \
+        bin_op_err(S, op, a, b); \
+} while (0)
+
+/* equality */
+#define eql_op(S, op, a, b) do { \
+    if (is_num(a) && is_num(b)) \
+        seal_pushbool(S, as_num(a) op as_num(b)); \
+    else if (is_str(a) && is_str(b)) \
+        seal_pushbool(S, strcmp(as_strv(a), as_strv(b)) op 0); \
+    else if (is_bool(a) && is_bool(b)) \
+        seal_pushbool(S, as_bool(a) op as_bool(b)); \
+    else if (is_list(a) && is_list(b)) \
+        seal_pushbool(S, (void *)as_list(a) op (void *)as_list(b)); \
+    else if (is_map(a) && is_map(b)) \
+        seal_pushbool(S, (void *)as_map(a) op (void *)as_map(b)); \
+    else if (is_func(a) && is_func(b)) \
+        seal_pushbool(S, (void *)as_func(a) op (void *)as_func(b)); \
+    else \
+        seal_pushbool(S, vtype(a) op vtype(b)); \
 } while (0)
 
 int eval(seal_state *S)
@@ -232,20 +258,30 @@ int eval(seal_state *S)
             get_ab(S, a, b);
             onlyint_op(S, >>, a, b);
             break;
-        /*
         case OP_GT:
+            get_ab(S, a, b);
+            cmp_op(S, >, a, b);
             break;
         case OP_GE:
+            get_ab(S, a, b);
+            cmp_op(S, >=, a, b);
             break;
         case OP_LT:
+            get_ab(S, a, b);
+            cmp_op(S, <, a, b);
             break;
         case OP_LE:
+            get_ab(S, a, b);
+            cmp_op(S, <=, a, b);
             break;
         case OP_EQ:
+            get_ab(S, a, b);
+            eql_op(S, ==, a, b);
             break;
         case OP_NE:
+            get_ab(S, a, b);
+            eql_op(S, !=, a, b);
             break;
-        */
         /* unaries */
         /*
         case OP_NOT:
