@@ -45,6 +45,7 @@ int main(int argc, char **argv)
         STREAM[read] = '\0';
         fclose(fp);
         S = seal_state_new();
+        S->file_name = argv[1];
         if (setjmp(S->l.fail_point) == 0) {
             seal_evalstr(S, STREAM);
         } else {

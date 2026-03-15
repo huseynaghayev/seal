@@ -13,6 +13,8 @@ seal_state *seal_state_new()
 {
     seal_state *S = SEAL_MALLOC(sizeof(seal_state));
 
+    S->file_name = "<stdin>";
+
     S->stack =
             SEAL_MALLOC(sizeof(struct seal_value) * STACK_START_SIZE);
 

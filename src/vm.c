@@ -2,19 +2,91 @@
 #include "compiler.h"
 #include <stdio.h>
 
+#define is_null   SEAL_IS_NULL
+#define is_bool   SEAL_IS_BOOL
+#define is_int    SEAL_IS_INT
+#define is_float  SEAL_IS_FLOAT
+#define is_str    SEAL_IS_STRING
+#define is_list   SEAL_IS_LIST
+#define is_map    SEAL_IS_MAP
+#define is_func   SEAL_IS_FUNC
+
+#define as_bool   SEAL_AS_BOOL
+#define as_int    SEAL_AS_INT
+#define as_float  SEAL_AS_FLOAT
+#define as_str    SEAL_AS_STRING
+#define as_strv   SEAL_AS_STRINGVAL
+#define as_list   SEAL_AS_LIST
+#define as_map    SEAL_AS_MAP
+#define as_func   SEAL_AS_FUNC
+
+static const char *const _type_names[] = {
+    [SEAL_TNULL] = "null",
+    [SEAL_TBOOL] = "bool",
+    [SEAL_TINT] = "integer",
+    [SEAL_TFLOAT] = "float",
+    [SEAL_TSTRING] = "string",
+    [SEAL_TLIST] = "list",
+    [SEAL_TMAP] = "map",
+    [SEAL_TFUNCTION] = "function"
+};
+
+#define valt_name(v) (_type_names[(v).type])
+
+#define error(S, fmt, ...) do { \
+    printf("seal: %s:%d: ", \
+           S->file_name,   \
+           get_line(CUR_FUNC(S)->as.s.c, S->ip - CUR_FUNC(S)->as.s.c->code)); \
+    printf(fmt, __VA_ARGS__); \
+    putchar('\n'); \
+    return 1; \
+} while (0)
+
 #define FETCH(S) (*(S)->ip++)
 
-#define CUR_FUNC(S) SEAL_AS_FUNC((S)->stack[(S)->ci->func_idx])
+#define CUR_FUNC(S) as_func((S)->stack[(S)->ci->func_idx])
 
 #define GET_CONST(S, i) (CUR_FUNC(S)->as.s.c->pool[i])
 
 #define PUSH_CONST(S, i)  seal_push(S, GET_CONST(S, i))
 
 #define IS_FALSY(v) ( \
-    SEAL_IS_NULL(v) || ( \
-        SEAL_IS_BOOL(v) && !SEAL_AS_BOOL(v) \
+    is_null(v) || ( \
+        is_bool(v) && !as_bool(v) \
     ) \
 )
+
+#define get_ab(S, a, b) ((b) = seal_pop(S), (a) = seal_pop(S))
+
+/* arithmetic */
+#define int_op(S, op, a, b)   seal_pushint(S, as_int(a) op as_int(b))
+#define float_op(S, op, a, b) seal_pushfloat(S, as_float(a) op as_float(b))
+#define iorf_op(S, op, a, b)  \
+    seal_pushfloat(S, \
+        (is_int(a) ? as_int(a) : as_float(a)) op \
+        (is_int(b) ? as_int(b) : as_float(b)))
+
+#define bin_op(S, op, a, b) do { \
+    if (is_int(a) && is_int(b)) \
+        int_op(S, op, a, b); \
+    else if (is_float(a) && is_float(b)) \
+        float_op(S, op, a, b); \
+    else if ((is_int(a) && is_float(b)) || (is_float(a) && is_int(b))) \
+        iorf_op(S, op, a, b); \
+    else \
+        error(S, \
+              "\'%s\' operator does not support \'%s\' and \'%s\'", \
+              #op, valt_name(a), valt_name(b)); \
+} while (0)
+
+#define mod_op(S, a, b) do { \
+    if (is_int(a) && is_int(b)) \
+        int_op(S, %, a, b); \
+    else \
+        error(S, \
+              "\'%%\' operator does not support \'%s\' and \'%s\'", \
+              valt_name(a), valt_name(b)); \
+} while (0);
 
 int eval(seal_state *S)
 {
@@ -24,6 +96,7 @@ int eval(seal_state *S)
     signed short jmp_offset;
     call_info *prev_ci;
     struct seal_value popped;
+    struct seal_value a, b; /* a - left, b - right */
 
     for (;;) {
         op = FETCH(S);
@@ -90,7 +163,7 @@ int eval(seal_state *S)
             jmp_offset  = FETCH(S) << 8;
             jmp_offset |= FETCH(S);
             popped = seal_pop(S);
-            if (SEAL_IS_NULL(popped))
+            if (is_null(popped))
                 S->ip += jmp_offset;
             break;
         case OP_CALL:
@@ -110,17 +183,27 @@ int eval(seal_state *S)
             break;
 
         /* binaries */
-        /*
         case OP_ADD:
+            get_ab(S, a, b);
+            bin_op(S, +, a, b);
             break;
         case OP_SUB:
+            get_ab(S, a, b);
+            bin_op(S, -, a, b);
             break;
         case OP_MUL:
+            get_ab(S, a, b);
+            bin_op(S, *, a, b);
             break;
         case OP_DIV:
+            get_ab(S, a, b);
+            bin_op(S, /, a, b);
             break;
         case OP_MOD:
+            get_ab(S, a, b);
+            mod_op(S, a, b);
             break;
+        /*
         case OP_AND:
             break;
         case OP_OR:
@@ -157,15 +240,15 @@ int eval(seal_state *S)
         case OP_GETGLOBAL:
             idx  = FETCH(S) << 8;
             idx |= FETCH(S);
-            if (seal_getglobal(S, SEAL_AS_STRINGVAL(GET_CONST(S, idx)))) {
-                printf("\'%s\' is not defined\n", SEAL_AS_STRINGVAL(GET_CONST(S, idx)));
-                return 1;
+            if (seal_getglobal(S, as_strv(GET_CONST(S, idx)))) {
+                error(S, "\'%s\' is not defined\n", as_strv(GET_CONST(S, idx)));
             }
+
             break;
         case OP_GETGLOBAL_SAFE:
             idx  = FETCH(S) << 8;
             idx |= FETCH(S);
-            if (seal_getglobal(S, SEAL_AS_STRINGVAL(GET_CONST(S, idx)))) {
+            if (seal_getglobal(S, as_strv(GET_CONST(S, idx)))) {
                 seal_pushnull(S);
             }
             break;
@@ -173,7 +256,7 @@ int eval(seal_state *S)
             seal_dup(S);
             idx  = FETCH(S) << 8;
             idx |= FETCH(S);
-            seal_setglobal(S, SEAL_AS_STRINGVAL(GET_CONST(S, idx)));
+            seal_setglobal(S, as_strv(GET_CONST(S, idx)));
             break;
         case OP_GETLOCAL:
             idx = FETCH(S);
@@ -188,8 +271,7 @@ int eval(seal_state *S)
 
 #if SEAL_DEBUG
         default:
-            printf("\"%s\": unspecified operation\n", get_opname(op));
-            SEAL_ASSERT(0);
+            error(S, "\"%s\": unspecified operation\n", get_opname(op));
 #endif
         }
     }
@@ -205,25 +287,25 @@ static void print_val(struct seal_value *v)
         printf("null");
         break;
     case SEAL_TBOOL:
-        printf("%s", SEAL_AS_BOOL(*v) ? "true" : "false");
+        printf("%s", as_bool(*v) ? "true" : "false");
         break;
     case SEAL_TINT:
-        printf("%lld", SEAL_AS_INT(*v));
+        printf("%lld", as_int(*v));
         break;
     case SEAL_TFLOAT:
-        printf("%g", SEAL_AS_FLOAT(*v));
+        printf("%g", as_float(*v));
         break;
     case SEAL_TSTRING:
-        printf("%s", SEAL_AS_STRINGVAL(*v));
+        printf("%s", as_strv(*v));
         break;
     case SEAL_TLIST:
-        printf("list: %p", (void*)SEAL_AS_LIST(*v));
+        printf("list: %p", (void*)as_list(*v));
         break;
     case SEAL_TMAP:
-        printf("map: %p", (void*)SEAL_AS_MAP(*v));
+        printf("map: %p", (void*)as_map(*v));
         break;
     case SEAL_TFUNCTION:
-        printf("function: %p", (void*)SEAL_AS_FUNC(*v));
+        printf("function: %p", (void*)as_func(*v));
         break;
     }
 }

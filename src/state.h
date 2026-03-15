@@ -24,6 +24,8 @@ typedef struct call_info {
 } call_info;
 
 typedef struct seal_state {
+    /* debug info */
+    const char *file_name;
     /* pre-runtime state */
     struct lexer l;
 
