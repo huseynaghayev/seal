@@ -34,11 +34,12 @@ static const char *const _type_names[] = {
 #define valt_name(v) (_type_names[(v).type])
 
 #define error(S, fmt, ...) do { \
-    printf("seal: %s:%d: ", \
-           S->file_name,   \
-           get_line(CUR_FUNC(S)->as.s.c, S->ip - CUR_FUNC(S)->as.s.c->code)); \
-    printf(fmt, __VA_ARGS__); \
-    putchar('\n'); \
+    fprintf(stderr, \
+            "seal: %s:%d: ", \
+            S->file_name,   \
+            get_line(CUR_FUNC(S)->as.s.c, S->ip - CUR_FUNC(S)->as.s.c->code)); \
+    fprintf(stderr, fmt, __VA_ARGS__); \
+    fputc('\n', stderr); \
     return 1; \
 } while (0)
 
@@ -66,6 +67,11 @@ static const char *const _type_names[] = {
         (is_int(a) ? as_int(a) : as_float(a)) op \
         (is_int(b) ? as_int(b) : as_float(b)))
 
+#define bin_op_err(S, op, a, b) \
+    error(S, \
+          "\'%s\' operator does not support \'%s\' and \'%s\'", \
+          #op, valt_name(a), valt_name(b)); \
+
 #define bin_op(S, op, a, b) do { \
     if (is_int(a) && is_int(b)) \
         int_op(S, op, a, b); \
@@ -74,19 +80,22 @@ static const char *const _type_names[] = {
     else if ((is_int(a) && is_float(b)) || (is_float(a) && is_int(b))) \
         iorf_op(S, op, a, b); \
     else \
-        error(S, \
-              "\'%s\' operator does not support \'%s\' and \'%s\'", \
-              #op, valt_name(a), valt_name(b)); \
+        bin_op_err(S, op, a, b); \
 } while (0)
 
 #define mod_op(S, a, b) do { \
     if (is_int(a) && is_int(b)) \
         int_op(S, %, a, b); \
     else \
-        error(S, \
-              "\'%%\' operator does not support \'%s\' and \'%s\'", \
-              valt_name(a), valt_name(b)); \
-} while (0);
+        bin_op_err(S, %, a, b); \
+} while (0)
+
+#define onlyint_op(S, op, a, b) do { \
+    if (is_int(a) && is_int(b)) \
+        int_op(S, op, a, b); \
+    else \
+        bin_op_err(S, op, a, b); \
+} while (0)
 
 int eval(seal_state *S)
 {
@@ -203,17 +212,27 @@ int eval(seal_state *S)
             get_ab(S, a, b);
             mod_op(S, a, b);
             break;
-        /*
         case OP_AND:
+            get_ab(S, a, b);
+            onlyint_op(S, &, a, b);
             break;
         case OP_OR:
+            get_ab(S, a, b);
+            onlyint_op(S, |, a, b);
             break;
         case OP_XOR:
+            get_ab(S, a, b);
+            onlyint_op(S, ^, a, b);
             break;
         case OP_SHL:
+            get_ab(S, a, b);
+            onlyint_op(S, <<, a, b);
             break;
         case OP_SHR:
+            get_ab(S, a, b);
+            onlyint_op(S, >>, a, b);
             break;
+        /*
         case OP_GT:
             break;
         case OP_GE:
