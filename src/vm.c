@@ -54,11 +54,7 @@ static const char *const _type_names[] = {
 
 #define PUSH_CONST(S, i)  seal_push(S, GET_CONST(S, i))
 
-#define IS_FALSY(v) ( \
-    is_null(v) || ( \
-        is_bool(v) && !as_bool(v) \
-    ) \
-)
+#define IS_FALSY(v) (is_null(v) || (is_bool(v) && !as_bool(v)))
 
 #define get_ab(S, a, b) ((b) = seal_pop(S), (a) = seal_pop(S))
 
@@ -66,6 +62,11 @@ static const char *const _type_names[] = {
     error(S, \
           "\'%s\' operator does not support \'%s\' and \'%s\'", \
           #op, valt_name(a), valt_name(b)); \
+
+#define unry_op_err(S, op, v) \
+    error(S, \
+          "\'%s\' operator does not support \'%s\'", \
+          #op, valt_name(v)); \
 
 /* arithmetic */
 #define int_op(S, op, a, b)   seal_pushint(S, as_int(a) op as_int(b))
@@ -121,6 +122,23 @@ static const char *const _type_names[] = {
         seal_pushbool(S, (void *)as_func(a) op (void *)as_func(b)); \
     else \
         seal_pushbool(S, vtype(a) op vtype(b)); \
+} while (0)
+
+/* unaries */
+#define bnot_op(S, v) do { \
+    if (is_int(v)) \
+        seal_pushint(S, ~ as_int(v)); \
+    else \
+        unry_op_err(S, ~, v); \
+} while (0)
+
+#define neg_op(S, v) do { \
+    if (is_int(v)) \
+        seal_pushint(S, - as_int(v)); \
+    else if (is_float(v)) \
+        seal_pushfloat(S, - as_float(v)); \
+    else \
+        unry_op_err(S, -, v); \
 } while (0)
 
 int eval(seal_state *S)
@@ -283,14 +301,18 @@ int eval(seal_state *S)
             eql_op(S, !=, a, b);
             break;
         /* unaries */
-        /*
         case OP_NOT:
+            popped = seal_pop(S);
+            seal_pushbool(S, IS_FALSY(popped) ? 1 : 0);
             break;
         case OP_BNOT:
+            popped = seal_pop(S);
+            bnot_op(S, popped);
             break;
         case OP_NEG:
+            popped = seal_pop(S);
+            neg_op(S, popped);
             break;
-        */
         /* symbols */
         case OP_GETGLOBAL:
             idx  = FETCH(S) << 8;
