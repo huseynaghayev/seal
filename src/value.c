@@ -1,5 +1,19 @@
 #include "value.h"
+#include <stdio.h> /* snprintf */
 
+
+/* float */
+int seal_format_float(seal_float f, char *buf, int bufsiz)
+{
+    int n;
+    n = snprintf(buf, bufsiz, SEAL_FLOAT_FMT, f);
+    if (buf[strspn(buf, "-0123456789")] == '\0') {
+        buf[n++] = '.';
+        buf[n++] = '0';
+        buf[n] = '\0';
+    }
+    return n;
+}
 
 /* string */
 const char *string_duplen(const char *s, int len)

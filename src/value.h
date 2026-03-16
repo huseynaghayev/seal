@@ -52,6 +52,7 @@ struct seal_list;
 struct seal_hashmap;
 struct seal_func;
 
+int seal_format_float(seal_float f, char *buf, int bufsiz);
 
 struct seal_value {
     /* ... */

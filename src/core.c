@@ -19,8 +19,12 @@ static void print_val(value *v)
         printf("%lld", SEAL_AS_INT(*v));
         break;
     case SEAL_TFLOAT:
-        printf("%g", SEAL_AS_FLOAT(*v));
+    {
+        char buf[32];
+        seal_format_float(SEAL_AS_FLOAT(*v), buf, sizeof(buf));
+        printf("%s", buf);
         break;
+    }
     case SEAL_TSTRING:
         printf("%s", SEAL_AS_STRINGVAL(*v));
         break;

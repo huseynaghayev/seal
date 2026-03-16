@@ -37,6 +37,7 @@
 #else
     #define SEAL_INTEGER long long
     #define SEAL_FLOAT   double
+    #define SEAL_FLOAT_FMT "%.14g"
 #endif
 
 #define SEAL_BOOL bool
