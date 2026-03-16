@@ -43,6 +43,8 @@ static const char *const _type_names[] = {
             get_line(CUR_FUNC(S)->as.s.c, S->ip - CUR_FUNC(S)->as.s.c->code)); \
     fprintf(stderr, fmt, __VA_ARGS__); \
     fputc('\n', stderr); \
+    printf("Call stack:\n"); \
+    print_callstack(S); \
     return 1; \
 } while (0)
 
@@ -140,6 +142,27 @@ static const char *const _type_names[] = {
     else \
         unry_op_err(S, -, v); \
 } while (0)
+
+static void print_ci(seal_state *S, call_info *ci, int i)
+{
+    struct seal_value f = S->stack[ci->func_idx];
+    const char *name;
+    if (as_func(f)->type == FUNCTION_TYPE_SEAL)
+        name = as_func(f)->as.s.name;
+    else
+        name = as_func(f)->as.c.name;
+
+    printf("Call Frame %d: name: \'%s\'\n", i, name);
+}
+
+static void print_callstack(seal_state *S)
+{
+    int i = S->ci_idx;
+    while (i >= 0) {
+        print_ci(S, &S->ci_arr[i], i);
+        i--;
+    }
+}
 
 int eval(seal_state *S)
 {
@@ -344,8 +367,39 @@ int eval(seal_state *S)
             idx = FETCH(S);
             seal_getstack(S, idx) = seal_pop(S);
             break;
-        
 
+        /* lists and maps */
+        /*
+        case OP_NEWLIST:
+			break;
+        case OP_MAKELIST:
+			break;
+        case OP_PUSHLIST:
+			break;
+        case OP_NEWMAP:
+			break;
+        case OP_MAKEMAP:
+			break;
+        case OP_PUSHMAP:
+			break;
+        case OP_GETFIELD:
+			break;
+        case OP_GETFIELD_SAFE:
+			break;
+        case OP_SETFIELD:
+			break;
+        case OP_GETINDEX:
+			break;
+        case OP_SETINDEX:
+			break;
+        */
+
+         /* other */
+        case OP_INCLUDE:
+            idx  = FETCH(S) << 8;
+            idx |= FETCH(S);
+            if (seal_dofile(S, as_strv(GET_CONST(S, idx)))); /* throw error */
+            break;
 #if SEAL_DEBUG
         default:
             error(S, "\"%s\": unspecified operation\n", get_opname(op));

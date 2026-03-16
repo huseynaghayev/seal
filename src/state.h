@@ -42,7 +42,8 @@ typedef struct seal_state {
 
 seal_state *seal_state_new();
 void seal_state_free(seal_state *S);
-int seal_evalstr(seal_state *S, const char *str);
+int seal_dostring(seal_state *S, const char *str);
+int seal_dofile(seal_state *S, const char *file_name);
 int seal_call(seal_state *S, int argc);
 /* return 0 if it existed before, 1 if new */
 int seal_setglobal(seal_state *S, const char *name); /* value is on top */

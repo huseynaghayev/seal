@@ -3,6 +3,7 @@
 #include "parser.h"
 #include "compiler.h"
 #include "vm.h"
+#include <stdio.h>
 
 
 #define GLOBALS_START_SIZE 64
@@ -67,17 +68,17 @@ static void free_chunk(struct chunk *c, int free_cp) {
         SEAL_FREE(c);
 }
 
-int seal_evalstr(seal_state *S, const char *str)
+int seal_dostring(seal_state *S, const char *str)
 {
     lexer_init(&S->l, str);
     struct parser p;
     struct ast *root;
-    struct chunk c;
+    struct chunk *c = SEAL_MALLOC(sizeof(struct chunk));
 
     parser_init(&p, &S->l);
     root = parse(&p);
     //dump_ast(root, 0);
-    c = compile(root, NULL);
+    *c = compile(root, NULL);
     //dump_chunk(&c);
     //dump_bytecode(&c);
     arena_free(p.a);
@@ -88,20 +89,22 @@ int seal_evalstr(seal_state *S, const char *str)
      */
     struct seal_value fval;
     fval.type = SEAL_TFUNCTION;
-    struct seal_func func;
-    fval.as.func = &func;
+    struct seal_func *func = SEAL_MALLOC(sizeof(struct seal_func));
+    fval.as.func = func;
     SEAL_AS_FUNC(fval)->type = FUNCTION_TYPE_SEAL;
     SEAL_AS_FUNC(fval)->as.s.name  = "main";
     SEAL_AS_FUNC(fval)->as.s.psize = 0;
-    SEAL_AS_FUNC(fval)->as.s.c = &c;
+    SEAL_AS_FUNC(fval)->as.s.c = c;
 
     stack_idx start_idx = S->sp;
     seal_push(S, fval);
     seal_call(S, 0);
-    if (eval(S)) { /* fail */
-        S->sp = start_idx;
-    } else { /* success */
-        S->sp--; /* ignore pushed null */
+    if (S->ci_idx == 0) {
+        if (eval(S)) { /* fail */
+            S->sp = start_idx;
+        } else { /* success */
+            S->sp--; /* ignore pushed null */
+        }
     }
 
 
@@ -109,6 +112,30 @@ int seal_evalstr(seal_state *S, const char *str)
     //free_chunk(&c, false);
 
     return 0;
+}
+
+int seal_dofile(seal_state *S, const char *file_name)
+{
+    FILE *f = fopen(file_name, "rb");
+    SEAL_ASSERT(f != NULL);
+
+    fseek(f, 0, SEEK_END);
+    long size = ftell(f);
+    rewind(f);
+    char *src = malloc(size + 1);
+    fread(src, 1, size, f);
+    src[size] = '\0';
+
+    fclose(f);
+
+    const char *prev_file_name = S->file_name;
+    S->file_name = file_name;
+    int result = seal_dostring(S, src);
+    S->file_name = prev_file_name;
+
+    free(src);
+
+    return result;
 }
 
 int seal_call(seal_state *S, int argc)

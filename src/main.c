@@ -47,7 +47,7 @@ int main(int argc, char **argv)
         S = seal_state_new();
         S->file_name = argv[1];
         if (setjmp(S->l.fail_point) == 0) {
-            seal_evalstr(S, STREAM);
+            seal_dostring(S, STREAM);
         } else {
             seal_state_free(S);
             return 1;
@@ -88,7 +88,7 @@ repl:
         goto repl;
     }
 
-    seal_evalstr(S, input);
+    seal_dostring(S, input);
 
 #if USE_GNU_READL
     free(input);
