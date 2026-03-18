@@ -136,7 +136,7 @@ int hashmap_insert_e(struct seal_hashmap *map,
                      struct seal_value val);
 
 int hashmap_remove(struct seal_hashmap *map, const char *key);
-int hashmap_free(struct seal_hashmap *map, bool free_key, bool collect);
+int hashmap_free(struct seal_hashmap *map, bool free_key);
 
 
 #define hashmap_Cnew(cap) hashmap_new(cap, true)

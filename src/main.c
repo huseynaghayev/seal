@@ -86,6 +86,9 @@ repl:
     } else if (strcmp(input, "stack") == 0) {
         print_stack(S);
         goto repl;
+    } else if (strcmp(input, "G") == 0) {
+        printf("Globals: cap: %d, size %d\n", S->globals->cap, S->globals->len);
+        goto repl;
     }
 
     seal_dostring(S, input);

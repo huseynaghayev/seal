@@ -38,9 +38,9 @@ seal_state *seal_state_new()
 
 void seal_state_free(seal_state *S)
 {
-    hashmap_free(S->globals, false, true);
+    hashmap_free(S->globals, false);
     SEAL_FREE(S->stack);
-    hashmap_free(S->l.lexemes, true, true);
+    hashmap_free(S->l.lexemes, true);
     SEAL_FREE(S->ci_arr);
     SEAL_FREE(S);
 }
@@ -102,6 +102,8 @@ int seal_dostring(seal_state *S, const char *str)
     if (S->ci_idx == 0) {
         if (eval(S)) { /* fail */
             S->sp = start_idx;
+            S->ci_idx = -1;
+            S->ci = S->ci_arr + S->ci_idx;
         } else { /* success */
             S->sp--; /* ignore pushed null */
         }
@@ -182,6 +184,46 @@ int seal_getglobal(seal_state *S, const char *name)
         return 1;
     }
 
+    seal_push(S, e->val);
+    return 0;
+}
+
+/* return 0 if it existed before
+ * 1 if new
+ * -1 if not map
+ */
+int seal_setfield(seal_state *S, int map_i, const char *key)
+{
+    struct seal_value m = seal_getstack(S, map_i);
+    if (!SEAL_IS_MAP(m)) {
+        /* TODO: throw error when it is not map */
+        return -1;
+    }
+    int is_new = hashmap_insert(SEAL_AS_MAP(m), key, seal_pop(S));
+    return is_new;
+}
+/* return 0 if it exists
+ * 1 if not found (null is pushed for now)
+ * -1 if not map (null is pushed for now)
+ */
+int seal_getfield(seal_state *S, int map_i, const char *key)
+{
+    struct seal_value m = seal_getstack(S, map_i);
+    struct seal_value v = seal_pop(S);
+    if (!SEAL_IS_MAP(m)) {
+        /* TODO: throw error when it is not map */
+        seal_pushnull(S);
+        return 1;
+    }
+    struct h_entry *e;
+    e = hashmap_search(SEAL_AS_MAP(m), key);
+    if (nullhentry(e)) {
+        /* TODO: throw error when key is not found
+         * but return null for now
+         */
+        seal_pushnull(S);
+        return 1;
+    }
     seal_push(S, e->val);
     return 0;
 }

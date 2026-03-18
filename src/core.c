@@ -32,8 +32,28 @@ static void print_val(value *v)
         printf("list: %p", (void*)SEAL_AS_LIST(*v));
         break;
     case SEAL_TMAP:
-        printf("map: %p", (void*)SEAL_AS_MAP(*v));
+    {
+        //printf("map: %p", (void*)SEAL_AS_MAP(*v));
+        putchar('{');
+        int printed = 0;
+        int len = SEAL_AS_MAP(*v)->len;
+        for (int i = 0; i < SEAL_AS_MAP(*v)->cap; i++) {
+            struct h_entry e = SEAL_AS_MAP(*v)->entries[i];
+            if (e.key) {
+                printf("%s = ", e.key);
+                print_val(&e.val);
+                printed++;
+                if (printed < len) {
+                    putchar(',');
+                    putchar(' ');
+                } else {
+                    break;
+                }
+            }
+        }
+        putchar('}');
         break;
+    }
     case SEAL_TFUNCTION:
         printf("function: %p", (void*)SEAL_AS_FUNC(*v));
         break;

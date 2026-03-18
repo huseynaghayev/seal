@@ -517,29 +517,44 @@ static void compile_assign(proto *p, ast *n, scope *s)
 {
     /* TODO: compile all assign types */
     SEAL_ASSERT(n->as.assign.op == IMOP_ASSIGN);
-    SEAL_ASSERT(n->as.assign.var->type == AST_NAME);
-
-    compile_node(p, n->as.assign.val, s);
+    SEAL_ASSERT(n->as.assign.var->type == AST_NAME ||
+                n->as.assign.var->type == AST_FIELD);
 
     ast *var = n->as.assign.var;
-    if (var->as.name.global) {
-        int i = get_string_idx(p, var->as.name.s);
-        emit(p, OP_SETGLOBAL, var);
-        emit16(p, i, var);
-    } else {
-        h_entry *e = hashmap_search(s->h, var->as.name.s);
-        if (e == NULL) {
-            /* HASHMAP IS FULL */
-            SEAL_ASSERT(0 && "maximum amount of locals is 256");
-        }
-        if (e->key == NULL) {
-            /* VARIABLE IS NOT SET YET */
-            int idx = s->h->len;
-            hashmap_insert_e(s->h, e, var->as.name.s, SEAL_VINT(idx));
-        }
+    ast *val = n->as.assign.val;
 
-        emit(p, OP_SETLOCAL, var);
-        emit(p, e->val.as.integer, var);
+    if (var->type == AST_NAME) {
+        compile_node(p, val, s);
+
+        if (var->as.name.global) {
+            int i = get_string_idx(p, var->as.name.s);
+            emit(p, OP_SETGLOBAL, var);
+            emit16(p, i, var);
+        } else {
+            h_entry *e = hashmap_search(s->h, var->as.name.s);
+            if (e == NULL) {
+                /* HASHMAP IS FULL */
+                SEAL_ASSERT(0 && "maximum amount of locals is 256");
+            }
+            if (e->key == NULL) {
+                /* VARIABLE IS NOT SET YET */
+                int idx = s->h->len;
+                hashmap_insert_e(s->h, e, var->as.name.s, SEAL_VINT(idx));
+            }
+
+            emit(p, OP_SETLOCAL, var);
+            emit(p, e->val.as.integer, var);
+        }
+    } else if (var->type == AST_FIELD) {
+        /* compile main part */
+        compile_node(p, var->as.field.m, s);
+        /* compile assigned expr */
+        compile_node(p, val, s);
+        /* compile OP_SETFIELD */
+        ast *key = var->as.field.f;
+        emit(p, OP_SETFIELD, key);
+        int i = get_string_idx(p, key->as.name.s);
+        emit16(p, i, key);
     }
 }
 
@@ -762,7 +777,7 @@ struct chunk compile(struct ast *n, struct seal_hashmap *h)
     c.li_size = p.li_size;
     c.local_size = s.h->len;
 
-    hashmap_free(s.h, false, false);
+    hashmap_free(s.h, false);
 
     return c;
 }

@@ -152,7 +152,7 @@ static void print_ci(seal_state *S, call_info *ci, int i)
     else
         name = as_func(f)->as.c.name;
 
-    printf("Call Frame %d: name: \'%s\'\n", i, name);
+    printf("Call Frame [%d]: name: \'%s\'\n", i, name);
 }
 
 static void print_callstack(seal_state *S)
@@ -341,7 +341,7 @@ int eval(seal_state *S)
             idx  = FETCH(S) << 8;
             idx |= FETCH(S);
             if (seal_getglobal(S, as_strv(GET_CONST(S, idx)))) {
-                error(S, "\'%s\' is not defined\n", as_strv(GET_CONST(S, idx)));
+                error(S, "\'%s\' is not defined", as_strv(GET_CONST(S, idx)));
             }
 
             break;
@@ -371,27 +371,60 @@ int eval(seal_state *S)
         /* lists and maps */
         /*
         case OP_NEWLIST:
-			break;
+            break;
         case OP_MAKELIST:
-			break;
+            break;
         case OP_PUSHLIST:
-			break;
+            break;
+        */
         case OP_NEWMAP:
-			break;
+            seal_pushnewmap(S);
+            break;
+        /*
         case OP_MAKEMAP:
-			break;
+            break;
         case OP_PUSHMAP:
-			break;
+            break;
+        */
         case OP_GETFIELD:
-			break;
+        {
+            idx  = FETCH(S) << 8;
+            idx |= FETCH(S);
+            const char *key = as_strv(GET_CONST(S, idx));
+            if (!is_map(seal_getstack(S, -1))) {
+                error(S, "cannot index \'%s\'", valt_name(seal_getstack(S, -1)));
+            }
+            int status = seal_getfield(S, -1, key);
+            if (status == 1) /* not found */
+                error(S, "does not have \'%s\' key", key);
+
+            seal_getstack(S, -2) = seal_getstack(S, -1);
+            seal_pop(S);
+            break;
+        }
+        /*
         case OP_GETFIELD_SAFE:
-			break;
+            break;
+        */
         case OP_SETFIELD:
-			break;
+        {
+            idx  = FETCH(S) << 8;
+            idx |= FETCH(S);
+            const char *key = as_strv(GET_CONST(S, idx));
+            struct seal_value v = seal_getstack(S, -1);
+            if (!is_map(seal_getstack(S, -2))) {
+                error(S, "cannot index \'%s\'", valt_name(seal_getstack(S, -2)));
+            }
+            int status = seal_setfield(S, -2, key);
+            seal_pop(S); /* pop map */
+            seal_push(S, v);
+            break;
+        }
+        /*
         case OP_GETINDEX:
-			break;
+            break;
         case OP_SETINDEX:
-			break;
+            break;
         */
 
          /* other */
@@ -402,7 +435,7 @@ int eval(seal_state *S)
             break;
 #if SEAL_DEBUG
         default:
-            error(S, "\"%s\": unspecified operation\n", get_opname(op));
+            error(S, "\"%s\": unspecified operation", get_opname(op));
 #endif
         }
     }

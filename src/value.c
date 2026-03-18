@@ -216,7 +216,7 @@ int hashmap_remove(struct seal_hashmap *map, const char *key)
   return 0;
 }
 
-int hashmap_free(struct seal_hashmap *map, bool free_key, bool collect)
+int hashmap_free(struct seal_hashmap *map, bool free_key)
 {
     if (!map)
         return 1;
@@ -229,7 +229,7 @@ int hashmap_free(struct seal_hashmap *map, bool free_key, bool collect)
         if (free_key)
             SEAL_FREE((char*)e.key);
 
-        if (collect) {}
+        if (map->collect) {}
             /* gc collect seal value */;
     }
 
