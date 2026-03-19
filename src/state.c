@@ -209,7 +209,6 @@ int seal_setfield(seal_state *S, int map_i, const char *key)
 int seal_getfield(seal_state *S, int map_i, const char *key)
 {
     struct seal_value m = seal_getstack(S, map_i);
-    struct seal_value v = seal_pop(S);
     if (!SEAL_IS_MAP(m)) {
         /* TODO: throw error when it is not map */
         seal_pushnull(S);

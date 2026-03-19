@@ -398,7 +398,9 @@ int eval(seal_state *S)
             if (status == 1) /* not found */
                 error(S, "does not have \'%s\' key", key);
 
+            /* replace map with value */
             seal_getstack(S, -2) = seal_getstack(S, -1);
+            /* pop value */
             seal_pop(S);
             break;
         }
@@ -416,8 +418,7 @@ int eval(seal_state *S)
                 error(S, "cannot index \'%s\'", valt_name(seal_getstack(S, -2)));
             }
             int status = seal_setfield(S, -2, key);
-            seal_pop(S); /* pop map */
-            seal_push(S, v);
+            seal_getstack(S, -1) = v; /* replace map with value */
             break;
         }
         /*

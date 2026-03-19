@@ -60,9 +60,15 @@ int seal_getglobal(seal_state *S, const char *name); /* push value on top */
 #define seal_pushmap(S, m)  seal_push(S, SEAL_VMAP(m))
 #define seal_pushnewmap(S)  seal_pushmap(S, hashmap_Cnew(8))
 
-/* return 0 if it existed before, 1 if new */
+/* return 0 if it existed before
+ * 1 if new
+ * -1 if not map
+ */
 int seal_setfield(seal_state *S, int map_i, const char *key);
-/* return 0 if it exists, 1 if not found (nothing is pushed) */
+/* return 0 if it exists
+ * 1 if not found (null is pushed for now)
+ * -1 if not map (null is pushed for now)
+ */
 int seal_getfield(seal_state *S, int map_i, const char *key);
 
 void seal_pushstring(seal_state *S, const char *str);
