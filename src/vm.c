@@ -10,7 +10,7 @@
 #define is_list   SEAL_IS_LIST
 #define is_map    SEAL_IS_MAP
 #define is_func   SEAL_IS_FUNC
-#define is_num(v) (is_int(v) || is_float(v))
+#define is_num    SEAL_IS_NUM
 
 #define as_bool   SEAL_AS_BOOL
 #define as_int    SEAL_AS_INT
@@ -20,7 +20,7 @@
 #define as_list   SEAL_AS_LIST
 #define as_map    SEAL_AS_MAP
 #define as_func   SEAL_AS_FUNC
-#define as_num(v) (is_int(v) ? as_int(v) : as_float(v))
+#define as_num    SEAL_AS_NUM
 
 static const char *const _type_names[] = {
     [SEAL_TNULL] = "null",
