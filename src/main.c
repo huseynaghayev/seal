@@ -46,7 +46,7 @@ int main(int argc, char **argv)
         fclose(fp);
         S = seal_state_new();
         S->file_name = argv[1];
-        if (setjmp(S->l.fail_point) == 0) {
+        if (setjmp(S->fail_point) == 0) {
             seal_dostring(S, STREAM);
         } else {
             seal_state_free(S);
@@ -63,7 +63,7 @@ int main(int argc, char **argv)
     char input[SRC_SIZE];
 #endif
 
-    setjmp(S->l.fail_point);
+    setjmp(S->fail_point);
 
 repl:
 #if USE_GNU_READL

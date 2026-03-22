@@ -11,7 +11,6 @@ struct parser {
     struct lexer *l;
     struct token tcur, tnext;
     struct arena *a;
-    struct ast *node;
     int cond_lvl;
     int loop_lvl;
     int func_lvl;

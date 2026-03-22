@@ -1,5 +1,6 @@
 #include "lexer.h"
 #include <stdio.h>
+#include "state.h"
 
 
 #define LEXEME_START_CAP 8
@@ -44,7 +45,7 @@ typedef struct lexer lexer;
     fprintf(stderr, "line %d: ", ln), \
     fprintf(stderr, __VA_ARGS__), \
     fputc('\n', stderr), \
-    longjmp(l->fail_point, 1) \
+    longjmp((l)->S->fail_point, 1) \
 )
 #define lerror(l, ...) lerrorln(l, (l)->line, __VA_ARGS__)
 

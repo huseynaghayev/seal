@@ -29,6 +29,7 @@ seal_state *seal_state_new()
     S->ip = NULL;
 
     S->l.lexemes = NULL;
+    S->l.S = S;
 
     // Initialize core if needed
     seal_core_init(S);

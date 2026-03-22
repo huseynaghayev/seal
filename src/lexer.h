@@ -52,7 +52,7 @@ struct token {
 #define MAX_CACHED_TK_SIZE 32 // fix
 
 struct lexer {
-    jmp_buf fail_point; /* used for REPL */
+    struct seal_state *S; /* for jumping */
     const char *src; /* code */
     struct seal_hashmap *lexemes; /* to avoid duplicate strings */
     int i; /* current */

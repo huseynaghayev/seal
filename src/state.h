@@ -26,6 +26,7 @@ typedef struct call_info {
 typedef struct seal_state {
     /* debug info */
     const char *file_name;
+    jmp_buf fail_point; /* used for error handling */
     /* pre-runtime state */
     struct lexer l;
 

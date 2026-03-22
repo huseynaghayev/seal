@@ -1,5 +1,6 @@
 #include "parser.h"
 #include <stdio.h>
+#include "state.h"
 
 
 /* Precedence Table
@@ -66,7 +67,7 @@ static inline token adv(parser *p)
     fprintf(stderr, "line %d: ", (t).line), \
     fprintf(stderr, __VA_ARGS__), \
     fputc('\n', stderr), \
-    longjmp((p)->l->fail_point, 1) \
+    longjmp((p)->l->S->fail_point, 1) \
 )
 
 #define unexpected(p, t) ( \
@@ -866,7 +867,6 @@ void parser_init(struct parser *p, struct lexer *l)
     p->tcur  = lexer_get_token(l);
     p->tnext = lexer_get_token(l);
     p->a = arena_new(NULL);
-    p->node  = NULL;
     p->cond_lvl = p->loop_lvl = p->func_lvl = 0;
 }
 
