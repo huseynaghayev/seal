@@ -71,50 +71,70 @@ static void free_chunk(struct chunk *c, int free_cp) {
 
 int seal_dostring(seal_state *S, const char *str)
 {
-    lexer_init(&S->l, str);
     struct parser p;
-    struct ast *root;
-    struct chunk *c = SEAL_MALLOC(sizeof(struct chunk));
+    struct chunk *volatile c = NULL;
+    struct seal_func *volatile func = NULL;
+    int result = 0;
 
-    parser_init(&p, &S->l);
-    root = parse(&p);
-    //dump_ast(root, 0);
-    *c = compile(root, NULL);
-    //dump_chunk(&c);
-    //dump_bytecode(&c);
-    arena_free(p.a);
+    volatile stack_idx start_idx = S->sp;
 
-    /* push main function with chunk
-     * call it
-     * then eval
-     */
-    struct seal_value fval;
-    fval.type = SEAL_TFUNCTION;
-    struct seal_func *func = SEAL_MALLOC(sizeof(struct seal_func));
-    fval.as.func = func;
-    SEAL_AS_FUNC(fval)->type = FUNCTION_TYPE_SEAL;
-    SEAL_AS_FUNC(fval)->as.s.name  = "main";
-    SEAL_AS_FUNC(fval)->as.s.psize = 0;
-    SEAL_AS_FUNC(fval)->as.s.c = c;
+    if (setjmp(S->fail_point) == 0) {
+        lexer_init(&S->l, str);
+        parser_init(&p, &S->l);
+        struct ast *root = parse(&p);
+        //dump_ast(root, 0);
+        c = SEAL_MALLOC(sizeof(struct chunk));
+        *c = compile(root, NULL);
+        //dump_chunk(&c);
+        //dump_bytecode(&c);
+        arena_free(p.a);
 
-    stack_idx start_idx = S->sp;
-    seal_push(S, fval);
-    seal_call(S, 0);
-    if (S->ci_idx == 0) {
-        if (eval(S)) { /* fail */
-            S->sp = start_idx;
-            S->ci_idx = -1;
-            S->ci = S->ci_arr + S->ci_idx;
-        } else { /* success */
-            S->sp--; /* ignore pushed null */
+        /* push main function with chunk
+         * call it
+         * then eval
+         */
+        struct seal_value fval;
+        fval.type = SEAL_TFUNCTION;
+        func = SEAL_MALLOC(sizeof(struct seal_func));
+        fval.as.func = func;
+        SEAL_AS_FUNC(fval)->type = FUNCTION_TYPE_SEAL;
+        SEAL_AS_FUNC(fval)->as.s.name  = "main";
+        SEAL_AS_FUNC(fval)->as.s.psize = 0;
+        SEAL_AS_FUNC(fval)->as.s.c = c;
+
+        seal_push(S, fval);
+        seal_call(S, 0);
+        if (S->ci_idx == 0) {
+            if (eval(S)) { /* fail */
+                S->sp = start_idx;
+                S->ci_idx = -1;
+                S->ci = S->ci_arr + S->ci_idx;
+                // free c
+                // free func
+                result = 1;
+            } else { /* success */
+                S->sp--; /* ignore pushed null */
+            }
         }
+    } else {
+        if (p.a)
+            arena_free(p.a);
+        if (c)
+            // free c
+            ;
+        if (func)
+            // free func
+            ;
+        S->sp = start_idx;
+        S->ci_idx = -1;
+        S->ci = S->ci_arr + S->ci_idx;
+        result = -1;
     }
-
 
     /* do not free needed functions */
     //free_chunk(&c, false);
 
-    return 0;
+    return result;
 }
 
 int seal_dofile(seal_state *S, const char *file_name)

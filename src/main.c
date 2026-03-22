@@ -46,14 +46,9 @@ int main(int argc, char **argv)
         fclose(fp);
         S = seal_state_new();
         S->file_name = argv[1];
-        if (setjmp(S->fail_point) == 0) {
-            seal_dostring(S, STREAM);
-        } else {
-            seal_state_free(S);
-            return 1;
-        }
+        int status = seal_dostring(S, STREAM);
         seal_state_free(S);
-        return 0;
+        return status;
     }
 
     S = seal_state_new();
@@ -80,18 +75,15 @@ repl:
     input[strlen(input) - 1] = '\0';
     if (strcmp(input, "clear") == 0) {
         clear();
-        goto repl;
     } else if (strcmp(input, "exit") == 0) {
         goto end;
     } else if (strcmp(input, "stack") == 0) {
         print_stack(S);
-        goto repl;
     } else if (strcmp(input, "G") == 0) {
         printf("Globals: cap: %d, size %d\n", S->globals->cap, S->globals->len);
-        goto repl;
+    } else {
+        seal_dostring(S, input);
     }
-
-    seal_dostring(S, input);
 
 #if USE_GNU_READL
     free(input);
