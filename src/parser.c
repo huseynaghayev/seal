@@ -63,16 +63,9 @@ static inline token adv(parser *p)
 #define matchadv(p, t)  (match(p, t) ? adv(p), 1 : 0)
 #define iseof(p) (match(p, TK_EOF))
 
-#define perror(p, t, ...) ( \
-    fprintf(stderr, "line %d: ", (t).line), \
-    fprintf(stderr, __VA_ARGS__), \
-    fputc('\n', stderr), \
-    longjmp((p)->l->S->fail_point, 1) \
-)
+#define perror(p, t, ...) seal_error((p)->l->S, (t).line, __VA_ARGS__)
 
-#define unexpected(p, t) ( \
-    perror(p, t, "unexpected \'%s\'", val(t)) \
-)
+#define unexpected(p, t) perror(p, t, "unexpected \'%s\'", val(t))
 
 static inline token eat(parser *p, int t)
 {

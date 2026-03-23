@@ -66,4 +66,6 @@ typedef SEAL_BOOL    seal_bool;
 #define SEAL_MAX_INDENT_LEVEL  32
 #define SEAL_LOCAL_MAX 256  /* must be <=256 */
 
+#define SEAL_ERRMSG_BUFSIZ 256
+
 #endif /* SEAL_CONF_H */

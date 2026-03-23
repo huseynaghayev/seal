@@ -47,6 +47,9 @@ int main(int argc, char **argv)
         S = seal_state_new();
         S->file_name = argv[1];
         int status = seal_dostring(S, STREAM);
+        if (status) {
+            fprintf(stderr, "%s\n", S->errmsg);
+        }
         seal_state_free(S);
         return status;
     }
@@ -82,7 +85,9 @@ repl:
     } else if (strcmp(input, "G") == 0) {
         printf("Globals: cap: %d, size %d\n", S->globals->cap, S->globals->len);
     } else {
-        seal_dostring(S, input);
+        if (seal_dostring(S, input)) {
+            fprintf(stderr, "%s\n", S->errmsg);
+        }
     }
 
 #if USE_GNU_READL

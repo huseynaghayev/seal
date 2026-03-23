@@ -41,12 +41,7 @@ static const char *const token_names[] = {
 typedef struct token token;
 typedef struct lexer lexer;
 
-#define lerrorln(l, ln, ...) ( \
-    fprintf(stderr, "line %d: ", ln), \
-    fprintf(stderr, __VA_ARGS__), \
-    fputc('\n', stderr), \
-    longjmp((l)->S->fail_point, 1) \
-)
+#define lerrorln(l, ln, ...) seal_error((l)->S, ln, __VA_ARGS__)
 #define lerror(l, ...) lerrorln(l, (l)->line, __VA_ARGS__)
 
 #define isnum(c) ((c) >= '0' && (c) <= '9')

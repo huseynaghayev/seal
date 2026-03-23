@@ -27,6 +27,7 @@ typedef struct seal_state {
     /* debug info */
     const char *file_name;
     jmp_buf fail_point; /* used for error handling */
+    char errmsg[SEAL_ERRMSG_BUFSIZ];
     /* pre-runtime state */
     struct lexer l;
 
@@ -43,6 +44,13 @@ typedef struct seal_state {
 
 seal_state *seal_state_new();
 void seal_state_free(seal_state *S);
+void seal_error(seal_state *S, int errln, const char *fmt, ...);
+
+#define seal_throw(S, msg, ...) \
+    seal_error(S, \
+        get_line(CUR_FUNC(S)->as.s.c, S->ip - CUR_FUNC(S)->as.s.c->code), \
+        msg, __VA_ARGS__)
+
 int seal_dostring(seal_state *S, const char *str);
 int seal_dofile(seal_state *S, const char *file_name);
 int seal_call(seal_state *S, int argc);

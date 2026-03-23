@@ -36,18 +36,6 @@ static const char *const _type_names[] = {
 #define vtype(v) ((v).type)
 #define valt_name(v) (_type_names[vtype(v)])
 
-#define error(S, fmt, ...) do { \
-    fprintf(stderr, \
-            "seal: %s:%d: ", \
-            S->file_name,   \
-            get_line(CUR_FUNC(S)->as.s.c, S->ip - CUR_FUNC(S)->as.s.c->code)); \
-    fprintf(stderr, fmt, __VA_ARGS__); \
-    fputc('\n', stderr); \
-    printf("Call stack:\n"); \
-    print_callstack(S); \
-    return 1; \
-} while (0)
-
 #define FETCH(S) (*(S)->ip++)
 
 #define CUR_FUNC(S) as_func((S)->stack[(S)->ci->func_idx])
@@ -61,14 +49,14 @@ static const char *const _type_names[] = {
 #define get_ab(S, a, b) ((b) = seal_pop(S), (a) = seal_pop(S))
 
 #define bin_op_err(S, op, a, b) \
-    error(S, \
-          "\'%s\' operator does not support \'%s\' and \'%s\'", \
-          #op, valt_name(a), valt_name(b)); \
+    seal_throw(S, \
+               "\'%s\' operator does not support \'%s\' and \'%s\'", \
+               #op, valt_name(a), valt_name(b)); \
 
 #define unry_op_err(S, op, v) \
-    error(S, \
-          "\'%s\' operator does not support \'%s\'", \
-          #op, valt_name(v)); \
+    seal_throw(S, \
+               "\'%s\' operator does not support \'%s\'", \
+               #op, valt_name(v)); \
 
 /* arithmetic */
 #define int_op(S, op, a, b)   seal_pushint(S, as_int(a) op as_int(b))
@@ -152,11 +140,12 @@ static void print_ci(seal_state *S, call_info *ci, int i)
     else
         name = as_func(f)->as.c.name;
 
-    printf("Call Frame [%d]: name: \'%s\'\n", i, name);
+    fprintf(stderr, "Call Frame [%d]: name: \'%s\'\n", i, name);
 }
 
 static void print_callstack(seal_state *S)
 {
+    fprintf(stderr, "Call stack:\n");
     int i = S->ci_idx;
     while (i >= 0) {
         print_ci(S, &S->ci_arr[i], i);
@@ -341,7 +330,7 @@ int eval(seal_state *S)
             idx  = FETCH(S) << 8;
             idx |= FETCH(S);
             if (seal_getglobal(S, as_strv(GET_CONST(S, idx)))) {
-                error(S, "\'%s\' is not defined", as_strv(GET_CONST(S, idx)));
+                seal_throw(S, "\'%s\' is not defined", as_strv(GET_CONST(S, idx)));
             }
 
             break;
@@ -392,11 +381,11 @@ int eval(seal_state *S)
             idx |= FETCH(S);
             const char *key = as_strv(GET_CONST(S, idx));
             if (!is_map(seal_getstack(S, -1))) {
-                error(S, "cannot index \'%s\'", valt_name(seal_getstack(S, -1)));
+                seal_throw(S, "cannot index \'%s\'", valt_name(seal_getstack(S, -1)));
             }
             int status = seal_getfield(S, -1, key);
             if (status == 1) /* not found */
-                error(S, "does not have \'%s\' key", key);
+                seal_throw(S, "does not have \'%s\' key", key);
 
             /* replace map with value */
             seal_getstack(S, -2) = seal_getstack(S, -1);
@@ -415,7 +404,7 @@ int eval(seal_state *S)
             const char *key = as_strv(GET_CONST(S, idx));
             struct seal_value v = seal_getstack(S, -1);
             if (!is_map(seal_getstack(S, -2))) {
-                error(S, "cannot index \'%s\'", valt_name(seal_getstack(S, -2)));
+                seal_throw(S, "cannot index \'%s\'", valt_name(seal_getstack(S, -2)));
             }
             int status = seal_setfield(S, -2, key);
             seal_getstack(S, -1) = v; /* replace map with value */
@@ -436,7 +425,7 @@ int eval(seal_state *S)
             break;
 #if SEAL_DEBUG
         default:
-            error(S, "\"%s\": unspecified operation", get_opname(op));
+            seal_throw(S, "\"%s\": unspecified operation", get_opname(op));
 #endif
         }
     }

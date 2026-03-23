@@ -4,6 +4,7 @@
 #include "compiler.h"
 #include "vm.h"
 #include <stdio.h>
+#include <stdarg.h>
 
 
 #define GLOBALS_START_SIZE 64
@@ -44,6 +45,18 @@ void seal_state_free(seal_state *S)
     hashmap_free(S->l.lexemes, true);
     SEAL_FREE(S->ci_arr);
     SEAL_FREE(S);
+}
+
+void seal_error(seal_state *S, int errln, const char *fmt, ...)
+{
+    int offset = 0;
+    offset += snprintf(S->errmsg + offset, SEAL_ERRMSG_BUFSIZ - offset,
+                       "seal: %s:%d: ", S->file_name, errln);
+    va_list vargs;
+    va_start(vargs, fmt);
+    offset += vsnprintf(S->errmsg + offset, SEAL_ERRMSG_BUFSIZ - offset, fmt, vargs);
+    va_end(vargs);
+    longjmp(S->fail_point, 1);
 }
 
 static void free_chunk(struct chunk *c, int free_cp) {
@@ -87,7 +100,6 @@ int seal_dostring(seal_state *S, const char *str)
         *c = compile(root, NULL);
         //dump_chunk(&c);
         //dump_bytecode(&c);
-        arena_free(p.a);
 
         /* push main function with chunk
          * call it
@@ -117,8 +129,6 @@ int seal_dostring(seal_state *S, const char *str)
             }
         }
     } else {
-        if (p.a)
-            arena_free(p.a);
         if (c)
             // free c
             ;
@@ -133,6 +143,8 @@ int seal_dostring(seal_state *S, const char *str)
 
     /* do not free needed functions */
     //free_chunk(&c, false);
+
+    arena_free(p.a);
 
     return result;
 }
