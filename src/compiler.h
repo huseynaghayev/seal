@@ -97,9 +97,9 @@ struct chunk {
     int local_size;
 };
 
-int get_line(struct chunk *c, int ip);
+int get_line(struct chunk *c, seal_byte *ip);
 
-struct chunk compile(struct ast *a, struct seal_hashmap *h);
+struct chunk compile(struct ast *a, struct seal_hashmap *h, const char *file_name);
 
 #if SEAL_DEBUG
 const char *get_opname(int op);

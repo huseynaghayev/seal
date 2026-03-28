@@ -21,6 +21,8 @@ typedef struct call_info {
     stack_idx func_idx; /* the called function stack index */
     seal_byte *ret_ip;
     int local_size;
+    const char *file_name; /* where the function called from */
+    int line; /* and the line info, if 0, it is main chunk */
 } call_info;
 
 typedef struct seal_state {
@@ -28,6 +30,7 @@ typedef struct seal_state {
     const char *file_name;
     jmp_buf fail_point; /* used for error handling */
     char errmsg[SEAL_ERRMSG_BUFSIZ];
+    char stktrc[SEAL_STKTRC_BUFSIZ];
     /* pre-runtime state */
     struct lexer l;
 
@@ -48,7 +51,7 @@ void seal_error(seal_state *S, int errln, const char *fmt, ...);
 
 #define seal_throw(S, msg, ...) \
     seal_error(S, \
-        get_line(CUR_FUNC(S)->as.s.c, S->ip - CUR_FUNC(S)->as.s.c->code), \
+        get_line(CUR_SFUNC(S).c, S->ip), \
         msg, __VA_ARGS__)
 
 int seal_dostring(seal_state *S, const char *str);

@@ -31,6 +31,7 @@ typedef struct {
         signed short last_stop;
     } loops[MAX_LOOP_DEPTH];
     int loop_count;
+    const char *file_name;
 } proto;
 
 #define push_loop(p, begin) ( \
@@ -322,15 +323,16 @@ static void compile_name(proto *p, ast *n, scope *s)
 
 static void compile_func_def(proto *p, ast *n, scope *s)
 {
-    struct seal_hashmap *h = hashmap_Nnew(SEAL_LOCAL_MAX);
+    scope local_scope = {0};
+    local_scope.h = hashmap_Nnew(SEAL_LOCAL_MAX);
     ast *param = n->as.func.params;
     while (param) {
-        int idx = s->h->len;
-        hashmap_insert(h, param->as.name.s, SEAL_VINT(idx));
+        int idx = local_scope.h->len;
+        hashmap_insert(local_scope.h, param->as.name.s, SEAL_VINT(idx));
         param = param->next;
     }
 
-    struct chunk c = compile(n->as.func.body, h);
+    struct chunk c = compile(n->as.func.body, local_scope.h, p->file_name);
     struct chunk *pc = SEAL_MALLOC(sizeof(c));
     *pc = c;
     struct seal_value f;
@@ -338,6 +340,8 @@ static void compile_func_def(proto *p, ast *n, scope *s)
     f.as.func = SEAL_MALLOC(sizeof(struct seal_func));
     f.as.func->type = FUNCTION_TYPE_SEAL;
     f.as.func->as.s.c = pc;
+    f.as.func->as.s.file_name = p->file_name;
+    f.as.func->as.s.line = n->line;
     f.as.func->as.s.name  = n->as.func.name;
     f.as.func->as.s.psize = n->as.func.psize;
 
@@ -759,10 +763,11 @@ static void compile_node(proto *p, ast *n, scope *s)
 
 
 /* convert this return type to pointer */
-struct chunk compile(struct ast *n, struct seal_hashmap *h)
+struct chunk compile(struct ast *n, struct seal_hashmap *h, const char *file_name)
 {
     struct chunk c = {0};
     proto p = {0};
+    p.file_name = file_name;
     scope s = {0};
     s.h = h ? h : hashmap_Nnew(SEAL_LOCAL_MAX);
     compile_node(&p, n, &s);
@@ -782,17 +787,18 @@ struct chunk compile(struct ast *n, struct seal_hashmap *h)
     return c;
 }
 
-int get_line(struct chunk *c, int ip)
+int get_line(struct chunk *c, seal_byte *ip)
 {
     int low = 0;
     int high = c->li_size - 1;
     int line = 1;
+    int offset = ip - c->code;
 
     while (low <= high) {
         int mid = low + (high - low) / 2;
         line_info *li = &c->li[mid];
 
-        if (li->offset <= ip) {
+        if (li->offset <= offset) {
             line = li->line;
             low = mid + 1;
         } else {
@@ -882,7 +888,7 @@ void dump_chunk(struct chunk *c)
     printf("Total bytes: %d\n", c->code_size);
     int cur_line = 0;
     for (int i = 0; i < c->code_size; i++) {
-        int checked_line = get_line(c, i);
+        int checked_line = get_line(c, &c->code[i]);
         if (cur_line != checked_line) {
             cur_line = checked_line;
             printf("--- line %d ---\n", cur_line);
@@ -914,9 +920,9 @@ void dump_chunk(struct chunk *c)
                     break;
                 case SEAL_TFUNCTION:
                     printf("function %s: %p",
-                           SEAL_AS_FUNC(v)->as.s.name ? SEAL_AS_FUNC(v)->as.s.name : "",
+                           SEAL_AS_SFUNC(v).name ? SEAL_AS_SFUNC(v).name : "",
                            (void*)SEAL_AS_FUNC(v));
-                    dump_chunk(SEAL_AS_FUNC(v)->as.s.c);
+                    dump_chunk(SEAL_AS_SFUNC(v).c);
                     puts("END FUNCTION");
                     break;
                 }

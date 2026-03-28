@@ -49,6 +49,7 @@ int main(int argc, char **argv)
         int status = seal_dostring(S, STREAM);
         if (status) {
             fprintf(stderr, "%s\n", S->errmsg);
+            fprintf(stderr, "%s\n", S->stktrc);
         }
         seal_state_free(S);
         return status;
@@ -87,6 +88,7 @@ repl:
     } else {
         if (seal_dostring(S, input)) {
             fprintf(stderr, "%s\n", S->errmsg);
+            fprintf(stderr, "%s\n", S->stktrc);
         }
     }
 

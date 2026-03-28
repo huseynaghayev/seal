@@ -20,6 +20,8 @@
 #define as_list   SEAL_AS_LIST
 #define as_map    SEAL_AS_MAP
 #define as_func   SEAL_AS_FUNC
+#define as_sfunc  SEAL_AS_SFUNC
+#define as_cfunc  SEAL_AS_CFUNC
 #define as_num    SEAL_AS_NUM
 
 static const char *const _type_names[] = {
@@ -38,9 +40,9 @@ static const char *const _type_names[] = {
 
 #define FETCH(S) (*(S)->ip++)
 
-#define CUR_FUNC(S) as_func((S)->stack[(S)->ci->func_idx])
+#define CUR_SFUNC(S) as_sfunc((S)->stack[(S)->ci->func_idx])
 
-#define GET_CONST(S, i) (CUR_FUNC(S)->as.s.c->pool[i])
+#define GET_CONST(S, i) (CUR_SFUNC(S).c->pool[i])
 
 #define PUSH_CONST(S, i)  seal_push(S, GET_CONST(S, i))
 
@@ -48,15 +50,19 @@ static const char *const _type_names[] = {
 
 #define get_ab(S, a, b) ((b) = seal_pop(S), (a) = seal_pop(S))
 
-#define bin_op_err(S, op, a, b) \
+#define bin_op_err(S, op, a, b) ( \
+    store_callstack(S), \
     seal_throw(S, \
                "\'%s\' operator does not support \'%s\' and \'%s\'", \
-               #op, valt_name(a), valt_name(b)); \
+               #op, valt_name(a), valt_name(b)) \
+)
 
-#define unry_op_err(S, op, v) \
+#define unry_op_err(S, op, v) ( \
+    store_callstack(S), \
     seal_throw(S, \
                "\'%s\' operator does not support \'%s\'", \
-               #op, valt_name(v)); \
+               #op, valt_name(v)) \
+)
 
 /* arithmetic */
 #define int_op(S, op, a, b)   seal_pushint(S, as_int(a) op as_int(b))
@@ -131,25 +137,55 @@ static const char *const _type_names[] = {
         unry_op_err(S, -, v); \
 } while (0)
 
-static void print_ci(seal_state *S, call_info *ci, int i)
+static void print_ci(seal_state *S, call_info *ci, int *offset)
 {
     struct seal_value f = S->stack[ci->func_idx];
-    const char *name;
-    if (as_func(f)->type == FUNCTION_TYPE_SEAL)
-        name = as_func(f)->as.s.name;
-    else
-        name = as_func(f)->as.c.name;
 
-    fprintf(stderr, "Call Frame [%d]: name: \'%s\'\n", i, name);
+    if (as_func(f)->type == FUNCTION_TYPE_SEAL) {
+        if (ci->line > 0)
+            *offset += snprintf(S->stktrc + *offset, SEAL_STKTRC_BUFSIZ - *offset,
+                       "%s:%d: in ", ci->file_name, ci->line);
+        else
+            *offset += snprintf(S->stktrc + *offset, SEAL_STKTRC_BUFSIZ - *offset,
+                       "%s: in ", ci->file_name);
+
+        if (as_sfunc(f).line == 0) {
+            *offset += snprintf(S->stktrc + *offset, SEAL_STKTRC_BUFSIZ - *offset,
+                       "main chunk");
+        } else if (as_sfunc(f).name) {
+            *offset += snprintf(S->stktrc + *offset, SEAL_STKTRC_BUFSIZ - *offset,
+                       "\'%s\'", as_sfunc(f).name);
+        } else {
+            *offset += snprintf(S->stktrc + *offset, SEAL_STKTRC_BUFSIZ - *offset,
+                       "function <%s:%d>", as_sfunc(f).file_name, as_sfunc(f).line);
+        }
+    } else {
+        const char *name = as_cfunc(f).name;
+        if (name)
+            *offset += snprintf(S->stktrc + *offset, SEAL_STKTRC_BUFSIZ - *offset,
+                       "\'%s\'", name);
+        else
+            *offset += snprintf(S->stktrc + *offset, SEAL_STKTRC_BUFSIZ - *offset,
+                       "?");
+    }
 }
 
-static void print_callstack(seal_state *S)
+static void store_callstack(seal_state *S)
 {
-    fprintf(stderr, "Call stack:\n");
+    int offset = 0;
+    offset += snprintf(S->stktrc + offset, SEAL_STKTRC_BUFSIZ - offset,
+              "call stack traceback:\n");
     int i = S->ci_idx;
+    S->ci->line = get_line(CUR_SFUNC(S).c, S->ip /* - 1 */);
     while (i >= 0) {
-        print_ci(S, &S->ci_arr[i], i);
+        offset += snprintf(S->stktrc + offset, SEAL_STKTRC_BUFSIZ - offset,
+                  "\t");
+        print_ci(S, &S->ci_arr[i], &offset);
         i--;
+        if (i >= 0) {
+            offset += snprintf(S->stktrc + offset, SEAL_STKTRC_BUFSIZ - offset,
+                      "\n");
+        }
     }
 }
 
@@ -330,9 +366,9 @@ int eval(seal_state *S)
             idx  = FETCH(S) << 8;
             idx |= FETCH(S);
             if (seal_getglobal(S, as_strv(GET_CONST(S, idx)))) {
+                store_callstack(S);
                 seal_throw(S, "\'%s\' is not defined", as_strv(GET_CONST(S, idx)));
             }
-
             break;
         case OP_GETGLOBAL_SAFE:
             idx  = FETCH(S) << 8;
@@ -381,11 +417,14 @@ int eval(seal_state *S)
             idx |= FETCH(S);
             const char *key = as_strv(GET_CONST(S, idx));
             if (!is_map(seal_getstack(S, -1))) {
+                store_callstack(S);
                 seal_throw(S, "cannot index \'%s\'", valt_name(seal_getstack(S, -1)));
             }
             int status = seal_getfield(S, -1, key);
-            if (status == 1) /* not found */
+            if (status == 1) { /* not found */
+                store_callstack(S);
                 seal_throw(S, "does not have \'%s\' key", key);
+            }
 
             /* replace map with value */
             seal_getstack(S, -2) = seal_getstack(S, -1);
@@ -404,6 +443,7 @@ int eval(seal_state *S)
             const char *key = as_strv(GET_CONST(S, idx));
             struct seal_value v = seal_getstack(S, -1);
             if (!is_map(seal_getstack(S, -2))) {
+                store_callstack(S);
                 seal_throw(S, "cannot index \'%s\'", valt_name(seal_getstack(S, -2)));
             }
             int status = seal_setfield(S, -2, key);
@@ -425,6 +465,7 @@ int eval(seal_state *S)
             break;
 #if SEAL_DEBUG
         default:
+            store_callstack(S);
             seal_throw(S, "\"%s\": unspecified operation", get_opname(op));
 #endif
         }

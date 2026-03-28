@@ -51,7 +51,7 @@ void seal_error(seal_state *S, int errln, const char *fmt, ...)
 {
     int offset = 0;
     offset += snprintf(S->errmsg + offset, SEAL_ERRMSG_BUFSIZ - offset,
-                       "seal: %s:%d: ", S->file_name, errln);
+                       "seal: %s:%d: ", SEAL_AS_SFUNC(S->stack[S->ci->func_idx]).file_name, errln);
     va_list vargs;
     va_start(vargs, fmt);
     offset += vsnprintf(S->errmsg + offset, SEAL_ERRMSG_BUFSIZ - offset, fmt, vargs);
@@ -71,7 +71,7 @@ static void free_chunk(struct chunk *c, int free_cp) {
             SEAL_FREE(v.as.string);
         } else if (SEAL_IS_FUNC(v)) {
             if (SEAL_AS_FUNC(v)->type == FUNCTION_TYPE_SEAL) {
-                free_chunk(SEAL_AS_FUNC(v)->as.s.c, true);
+                free_chunk(SEAL_AS_SFUNC(v).c, true);
             }
             SEAL_FREE(SEAL_AS_FUNC(v));
         }
@@ -85,11 +85,15 @@ static void free_chunk(struct chunk *c, int free_cp) {
 int seal_dostring(seal_state *S, const char *str)
 {
     struct parser p;
+    p.a = NULL;
     struct chunk *volatile c = NULL;
     struct seal_func *volatile func = NULL;
     int result = 0;
 
     volatile stack_idx start_idx = S->sp;
+
+    jmp_buf saved;
+    memcpy(saved, S->fail_point, sizeof(jmp_buf));
 
     if (setjmp(S->fail_point) == 0) {
         lexer_init(&S->l, str);
@@ -97,9 +101,11 @@ int seal_dostring(seal_state *S, const char *str)
         struct ast *root = parse(&p);
         //dump_ast(root, 0);
         c = SEAL_MALLOC(sizeof(struct chunk));
-        *c = compile(root, NULL);
+        *c = compile(root, NULL, S->file_name);
         //dump_chunk(&c);
         //dump_bytecode(&c);
+        arena_free(p.a);
+        p.a = NULL;
 
         /* push main function with chunk
          * call it
@@ -110,9 +116,11 @@ int seal_dostring(seal_state *S, const char *str)
         func = SEAL_MALLOC(sizeof(struct seal_func));
         fval.as.func = func;
         SEAL_AS_FUNC(fval)->type = FUNCTION_TYPE_SEAL;
-        SEAL_AS_FUNC(fval)->as.s.name  = "main";
-        SEAL_AS_FUNC(fval)->as.s.psize = 0;
-        SEAL_AS_FUNC(fval)->as.s.c = c;
+        SEAL_AS_SFUNC(fval).file_name = S->file_name;
+        SEAL_AS_SFUNC(fval).line = 0;
+        SEAL_AS_SFUNC(fval).name  = "main chunk";
+        SEAL_AS_SFUNC(fval).psize = 0;
+        SEAL_AS_SFUNC(fval).c = c;
 
         seal_push(S, fval);
         seal_call(S, 0);
@@ -129,6 +137,8 @@ int seal_dostring(seal_state *S, const char *str)
             }
         }
     } else {
+        if (p.a)
+            arena_free(p.a);
         if (c)
             // free c
             ;
@@ -144,7 +154,7 @@ int seal_dostring(seal_state *S, const char *str)
     /* do not free needed functions */
     //free_chunk(&c, false);
 
-    arena_free(p.a);
+    memcpy(S->fail_point, saved, sizeof(jmp_buf));
 
     return result;
 }
@@ -178,19 +188,28 @@ int seal_call(seal_state *S, int argc)
     struct seal_value f;
     f = seal_getstack(S, -argc - 1);
     SEAL_ASSERT(SEAL_IS_FUNC(f));
+
+    if (SEAL_AS_FUNC(f)->type == FUNCTION_TYPE_SEAL) {
+        SEAL_ASSERT(SEAL_AS_SFUNC(f).psize == argc);
+    }
+
+    if (S->ci_idx >= 0) {
+        struct chunk *prev_chunk = SEAL_AS_SFUNC(S->stack[S->ci->func_idx]).c;
+        S->ci->line = get_line(prev_chunk, S->ip);
+    }
+
     S->ci++;
     S->ci_idx++;
-    if (SEAL_AS_FUNC(f)->type == FUNCTION_TYPE_SEAL) {
-        SEAL_ASSERT(SEAL_AS_FUNC(f)->as.s.psize == argc);
-    }
     S->ci->func_idx = S->sp - argc - 1;
 
     if (SEAL_AS_FUNC(f)->type == FUNCTION_TYPE_SEAL) {
+        S->ci->file_name = SEAL_AS_SFUNC(f).file_name;
+        S->ci->line = 0;
         S->ci->ret_ip = S->ip;
-        S->ip = SEAL_AS_FUNC(f)->as.s.c->code;
-        S->sp += SEAL_AS_FUNC(f)->as.s.c->local_size - argc;
+        S->ip = SEAL_AS_SFUNC(f).c->code;
+        S->sp += SEAL_AS_SFUNC(f).c->local_size - argc;
     } else {
-        SEAL_AS_FUNC(f)->as.c.f /* function */
+        SEAL_AS_CFUNC(f).f /* function */
             (S); /* calling */
 
         S->stack[S->ci->func_idx] = seal_getstack(S, -1);

@@ -35,7 +35,9 @@
 #define SEAL_AS_STRINGVAL(v) (SEAL_AS_STRING(v)->val)
 #define SEAL_AS_LIST(v) ((v).as.list)
 #define SEAL_AS_MAP(v)  ((v).as.map)
-#define SEAL_AS_FUNC(v) ((v).as.func)
+#define SEAL_AS_FUNC(v)  ((v).as.func)
+#define SEAL_AS_SFUNC(v) (SEAL_AS_FUNC(v)->as.s)
+#define SEAL_AS_CFUNC(v) (SEAL_AS_FUNC(v)->as.c)
 
 #define SEAL_VAL(t, f, v) ((struct seal_value) { .type = t, .as.f = v })
 #define SEAL_VNULL ((struct seal_value) { SEAL_TNULL })
@@ -160,6 +162,8 @@ struct seal_func {
         /* Seal function */
         struct {
             const char *name;  /* NULL ptr if anonymous */
+            const char *file_name; /* the file name it is defined in */
+            int line; /* the line which it is defined at */
             seal_byte psize;   /* number of parameters */
             struct chunk *c; /* chunk */
         } s;
