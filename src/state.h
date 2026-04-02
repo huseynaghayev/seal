@@ -5,6 +5,13 @@
 #include "value.h"
 #include "lexer.h"
 
+#define SEAL_OK  0
+#define SEAL_ERR_LEX    1
+#define SEAL_ERR_PARSE  2
+#define SEAL_ERR_COMPILE  3
+#define SEAL_ERR_RUNTIME  4
+
+#define seal_set_errcode(S, code) ((S)->status = (code))
 
 #define seal_push(S, v) ((S)->stack[(S)->sp++] = (v))
 #define seal_dup(S) ( \
@@ -29,7 +36,9 @@ typedef struct seal_state {
     /* debug info */
     const char *file_name;
     jmp_buf fail_point; /* used for error handling */
+    int status;
     char errmsg[SEAL_ERRMSG_BUFSIZ];
+    char prev_errmsg[SEAL_ERRMSG_BUFSIZ];
     char stktrc[SEAL_STKTRC_BUFSIZ];
     /* pre-runtime state */
     struct lexer l;
@@ -51,7 +60,7 @@ void seal_error(seal_state *S, int errln, const char *fmt, ...);
 
 #define seal_throw(S, msg, ...) \
     seal_error(S, \
-        get_line(CUR_SFUNC(S).c, S->ip), \
+        get_line(CUR_SFUNC(S).c, S->ip /* - 1 */), \
         msg, __VA_ARGS__)
 
 int seal_dostring(seal_state *S, const char *str);

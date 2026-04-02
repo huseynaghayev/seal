@@ -50,8 +50,14 @@ void seal_state_free(seal_state *S)
 void seal_error(seal_state *S, int errln, const char *fmt, ...)
 {
     int offset = 0;
+    const char *file_name;
+    if (S->status == SEAL_ERR_RUNTIME)
+        file_name = SEAL_AS_SFUNC(S->stack[S->ci->func_idx]).file_name;
+    else
+        file_name = S->file_name;
+
     offset += snprintf(S->errmsg + offset, SEAL_ERRMSG_BUFSIZ - offset,
-                       "seal: %s:%d: ", SEAL_AS_SFUNC(S->stack[S->ci->func_idx]).file_name, errln);
+                       "seal: %s:%d: ", file_name, errln);
     va_list vargs;
     va_start(vargs, fmt);
     offset += vsnprintf(S->errmsg + offset, SEAL_ERRMSG_BUFSIZ - offset, fmt, vargs);
@@ -90,7 +96,9 @@ int seal_dostring(seal_state *S, const char *str)
     struct seal_func *volatile func = NULL;
     int result = 0;
 
-    volatile stack_idx start_idx = S->sp;
+    volatile stack_idx prev_sp = S->sp;
+    volatile int prev_ci_idx = S->ci_idx;
+    call_info *volatile prev_ci = S->ci;
 
     jmp_buf saved;
     memcpy(saved, S->fail_point, sizeof(jmp_buf));
@@ -126,9 +134,9 @@ int seal_dostring(seal_state *S, const char *str)
         seal_call(S, 0);
         if (S->ci_idx == 0) {
             if (eval(S)) { /* fail */
-                S->sp = start_idx;
-                S->ci_idx = -1;
-                S->ci = S->ci_arr + S->ci_idx;
+                S->sp = prev_sp;
+                S->ci_idx = prev_ci_idx;
+                S->ci = prev_ci;
                 // free c
                 // free func
                 result = 1;
@@ -145,9 +153,9 @@ int seal_dostring(seal_state *S, const char *str)
         if (func)
             // free func
             ;
-        S->sp = start_idx;
-        S->ci_idx = -1;
-        S->ci = S->ci_arr + S->ci_idx;
+        S->sp = prev_sp;
+        S->ci_idx = prev_ci_idx;
+        S->ci = prev_ci;
         result = -1;
     }
 

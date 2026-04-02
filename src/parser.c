@@ -63,7 +63,10 @@ static inline token adv(parser *p)
 #define matchadv(p, t)  (match(p, t) ? adv(p), 1 : 0)
 #define iseof(p) (match(p, TK_EOF))
 
-#define perror(p, t, ...) seal_error((p)->l->S, (t).line, __VA_ARGS__)
+#define perror(p, t, ...) ( \
+    seal_set_errcode((p)->l->S, SEAL_ERR_PARSE), \
+    seal_error((p)->l->S, (t).line, __VA_ARGS__) \
+)
 
 #define unexpected(p, t) perror(p, t, "unexpected \'%s\'", val(t))
 
