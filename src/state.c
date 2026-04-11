@@ -379,7 +379,7 @@ const char *seal_checkstring(seal_state *S, int i)
 {
     struct seal_value v;
     int out;
-    if (!val_is(S, i, SEAL_TINT, v, out)) {
+    if (!val_is(S, i, SEAL_TSTRING, v, out)) {
         checkval_err(S, i, SEAL_TSTRING, out);
     }
 
