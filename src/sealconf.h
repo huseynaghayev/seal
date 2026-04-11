@@ -4,7 +4,6 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
-#include <setjmp.h>
 #include <limits.h>
 
 
@@ -29,7 +28,7 @@
 #define SEAL_REALLOC(ptr, size) realloc(ptr, size)
 #define SEAL_FREE(ptr) free(ptr)
 
-
+#define SEAL_API extern
 
 #if SEAL_32BITS
     #define SEAL_INTEGER int
@@ -52,7 +51,9 @@ typedef SEAL_INTEGER seal_int;
 typedef SEAL_FLOAT   seal_float;
 typedef SEAL_BOOL    seal_bool;
 
+#ifndef USE_GNU_READL
 #define USE_GNU_READL 0
+#endif
 
 #define HASHMAP_LOAD_FACTOR 0.7f
 

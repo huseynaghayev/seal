@@ -47,7 +47,7 @@ void seal_state_free(seal_state *S)
     SEAL_FREE(S);
 }
 
-void seal_error(seal_state *S, int errln, const char *fmt, ...)
+static void seal_errorv(seal_state *S, int errln, const char *fmt, va_list vargs)
 {
     int offset = 0;
     const char *file_name;
@@ -58,11 +58,51 @@ void seal_error(seal_state *S, int errln, const char *fmt, ...)
 
     offset += snprintf(S->errmsg + offset, SEAL_ERRMSG_BUFSIZ - offset,
                        "seal: %s:%d: ", file_name, errln);
+    offset += vsnprintf(S->errmsg + offset, SEAL_ERRMSG_BUFSIZ - offset, fmt, vargs);
+}
+
+void seal_error(seal_state *S, int errln, const char *fmt, ...)
+{
     va_list vargs;
     va_start(vargs, fmt);
-    offset += vsnprintf(S->errmsg + offset, SEAL_ERRMSG_BUFSIZ - offset, fmt, vargs);
+    seal_errorv(S, errln, fmt, vargs);
     va_end(vargs);
     longjmp(S->fail_point, 1);
+}
+
+void seal_throw(seal_state *S, const char *msg, ...)
+{
+    va_list vargs;
+    va_start(vargs, msg);
+    int ci_idx = S->ci_idx;
+    struct seal_func *f;
+    int valid = false;
+    int dec = false;
+    while (ci_idx >= 0) {
+        f = SEAL_AS_FUNC(S->stack[S->ci_arr[ci_idx].func_idx]);
+        if (f->type == FUNCTION_TYPE_SEAL) {
+            valid = true;
+            break;
+        }
+        dec = true;
+        ci_idx--;
+    }
+    int line = 0;
+    if (valid) {
+        if (dec) {
+            line = S->ci_arr[ci_idx].line;
+        } else {
+            line = get_line(f->as.s.c, S->ip /* - 1 */);
+        }
+    }
+    seal_errorv(S, line, msg, vargs);
+    va_end(vargs);
+    longjmp(S->fail_point, 1);
+}
+
+const char *seal_geterror(seal_state *S)
+{
+    return S->errmsg;
 }
 
 static void free_chunk(struct chunk *c, int free_cp) {
@@ -229,15 +269,167 @@ int seal_call(seal_state *S, int argc)
     return 0;
 }
 
-/* return 0 if it existed, 1 if new */
-int seal_setglobal(seal_state *S, const char *name)
+int seal_gettop(seal_state *S)
 {
-    int is_new = hashmap_insert(S->globals, name, seal_pop(S));
-    return is_new;
+    return S->sp - S->ci->func_idx - 1;
 }
 
-/* return 0 if it exists and push, 1 if not found (nothing is pushed) */
-int seal_getglobal(seal_state *S, const char *name)
+void seal_checkargcopt(seal_state *S, int min, int is_var)
+{
+    int n = seal_gettop(S);
+    if (n != min) {
+        if (!is_var || (is_var && n < min)) {
+            seal_throw(S, "expected %s%d argument%s, got %d",
+                       is_var ? "at least " : "", min, min == 1 ? "" : "s", n);
+        }
+    }
+}
+
+int seal_gettype(seal_state *S, int i)
+{
+    return seal_getstack(S, i).type;
+}
+
+static const char *const _type_names[] = {
+    [SEAL_TNULL] = "null",
+    [SEAL_TBOOL] = "bool",
+    [SEAL_TINT] = "integer",
+    [SEAL_TFLOAT] = "float",
+    [SEAL_TSTRING] = "string",
+    [SEAL_TLIST] = "list",
+    [SEAL_TMAP] = "map",
+    [SEAL_TFUNCTION] = "function"
+};
+
+const char *seal_gettypename(seal_state *S, int i)
+{
+    return _type_names[seal_getstack(S, i).type];
+}
+
+/* values */
+seal_bool seal_tobool(seal_state *S, int i)
+{
+    return SEAL_AS_BOOL(seal_getstack(S, i));
+}
+
+seal_int seal_toint(seal_state *S, int i)
+{
+    return SEAL_AS_INT(seal_getstack(S, i));
+}
+
+seal_float seal_tofloat(seal_state *S, int i)
+{
+    return SEAL_AS_FLOAT(seal_getstack(S, i));
+}
+
+seal_float  seal_tonumber(seal_state *S, int i)
+{
+    struct seal_value v = seal_getstack(S, i);
+    return SEAL_AS_NUM(v);
+}
+
+const char *seal_tostring(seal_state *S, int i)
+{
+    return SEAL_AS_STRINGVAL(seal_getstack(S, i));
+}
+
+#define val_is(S, i, t, v, out) (v = seal_getstack(S, i), (out = v.type) == (t))
+
+#define checkval_err(S, i, exp, got) \
+    seal_throw(S, "argument #%d: expected \'%s\', got \'%s\'", \
+               i + 1, _type_names[exp], _type_names[got])
+
+#define check_body(type) \
+    struct seal_value v; \
+    int out; \
+    if (!val_is(S, i, SEAL_T##type, v, out)) \
+        checkval_err(S, i, SEAL_T##type, out); \
+    return SEAL_AS_##type(v);
+
+seal_bool seal_checkbool(seal_state *S, int i)
+{
+    check_body(BOOL);
+}
+
+seal_int seal_checkint(seal_state *S, int i)
+{
+    check_body(INT);
+}
+
+seal_float seal_checkfloat(seal_state *S, int i)
+{
+    check_body(FLOAT);
+}
+
+seal_float seal_checknumber(seal_state *S, int i)
+{
+    struct seal_value v;
+    int out;
+    if (!val_is(S, i, SEAL_TINT, v, out)) {
+        if (out != SEAL_TFLOAT) {
+            seal_throw(S, "argument #%d: expected \'%s\', got \'%s\'",
+                       i + 1, "number", _type_names[out]);
+        }
+    }
+
+    return SEAL_AS_NUM(v);
+}
+
+const char *seal_checkstring(seal_state *S, int i)
+{
+    struct seal_value v;
+    int out;
+    if (!val_is(S, i, SEAL_TINT, v, out)) {
+        checkval_err(S, i, SEAL_TSTRING, out);
+    }
+
+    return SEAL_AS_STRINGVAL(v);
+}
+
+/* push */
+
+void seal_pushnull(seal_state *S)
+{
+    seal_push(S, SEAL_VNULL);
+}
+
+void seal_pushbool(seal_state *S, int b)
+{
+    seal_push(S, SEAL_VBOOL(b));
+}
+
+void seal_pushint(seal_state *S, seal_int n)
+{
+    seal_push(S, SEAL_VINT(n));
+}
+
+void seal_pushfloat(seal_state *S, seal_float f)
+{
+    seal_push(S, SEAL_VFLOAT(f));
+}
+
+void seal_pushstring(seal_state *S, const char *str);
+
+void seal_pushCfunc(seal_state *S, seal_Cfunction f)
+{
+    struct seal_func *func = SEAL_CALLOC(1, sizeof(struct seal_func));
+    func->type = FUNCTION_TYPE_C;
+    func->as.c.f = f;
+
+    seal_push(S, SEAL_VFUNC(func));
+}
+
+void seal_makelist(seal_state *S, int size);
+
+void seal_makemap(seal_state *S, int size)
+{
+    SEAL_ASSERT(size == 0);
+    seal_push(S, SEAL_VMAP(hashmap_Cnew(8)));
+}
+
+/* get */
+/* return 0 if it exists, 1 if not found (nothing is pushed) */
+int seal_getglobal(seal_state *S, const char *name) /* push value on top */
 {
     struct h_entry *e = hashmap_search(S->globals, name);
     if (nullhentry(e)) {
@@ -248,20 +440,8 @@ int seal_getglobal(seal_state *S, const char *name)
     return 0;
 }
 
-/* return 0 if it existed before
- * 1 if new
- * -1 if not map
- */
-int seal_setfield(seal_state *S, int map_i, const char *key)
-{
-    struct seal_value m = seal_getstack(S, map_i);
-    if (!SEAL_IS_MAP(m)) {
-        /* TODO: throw error when it is not map */
-        return -1;
-    }
-    int is_new = hashmap_insert(SEAL_AS_MAP(m), key, seal_pop(S));
-    return is_new;
-}
+int seal_getindex(seal_state *S, int i);
+
 /* return 0 if it exists
  * 1 if not found (null is pushed for now)
  * -1 if not map (null is pushed for now)
@@ -287,13 +467,40 @@ int seal_getfield(seal_state *S, int map_i, const char *key)
     return 0;
 }
 
-void seal_pushstring(seal_state *S, const char *str);
-
-void seal_pushCfunc(seal_state *S, seal_Cfunction f)
+/* set */
+/* return 0 if it existed before, 1 if new */
+int seal_setglobal(seal_state *S, const char *name) /* value is on top */
 {
-    struct seal_func *func = SEAL_CALLOC(1, sizeof(struct seal_func));
-    func->type = FUNCTION_TYPE_C;
-    func->as.c.f = f;
+    int is_new = hashmap_insert(S->globals, name, seal_pop(S));
+    return is_new;
+}
 
-    seal_push(S, SEAL_VFUNC(func));
+int seal_setindex(seal_state *S, int list_i, int i);
+
+/* return 0 if it existed before
+ * 1 if new
+ * -1 if not map
+ */
+int seal_setfield(seal_state *S, int map_i, const char *key)
+{
+    struct seal_value m = seal_getstack(S, map_i);
+    if (!SEAL_IS_MAP(m)) {
+        /* TODO: throw error when it is not map */
+        return -1;
+    }
+    int is_new = hashmap_insert(SEAL_AS_MAP(m), key, seal_pop(S));
+    return is_new;
+}
+
+void seal_newlib(seal_state *S, const seal_reg *reg)
+{
+    seal_newmap(S);
+    while (reg->name) {
+        seal_pushCfunc(S, reg->f);
+        SEAL_AS_CFUNC(S->stack[S->sp - 1]).name = reg->name;
+     /* ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      * TODO: make this better */
+        seal_setfield(S, -2, reg->name);
+        reg++;
+    }
 }

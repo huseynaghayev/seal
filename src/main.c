@@ -75,8 +75,8 @@ repl:
         putchar('\n');
         goto end;
     }
-#endif
     input[strlen(input) - 1] = '\0';
+#endif
     if (strcmp(input, "clear") == 0) {
         clear();
     } else if (strcmp(input, "exit") == 0) {

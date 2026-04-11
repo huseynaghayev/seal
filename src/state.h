@@ -4,6 +4,7 @@
 
 #include "value.h"
 #include "lexer.h"
+#include <setjmp.h>
 
 #define SEAL_OK  0
 #define SEAL_ERR_LEX    1
@@ -19,7 +20,6 @@
     (S)->sp++ \
 )
 #define seal_pop(S)  ((S)->stack[--(S)->sp])
-#define seal_gettop(S)  ((S)->sp - (S)->ci->func_idx - 1)
 #define seal_getstack(S, i) ((S)->stack[i >= 0 ? (S)->ci->func_idx + i + 1 : (S)->sp + i])
 
 typedef int stack_idx;
@@ -57,43 +57,75 @@ typedef struct seal_state {
 seal_state *seal_state_new();
 void seal_state_free(seal_state *S);
 void seal_error(seal_state *S, int errln, const char *fmt, ...);
-
-#define seal_throw(S, msg, ...) \
-    seal_error(S, \
-        get_line(CUR_SFUNC(S).c, S->ip /* - 1 */), \
-        msg, __VA_ARGS__)
+void seal_throw(seal_state *S, const char *msg, ...);
+const char *seal_geterror(seal_state *S);
 
 int seal_dostring(seal_state *S, const char *str);
 int seal_dofile(seal_state *S, const char *file_name);
 int seal_call(seal_state *S, int argc);
-/* return 0 if it existed before, 1 if new */
-int seal_setglobal(seal_state *S, const char *name); /* value is on top */
-/* return 0 if it exists, 1 if not found (nothing is pushed) */
-int seal_getglobal(seal_state *S, const char *name); /* push value on top */
+
+int seal_gettop(seal_state *S);
+void seal_checkargcopt(seal_state *S, int min, int is_var);
+#define seal_checkargc(S, c) seal_checkargcopt(S, c, false)
+int seal_gettype(seal_state *S, int i);
+const char *seal_gettypename(seal_state *S, int i);
+
+/* values */
+seal_bool   seal_tobool(seal_state *S, int i);
+seal_int    seal_toint(seal_state *S, int i);
+seal_float  seal_tofloat(seal_state *S, int i);
+seal_float  seal_tonumber(seal_state *S, int i);
+const char *seal_tostring(seal_state *S, int i);
+
+seal_bool   seal_checkbool(seal_state *S, int i);
+seal_int    seal_checkint(seal_state *S, int i);
+seal_float  seal_checkfloat(seal_state *S, int i);
+seal_float  seal_checknumber(seal_state *S, int i);
+const char *seal_checkstring(seal_state *S, int i);
 
 /* push */
-#define seal_pushnull(S)  seal_push(S, SEAL_VNULL)
-#define seal_pushbool(S, b)  seal_push(S, SEAL_VBOOL(b))
-#define seal_pushtrue(S)  seal_pushbool(S, true)
-#define seal_pushfalse(S) seal_pushbool(S, false)
-#define seal_pushint(S, n)   seal_push(S, SEAL_VINT(n))
-#define seal_pushfloat(S, f) seal_push(S, SEAL_VFLOAT(f))
-#define seal_pushmap(S, m)  seal_push(S, SEAL_VMAP(m))
-#define seal_pushnewmap(S)  seal_pushmap(S, hashmap_Cnew(8))
 
-/* return 0 if it existed before
- * 1 if new
- * -1 if not map
- */
-int seal_setfield(seal_state *S, int map_i, const char *key);
+void seal_pushnull(seal_state *S);
+void seal_pushbool(seal_state *S, int b);
+void seal_pushint(seal_state *S, seal_int n);
+void seal_pushfloat(seal_state *S, seal_float f);
+void seal_pushstring(seal_state *S, const char *str);
+void seal_pushCfunc(seal_state *S, seal_Cfunction f);
+void seal_makelist(seal_state *S, int size);
+#define seal_newlist(S) seal_makelist(S, 0)
+void seal_makemap(seal_state *S, int size);
+#define seal_newmap(S) seal_makemap(S, 0)
+
+/* get */
+/* return 0 if it exists, 1 if not found (nothing is pushed) */
+int seal_getglobal(seal_state *S, const char *name); /* push value on top */
+int seal_getindex(seal_state *S, int i);
 /* return 0 if it exists
  * 1 if not found (null is pushed for now)
  * -1 if not map (null is pushed for now)
  */
 int seal_getfield(seal_state *S, int map_i, const char *key);
 
-void seal_pushstring(seal_state *S, const char *str);
-void seal_pushCfunc(seal_state *S, seal_Cfunction f);
+/* set */
+/* return 0 if it existed before, 1 if new */
+int seal_setglobal(seal_state *S, const char *name); /* value is on top */
+int seal_setindex(seal_state *S, int list_i, int i);
+/* return 0 if it existed before
+ * 1 if new
+ * -1 if not map
+ */
+int seal_setfield(seal_state *S, int map_i, const char *key);
+
+typedef struct {
+    const char *name;
+    seal_Cfunction f;
+} seal_reg;
+
+#define seal_register(S, f, name) ( \
+    seal_pushCfunc(S, f), \
+    seal_setglobal(S, name) \
+)
+void seal_newlib(seal_state *S, const seal_reg *reg);
 
 
 #endif /* STATE_H */

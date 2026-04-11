@@ -1,6 +1,8 @@
 #include "vm.h"
 #include "compiler.h"
+#include "state.h"
 #include <stdio.h>
+#include <dlfcn.h>
 
 #define is_null   SEAL_IS_NULL
 #define is_bool   SEAL_IS_BOOL
@@ -191,6 +193,96 @@ static void store_callstack(seal_state *S)
     }
 }
 
+#define try_file(path) (fopen(path, "r"))
+
+#define INCLUDED_FILE_TYPE_NIL  -1
+#define INCLUDED_FILE_TYPE_LIB  0
+#define INCLUDED_FILE_TYPE_SRC  1
+
+typedef struct {
+    int file_type;
+    char *full_path;
+} included_file_t;
+
+included_file_t fallback_file(const char *name)
+{
+    static const char *path = "/home/huseyn/seal/libs/";
+    //char full_path[strlen(path) + strlen(name) + strlen(".seal") + 1];
+    char full_path[512];
+    included_file_t ift = { INCLUDED_FILE_TYPE_NIL, NULL };
+    FILE *f = NULL;
+
+    sprintf(full_path, "%s%s.so", path, name);
+    f = try_file(full_path);
+    if (f) {
+        ift.file_type = INCLUDED_FILE_TYPE_LIB;
+        goto success;
+    }
+
+    sprintf(full_path, "%s%s.seal", path, name);
+    f = try_file(full_path);
+    if (f) {
+        ift.file_type = INCLUDED_FILE_TYPE_SRC;
+        goto success;
+    }
+
+    sprintf(full_path, "./%s.so", name);
+    f = try_file(full_path);
+    if (f) {
+        ift.file_type = INCLUDED_FILE_TYPE_LIB;
+        goto success;
+    }
+
+    sprintf(full_path, "./%s.seal", name);
+    f = try_file(full_path);
+    if (f) {
+        ift.file_type = INCLUDED_FILE_TYPE_SRC;
+        goto success;
+    }
+
+    return ift;
+success:
+    fclose(f);
+    ift.full_path = (char *)string_dup(full_path);
+    return ift;
+}
+
+static int load_lib(seal_state *S, const char *name)
+{
+    included_file_t ift = fallback_file(name);
+    if (ift.file_type == INCLUDED_FILE_TYPE_NIL) {
+        return 1;
+    }
+
+    if (ift.file_type == INCLUDED_FILE_TYPE_LIB) {
+        /* TODO: ERROR HANDLING */
+        void *handler = dlopen(ift.full_path, RTLD_NOW | RTLD_LOCAL);
+        if (!handler) {
+            seal_throw(S, "dlopen failed: %s", dlerror());
+            return 1;
+        }
+        char fname[64];
+        const char *pure_name = strrchr(name, '/');
+        if (!pure_name)
+            pure_name = name;
+        else
+            pure_name++; /* skip '/' */
+
+        sprintf(fname, "sealopen_%s", pure_name);
+        seal_Cfunction open_func = dlsym(handler, fname);
+        open_func(S);
+        //dlclose(handler);
+    } else {
+        if (seal_dofile(S, ift.full_path)) { /* throw error */
+            strncpy(S->prev_errmsg, S->errmsg, SEAL_ERRMSG_BUFSIZ);
+            vm_error(S, "could not include \'%s\' file:\n\t%s", ift.full_path, S->prev_errmsg);
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 int eval(seal_state *S)
 {
     seal_byte op;
@@ -220,10 +312,10 @@ int eval(seal_state *S)
             seal_pushnull(S);
             break;
         case OP_PUSHTRUE:
-            seal_pushtrue(S);
+            seal_pushbool(S, true);
             break;
         case OP_PUSHFALSE:
-            seal_pushfalse(S);
+            seal_pushbool(S, false);
             break;
         case OP_PUSH8:
             seal_pushint(S, FETCH(S));
@@ -365,12 +457,15 @@ int eval(seal_state *S)
             break;
         /* symbols */
         case OP_GETGLOBAL:
+        {
             idx  = FETCH(S) << 8;
             idx |= FETCH(S);
-            if (seal_getglobal(S, as_strv(GET_CONST(S, idx)))) {
-                vm_error(S, "\'%s\' is not defined", as_strv(GET_CONST(S, idx)));
+            const char *name = as_strv(GET_CONST(S, idx));
+            if (seal_getglobal(S, name)) {
+                vm_error(S, "\'%s\' is not defined", name);
             }
             break;
+        }
         case OP_GETGLOBAL_SAFE:
             idx  = FETCH(S) << 8;
             idx |= FETCH(S);
@@ -404,7 +499,7 @@ int eval(seal_state *S)
             break;
         */
         case OP_NEWMAP:
-            seal_pushnewmap(S);
+            seal_newmap(S);
             break;
         /*
         case OP_MAKEMAP:
@@ -460,11 +555,8 @@ int eval(seal_state *S)
         {
             idx  = FETCH(S) << 8;
             idx |= FETCH(S);
-            const char *file_name = as_strv(GET_CONST(S, idx));
-            if (seal_dofile(S, file_name)) { /* throw error */
-                strncpy(S->prev_errmsg, S->errmsg, SEAL_ERRMSG_BUFSIZ);
-                vm_error(S, "could not include \'%s\' file:\n\t%s", file_name, S->prev_errmsg);
-            }
+            const char *name = as_strv(GET_CONST(S, idx));
+            load_lib(S, name);
             break;
         }
 #if SEAL_DEBUG
