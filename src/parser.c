@@ -104,9 +104,9 @@ static ast __NODE_FALSE = { .type = AST_FALSE };
 
 #define atype(a)  ((a)->type)
 #define islval(a) ( \
-    atype(a) == AST_NAME  || \
-    atype(a) == AST_INDEX || \
-    atype(a) == AST_FIELD \
+    (atype(a) == AST_NAME && !(a)->as.name.safe) || \
+    (atype(a) == AST_INDEX) || \
+    (atype(a) == AST_FIELD && !(a)->as.field.f->as.name.safe) \
 )
 #define isinlstmt(a) ( \
     atype(a) == AST_SKIP    || \
@@ -817,7 +817,7 @@ static ast *parse_assign(parser *p)
     int op;
     if (match(p, '=')) {
         op = IMOP_ASSIGN;
-    } else if (curtype(p) > TK_MUL_ASSIGN && curtype(p) < TK_OR_ASSIGN) {
+    } else if (curtype(p) >= TK_MUL_ASSIGN && curtype(p) <= TK_OR_ASSIGN) {
         op = IMOP_ASSIGN + (curtype(p) - TK_MUL_ASSIGN + 1);
     } else {
         return l;

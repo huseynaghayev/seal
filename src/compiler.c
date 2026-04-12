@@ -517,19 +517,48 @@ static void compile_ternary(proto *p, ast *n, scope *s)
     jmpreplace16cur(p, end_jump);
 }
 
-static void compile_assign(proto *p, ast *n, scope *s)
+static seal_byte augop2byte(int op)
 {
-    /* TODO: compile all assign types */
-    SEAL_ASSERT(n->as.assign.op == IMOP_ASSIGN);
-    SEAL_ASSERT(n->as.assign.var->type == AST_NAME ||
-                n->as.assign.var->type == AST_FIELD);
+    seal_byte b = -1;
+    switch (op) {
+    case IMOP_MUL_ASSIGN:
+        b = OP_MUL;
+        break;
+    case IMOP_DIV_ASSIGN:
+        b = OP_DIV;
+        break;
+    case IMOP_MOD_ASSIGN:
+        b = OP_MOD;
+        break;
+    case IMOP_ADD_ASSIGN:
+        b = OP_ADD;
+        break;
+    case IMOP_SUB_ASSIGN:
+        b = OP_SUB;
+        break;
+    case IMOP_SHL_ASSIGN:
+        b = OP_SHL;
+        break;
+    case IMOP_SHR_ASSIGN:
+        b = OP_SHR;
+        break;
+    case IMOP_AND_ASSIGN:
+        b = OP_AND;
+        break;
+    case IMOP_XOR_ASSIGN:
+        b = OP_XOR;
+        break;
+    case IMOP_OR_ASSIGN:
+        b = OP_OR;
+        break;
+    }
+    return b;
+}
 
-    ast *var = n->as.assign.var;
-    ast *val = n->as.assign.val;
-
-    if (var->type == AST_NAME) {
+static void compile_assign_name(proto *p, ast *var, ast *val, int op, scope *s)
+{
+    if (op == IMOP_ASSIGN) {
         compile_node(p, val, s);
-
         if (var->as.name.global) {
             int i = get_string_idx(p, var->as.name.s);
             emit(p, OP_SETGLOBAL, var);
@@ -545,20 +574,75 @@ static void compile_assign(proto *p, ast *n, scope *s)
                 int idx = s->h->len;
                 hashmap_insert_e(s->h, e, var->as.name.s, SEAL_VINT(idx));
             }
-
             emit(p, OP_SETLOCAL, var);
             emit(p, e->val.as.integer, var);
         }
-    } else if (var->type == AST_FIELD) {
+    } else {
+        int b = augop2byte(op);
+        if (var->as.name.global) {
+            int str_idx = get_string_idx(p, var->as.name.s);
+            emit(p, OP_GETGLOBAL, var);
+            emit16(p, str_idx, var);
+            compile_node(p, val, s);
+            emitn(p, b);
+            emit(p, OP_SETGLOBAL, var);
+            emit16(p, str_idx, var);
+        } else {
+            h_entry *e = hashmap_search(s->h, var->as.name.s);
+            if (nullhentry(e)) {
+                /* TODO: fix error msg */
+                SEAL_ASSERT(0 && "cannot assign augmentedly to undeclared variable");
+            }
+            int local_idx = e->val.as.integer;
+            emit(p, OP_GETLOCAL, var);
+            emit(p, local_idx, var);
+            compile_node(p, val, s);
+            emitn(p, b);
+            emit(p, OP_SETLOCAL, var);
+            emit(p, local_idx, var);
+        }
+    }
+}
+
+static void compile_assign_field(proto *p, ast *var, ast *val, int op, scope *s)
+{
+    compile_node(p, var->as.field.m, s);
+    ast *key = var->as.field.f;
+    int i = get_string_idx(p, key->as.name.s);
+    if (op == IMOP_ASSIGN) {
         /* compile main part */
-        compile_node(p, var->as.field.m, s);
         /* compile assigned expr */
         compile_node(p, val, s);
         /* compile OP_SETFIELD */
-        ast *key = var->as.field.f;
         emit(p, OP_SETFIELD, key);
-        int i = get_string_idx(p, key->as.name.s);
         emit16(p, i, key);
+    } else {
+        int b = augop2byte(op);
+        emitn(p, OP_DUP);
+        emit(p, OP_GETFIELD, key);
+        emit16(p, i, key);
+        compile_node(p, val, s);
+        emitn(p, b);
+        emit(p, OP_SETFIELD, key);
+        emit16(p, i, key);
+    }
+}
+
+static void compile_assign(proto *p, ast *n, scope *s)
+{
+    /* TODO: compile all assign types */
+    //SEAL_ASSERT(n->as.assign.op == IMOP_ASSIGN);
+    SEAL_ASSERT(n->as.assign.var->type == AST_NAME ||
+                n->as.assign.var->type == AST_FIELD);
+
+    ast *var = n->as.assign.var;
+    ast *val = n->as.assign.val;
+    int op = n->as.assign.op;
+
+    if (var->type == AST_NAME) {
+        compile_assign_name(p, var, val, op, s);
+    } else if (var->type == AST_FIELD) {
+        compile_assign_field(p, var, val, op, s);
     }
 }
 

@@ -251,6 +251,7 @@ static int load_lib(seal_state *S, const char *name)
 {
     included_file_t ift = fallback_file(name);
     if (ift.file_type == INCLUDED_FILE_TYPE_NIL) {
+        vm_error(S, "neither \'%s.seal\' nor \'%s.so\' file found", name, name);
         return 1;
     }
 
@@ -326,7 +327,7 @@ int eval(seal_state *S)
             seal_pushint(S, n);
             break;
         case OP_POP:
-            seal_pop(S);
+            (void)seal_pop(S);
             break;
         case OP_DUP:
             seal_dup(S);
@@ -481,12 +482,12 @@ int eval(seal_state *S)
             break;
         case OP_GETLOCAL:
             idx = FETCH(S);
-            seal_push(S, seal_getstack(S, idx));
+            a = seal_getstack(S, idx);
+            seal_push(S, a);
             break;
         case OP_SETLOCAL:
-            seal_dup(S);
             idx = FETCH(S);
-            seal_getstack(S, idx) = seal_pop(S);
+            seal_getstack(S, idx) = seal_getstack(S, -1);
             break;
 
         /* lists and maps */
@@ -523,7 +524,7 @@ int eval(seal_state *S)
             /* replace map with value */
             seal_getstack(S, -2) = seal_getstack(S, -1);
             /* pop value */
-            seal_pop(S);
+            (void)seal_pop(S);
             break;
         }
         /*
