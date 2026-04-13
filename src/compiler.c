@@ -371,9 +371,22 @@ static void compile_func_def(proto *p, ast *n, scope *s)
 
 static void compile_call(proto *p, ast *n, scope *s)
 {
-    SEAL_ASSERT(n->type == AST_FUNC_CALL);
+    //SEAL_ASSERT(n->type == AST_FUNC_CALL);
+    // TODO: add guard for method (254)
     SEAL_ASSERT(n->as.call.argc <= 0xFF);
-    compile_node(p, n->as.call.f, s); /* function */
+    int is_method = (tnode(n) == AST_METH_CALL);
+    if (is_method) {
+        ast *obj = n->as.call.f;
+        compile_node(p, obj->as.field.m, s);
+        emitn(p, OP_DUP);
+        emit(p, OP_GETFIELD, obj->as.field.f);
+        int i = get_string_idx(p, obj->as.field.f->as.name.s);
+        emit16(p, i, obj->as.field.f);
+        emitn(p, OP_SWAP);
+        emitn(p, 2);
+    } else {
+        compile_node(p, n->as.call.f, s); /* function */
+    }
 
     ast *arg = n->as.call.argv;
     while (arg) { /* compile arguments */
@@ -382,7 +395,7 @@ static void compile_call(proto *p, ast *n, scope *s)
     }
 
     emit(p, OP_CALL, n); /* call instruction */
-    emit(p, n->as.call.argc, n); /* number of arguments */
+    emit(p, n->as.call.argc + is_method, n); /* number of arguments */
 }
 
 static void compile_field(proto *p, ast *n, scope *s)

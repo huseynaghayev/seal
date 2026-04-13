@@ -206,7 +206,7 @@ typedef struct {
 
 included_file_t fallback_file(const char *name)
 {
-    static const char *path = "/home/huseyn/seal/libs/";
+    const char *path = getenv("SEAL_PATH");
     //char full_path[strlen(path) + strlen(name) + strlen(".seal") + 1];
     char full_path[512];
     included_file_t ift = { INCLUDED_FILE_TYPE_NIL, NULL };
@@ -334,8 +334,13 @@ int eval(seal_state *S)
             break;
         /*
         case OP_COPY:
-        case OP_SWAP:
         */
+        case OP_SWAP:
+            idx = FETCH(S);
+            a = seal_getstack(S, -1);
+            seal_getstack(S, -1) = seal_getstack(S, -1 - idx);
+            seal_getstack(S, -1 - idx) = a;
+            break;
         case OP_JMP:
             jmp_offset  = FETCH(S) << 8;
             jmp_offset |= FETCH(S);
