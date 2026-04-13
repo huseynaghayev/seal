@@ -383,7 +383,7 @@ static void compile_call(proto *p, ast *n, scope *s)
         int i = get_string_idx(p, obj->as.field.f->as.name.s);
         emit16(p, i, obj->as.field.f);
         emitn(p, OP_SWAP);
-        emitn(p, 2);
+        emitn(p, 1);
     } else {
         compile_node(p, n->as.call.f, s); /* function */
     }

@@ -507,9 +507,11 @@ int eval(seal_state *S)
         case OP_NEWMAP:
             seal_newmap(S);
             break;
-        /*
         case OP_MAKEMAP:
+            n = FETCH(S);
+            seal_makemap(S, n);
             break;
+        /*
         case OP_PUSHMAP:
             break;
         */

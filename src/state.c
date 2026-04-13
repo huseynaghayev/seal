@@ -2,6 +2,7 @@
 #include "core.h"
 #include "parser.h"
 #include "compiler.h"
+#include "value.h"
 #include "vm.h"
 #include <stdio.h>
 #include <stdarg.h>
@@ -423,8 +424,22 @@ void seal_makelist(seal_state *S, int size);
 
 void seal_makemap(seal_state *S, int size)
 {
-    SEAL_ASSERT(size == 0);
-    seal_push(S, SEAL_VMAP(hashmap_Cnew(8)));
+    if (size == 0) {
+        seal_push(S, SEAL_VMAP(hashmap_Cnew(8)));
+    } else {
+        /* TODO: fix hashmap size */
+        struct seal_value m = SEAL_VMAP(hashmap_Cnew(size / HASHMAP_LOAD_FACTOR));
+        struct seal_value *base = &seal_getstack(S, -size * 2);
+        struct seal_value v;
+        const char *key;
+        for (int i = 0; i < size; i++) {
+            key = SEAL_AS_STRINGVAL(*base++);
+            v = *base++;
+            hashmap_insert(SEAL_AS_MAP(m), key, v);
+        }
+        S->sp -= size * 2;
+        seal_push(S, m);
+    }
 }
 
 /* get */

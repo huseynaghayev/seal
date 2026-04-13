@@ -1,6 +1,7 @@
 CC = gcc
 # CFLAGS = -Wall -Wextra -g
 CFLAGS =
+LDFLAGS = -rdynamic
 DEFS   = -DUSE_GNU_READL=1
 LIBS   = -lreadline
 SRCDIR = src
@@ -13,7 +14,7 @@ OBJS = $(SRCS:.c=.o)
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(OBJS) -o $(TARGET) $(LIBS)
+	$(CC) $(OBJS) -o $(TARGET) $(LDFLAGS) $(LIBS)
 
 $(SRCDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) $(CFLAGS) $(DEFS) -c $< -o $@
