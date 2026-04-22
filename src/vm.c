@@ -101,7 +101,7 @@ static const char *const _type_names[] = {
     if (is_num(a) && is_num(b)) \
         seal_pushbool(S, as_num(a) op as_num(b)); \
     else if (is_str(a) && is_str(b)) \
-        seal_pushbool(S, strcmp(as_strv(a), as_strv(b)) op 0); \
+        seal_pushbool(S, as_strv(a) == as_strv(b) || strcmp(as_strv(a), as_strv(b)) op 0); \
     else \
         bin_op_err(S, op, a, b); \
 } while (0)
