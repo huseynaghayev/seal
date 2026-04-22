@@ -271,6 +271,10 @@ static int load_lib(seal_state *S, const char *name)
 
         sprintf(fname, "sealopen_%s", pure_name);
         seal_Cfunction open_func = dlsym(handler, fname);
+        if (!open_func) {
+            seal_throw(S, "ensure \'%s\' function exists in \'%s\' library",
+                       fname, ift.full_path);
+        }
         open_func(S);
         //dlclose(handler);
     } else {

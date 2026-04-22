@@ -409,7 +409,11 @@ void seal_pushfloat(seal_state *S, seal_float f)
     seal_push(S, SEAL_VFLOAT(f));
 }
 
-void seal_pushstring(seal_state *S, const char *str);
+void seal_pushstring(seal_state *S, const char *str)
+{
+    struct seal_string *s = string_new(str, false, false);
+    seal_push(S, SEAL_VSTRING(s));
+}
 
 void seal_pushCfunc(seal_state *S, seal_Cfunction f)
 {

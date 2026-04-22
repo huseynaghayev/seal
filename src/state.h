@@ -67,6 +67,7 @@ int seal_call(seal_state *S, int argc);
 int seal_gettop(seal_state *S);
 void seal_checkargcopt(seal_state *S, int min, int is_var);
 #define seal_checkargc(S, c) seal_checkargcopt(S, c, false)
+#define seal_checkargcvar(S, c) seal_checkargcopt(S, c, true)
 int seal_gettype(seal_state *S, int i);
 const char *seal_gettypename(seal_state *S, int i);
 

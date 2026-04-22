@@ -1,10 +1,9 @@
 #include "core.h"
+#include "state.h"
 #include "value.h"
 #include <stdio.h>
 
-
 typedef struct seal_value value;
-
 
 static void print_val(value *v)
 {
@@ -75,8 +74,47 @@ static void core_print(seal_state *S)
     seal_pushnull(S);
 }
 
+static void core_read(seal_state *S)
+{
+    int n = seal_gettop(S);
+    value *args = S->stack + S->sp - n;
+
+    for (int i = 0; i < n; i++) {
+        print_val(args + i);
+        if (i < n - 1)
+            putchar(' ');
+    }
+
+    /* TODO: FIX IT */
+    static char buf[1024];
+    fgets(buf, sizeof(buf), stdin);
+    *strchr(buf, '\n') = '\0';
+    seal_pushstring(S, buf);
+}
+
+static void core_exit(seal_state *S)
+{
+    seal_checkargc(S, 1);
+    exit(seal_checkint(S, 0));
+    seal_pushnull(S); /* Pointless, because program was already terminated.
+                       * But keep it as a convention.
+                       */
+}
+
+static void core_typeof(seal_state *S)
+{
+    seal_checkargc(S, 1);
+    seal_pushstring(S, seal_gettypename(S, 0));
+}
+
 void seal_core_init(seal_state *S)
 {
     seal_pushCfunc(S, core_print);
     seal_setglobal(S, "print");
+    seal_pushCfunc(S, core_read);
+    seal_setglobal(S, "read");
+    seal_pushCfunc(S, core_exit);
+    seal_setglobal(S, "exit");
+    seal_pushCfunc(S, core_typeof);
+    seal_setglobal(S, "typeof");
 }
