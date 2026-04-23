@@ -332,7 +332,7 @@ static void compile_func_def(proto *p, ast *n, scope *s)
         param = param->next;
     }
 
-    struct chunk c = compile(n->as.func.body, local_scope.h, p->file_name);
+    struct chunk c = compile(NULL, n->as.func.body, local_scope.h, p->file_name);
     struct chunk *pc = SEAL_MALLOC(sizeof(c));
     *pc = c;
     struct seal_value f;
@@ -775,7 +775,7 @@ static void compile_node(proto *p, ast *n, scope *s)
             switch (tnode(temp)) {
             case AST_NULL: case AST_TRUE: case AST_FALSE:
             case AST_INT: case AST_FLOAT: case AST_STRING:
-                break;
+                //break; // do not optimize to let REPL print
             case AST_NAME: case AST_FUNC_DEF: case AST_FUNC_CALL:
             case AST_METH_CALL: case AST_INDEX: case AST_FIELD:
             case AST_LIST: case AST_MAP: case AST_UNARY:
@@ -860,7 +860,10 @@ static void compile_node(proto *p, ast *n, scope *s)
 
 
 /* convert this return type to pointer */
-struct chunk compile(struct ast *n, struct seal_hashmap *h, const char *file_name)
+struct chunk compile(struct seal_state *S,
+                     struct ast *n,
+                     struct seal_hashmap *h,
+                     const char *file_name)
 {
     struct chunk c = {0};
     proto p = {0};
@@ -868,6 +871,15 @@ struct chunk compile(struct ast *n, struct seal_hashmap *h, const char *file_nam
     scope s = {0};
     s.h = h ? h : hashmap_Nnew(SEAL_LOCAL_MAX);
     compile_node(&p, n, &s);
+    if (S && S->repl_mode && p.code[p.code_size - 1] == OP_POP) {
+        p.code[p.code_size - 1] = OP_GETGLOBAL;
+        emit16(&p, get_string_idx(&p, "print"), NULL);
+        emitn(&p, OP_SWAP);
+        emitn(&p, 1);
+        emitn(&p, OP_CALL);
+        emitn(&p, 1);
+        emitn(&p, OP_POP);
+    }
     emitn(&p, OP_PUSHNULL);
     emitn(&p, OP_RETURN);
 

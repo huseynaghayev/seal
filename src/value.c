@@ -46,7 +46,7 @@ struct seal_string *string_new(const char *s, bool collect, bool dup)
 
     str->collect = collect;
     if (collect)
-        str->ref_count = 0;
+        str->marked = false;
 
     str->len = strlen(s);
 
@@ -65,7 +65,7 @@ struct seal_list *list_new(int cap)
     if (!list)
         return NULL;
 
-    list->ref_count = 0;
+    list->marked = false;
     list->len = 0;
     list->cap = cap;
     list->collect = true;
@@ -99,7 +99,7 @@ struct seal_hashmap *hashmap_new(int cap, bool collect)
         return NULL;
 
     map->entries = SEAL_CALLOC(cap, sizeof(struct h_entry));
-    map->ref_count = 0;
+    map->marked = false;
     map->cap = cap;
     map->len = 0;
     map->collect = collect;
@@ -200,20 +200,20 @@ int hashmap_insert_e(struct seal_hashmap *map,
 
 int hashmap_remove(struct seal_hashmap *map, const char *key)
 {
-  if (map->len <= 0)
-      return 1;
+    if (map->len <= 0)
+        return 1;
 
-  struct h_entry *searched = hashmap_search(map, key);
+    struct h_entry *searched = hashmap_search(map, key);
 
-  if (searched->key == NULL)
-    return 1;
+    if (searched->key == NULL)
+        return 1;
 
-  searched->is_tomb = true;
-  searched->key = NULL;
+    searched->is_tomb = true;
+    searched->key = NULL;
 
-  map->len--;
+    map->len--;
 
-  return 0;
+    return 0;
 }
 
 int hashmap_free(struct seal_hashmap *map, bool free_key)
@@ -229,8 +229,7 @@ int hashmap_free(struct seal_hashmap *map, bool free_key)
         if (free_key)
             SEAL_FREE((char*)e.key);
 
-        if (map->collect) {}
-            /* gc collect seal value */;
+        if (map->collect) {} /* gc collect seal value */
     }
 
     free(map->entries);

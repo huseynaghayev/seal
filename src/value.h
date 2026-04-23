@@ -73,7 +73,7 @@ struct seal_value {
 };
 
 #define GC_Header \
-    int ref_count; \
+    bool marked; \
     bool collect
 
 #define Array_Specs \

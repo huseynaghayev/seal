@@ -25,6 +25,10 @@ int main(int argc, char **argv)
 {
     seal_state *S;
     if (argc > 1) {
+        if (strcmp(argv[1], "--version") == 0) {
+            printf("Seal %s by Huseyn Aghayev (c) 2024-2026\nhttps://seallang.org\n", SEAL_VERSION);
+            return 0;
+        }
         FILE *fp = fopen(argv[1], "r"); 
         struct stat path_stat;
         if (!fp) {
@@ -56,6 +60,7 @@ int main(int argc, char **argv)
     }
 
     S = seal_state_new();
+    S->repl_mode = true;
 #if USE_GNU_READL
     char *input;
 #else
@@ -66,9 +71,13 @@ int main(int argc, char **argv)
 
 repl:
 #if USE_GNU_READL
-    if ((input = readline("> ")) != NULL)
-        if (*input)
+    if ((input = readline("> ")) != NULL) {
+        if (*input) {
             add_history(input);
+        }
+    } else {
+        goto end;
+    }
 #else
     printf("> ");
     if (fgets(input, SRC_SIZE, stdin) == NULL) {
@@ -85,6 +94,15 @@ repl:
         print_stack(S);
     } else if (strcmp(input, "G") == 0) {
         printf("Globals: cap: %d, size %d\n", S->globals->cap, S->globals->len);
+    } else if (strcmp(input, "intern") == 0) {
+        struct seal_hashmap *lexs = S->l.lexemes;
+        if (lexs) {
+            for (int i = 0; i < lexs->cap; i++) {
+                if (lexs->entries[i].key) {
+                    printf("%s\n", lexs->entries[i].key);
+                }
+            }
+        }
     } else {
         if (seal_dostring(S, input)) {
             fprintf(stderr, "%s\n", S->errmsg);

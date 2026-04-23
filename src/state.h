@@ -37,6 +37,7 @@ typedef struct seal_state {
     const char *file_name;
     jmp_buf fail_point; /* used for error handling */
     int status;
+    int repl_mode;
     char errmsg[SEAL_ERRMSG_BUFSIZ];
     char prev_errmsg[SEAL_ERRMSG_BUFSIZ];
     char stktrc[SEAL_STKTRC_BUFSIZ];

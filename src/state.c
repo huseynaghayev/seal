@@ -33,6 +33,8 @@ seal_state *seal_state_new()
     S->l.lexemes = NULL;
     S->l.S = S;
 
+    S->repl_mode = false;
+
     // Initialize core if needed
     seal_core_init(S);
 
@@ -150,7 +152,7 @@ int seal_dostring(seal_state *S, const char *str)
         struct ast *root = parse(&p);
         //dump_ast(root, 0);
         c = SEAL_MALLOC(sizeof(struct chunk));
-        *c = compile(root, NULL, S->file_name);
+        *c = compile(S, root, NULL, S->file_name);
         //dump_chunk(&c);
         //dump_bytecode(&c);
         arena_free(p.a);

@@ -5,6 +5,7 @@
 #include "sealconf.h"
 #include "ast.h"
 #include "value.h"
+#include "state.h"
 
 
 enum {
@@ -99,7 +100,10 @@ struct chunk {
 
 int get_line(struct chunk *c, seal_byte *ip);
 
-struct chunk compile(struct ast *a, struct seal_hashmap *h, const char *file_name);
+struct chunk compile(struct seal_state *S,
+                     struct ast *n,
+                     struct seal_hashmap *h,
+                     const char *file_name);
 
 #if SEAL_DEBUG
 const char *get_opname(int op);

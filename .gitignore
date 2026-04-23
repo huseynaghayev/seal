@@ -12,3 +12,4 @@ seal_visitor
 !modules/*.seal
 *.json
 *.txt
+.clangd

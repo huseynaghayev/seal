@@ -208,7 +208,7 @@ included_file_t fallback_file(const char *name)
 {
     const char *path = getenv("SEAL_PATH");
     //char full_path[strlen(path) + strlen(name) + strlen(".seal") + 1];
-    char full_path[512];
+    char full_path[PATH_MAX];
     included_file_t ift = { INCLUDED_FILE_TYPE_NIL, NULL };
     FILE *f = NULL;
 
