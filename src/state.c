@@ -12,6 +12,17 @@
 #define STACK_START_SIZE 1024
 #define CALL_FRAME_START_SIZE 64
 
+static const char *const _type_names[] = {
+    [SEAL_TNULL] = "null",
+    [SEAL_TBOOL] = "bool",
+    [SEAL_TINT] = "integer",
+    [SEAL_TFLOAT] = "float",
+    [SEAL_TSTRING] = "string",
+    [SEAL_TLIST] = "list",
+    [SEAL_TMAP] = "map",
+    [SEAL_TFUNCTION] = "function"
+};
+
 seal_state *seal_state_new()
 {
     seal_state *S = SEAL_MALLOC(sizeof(seal_state));
@@ -238,10 +249,9 @@ int seal_call(seal_state *S, int argc)
 {
     struct seal_value f;
     f = seal_getstack(S, -argc - 1);
-    SEAL_ASSERT(SEAL_IS_FUNC(f));
-
-    if (SEAL_AS_FUNC(f)->type == FUNCTION_TYPE_SEAL) {
-        SEAL_ASSERT(SEAL_AS_SFUNC(f).psize == argc);
+    if (!SEAL_IS_FUNC(f)) {
+        seal_throw(S, "cannot call \'%s\' object", _type_names[f.type]);
+        return 1;
     }
 
     if (S->ci_idx >= 0) {
@@ -252,6 +262,13 @@ int seal_call(seal_state *S, int argc)
     S->ci++;
     S->ci_idx++;
     S->ci->func_idx = S->sp - argc - 1;
+
+    if (SEAL_AS_FUNC(f)->type == FUNCTION_TYPE_SEAL) {
+        /* TODO: after adding variadic arguments into Seal,
+         * check for them too
+         */
+        seal_checkargc(S, SEAL_AS_SFUNC(f).psize);
+    }
 
     if (SEAL_AS_FUNC(f)->type == FUNCTION_TYPE_SEAL) {
         S->ci->file_name = SEAL_AS_SFUNC(f).file_name;
@@ -292,17 +309,6 @@ int seal_gettype(seal_state *S, int i)
 {
     return seal_getstack(S, i).type;
 }
-
-static const char *const _type_names[] = {
-    [SEAL_TNULL] = "null",
-    [SEAL_TBOOL] = "bool",
-    [SEAL_TINT] = "integer",
-    [SEAL_TFLOAT] = "float",
-    [SEAL_TSTRING] = "string",
-    [SEAL_TLIST] = "list",
-    [SEAL_TMAP] = "map",
-    [SEAL_TFUNCTION] = "function"
-};
 
 const char *seal_gettypename(seal_state *S, int i)
 {
