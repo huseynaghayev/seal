@@ -1,4 +1,4 @@
-#include <seal.h>
+#include "seal.h"
 #include <time.h>
 
 #if defined(__linux__)
@@ -24,25 +24,25 @@ static const char *arch = "arm64";
 static const char *arch = "Unknown";
 #endif
 
-static void seal_shell(seal_state *S)
+static void system_shell(seal_state *S)
 {
     seal_checkargc(S, 1);
     seal_pushint(S, system(seal_checkstring(S, 0)));
 }
 
-static void seal_time(seal_state *S)
+static void system_time(seal_state *S)
 {
     seal_checkargc(S, 0);
     seal_pushint(S, time(NULL));
 }
 
-static void seal_sleep(seal_state *S)
+static void system_sleep(seal_state *S)
 {
     seal_checkargc(S, 1);
     seal_pushint(S, usleep(seal_checkint(S, 0) * 1000));
 }
 
-#define REG(name) { #name, seal_##name }
+#define REG(name) { #name, system_##name }
 
 static const seal_reg syslib[] = {
     REG(shell),
@@ -51,7 +51,7 @@ static const seal_reg syslib[] = {
     { NULL, NULL }
 };
 
-SEAL_API void sealopen_system(seal_state *S)
+void sealopen_system(seal_state *S)
 {
     seal_newlib(S, syslib);
     seal_pushstring(S, osname);

@@ -1,4 +1,3 @@
-#include "core.h"
 #include "state.h"
 #include "value.h"
 #include <stdio.h>
@@ -107,14 +106,10 @@ static void core_typeof(seal_state *S)
     seal_pushstring(S, seal_gettypename(S, 0));
 }
 
-void seal_core_init(seal_state *S)
+void sealopen_core(seal_state *S)
 {
-    seal_pushCfunc(S, core_print);
-    seal_setglobal(S, "print");
-    seal_pushCfunc(S, core_read);
-    seal_setglobal(S, "read");
-    seal_pushCfunc(S, core_exit);
-    seal_setglobal(S, "exit");
-    seal_pushCfunc(S, core_typeof);
-    seal_setglobal(S, "typeof");
+    seal_register(S, core_print,  "print");
+    seal_register(S, core_read,   "read");
+    seal_register(S, core_exit,   "exit");
+    seal_register(S, core_typeof, "typeof");
 }

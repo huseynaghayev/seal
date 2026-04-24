@@ -1,6 +1,7 @@
 #include "vm.h"
 #include "compiler.h"
 #include "state.h"
+#include "libs.h"
 #include <stdio.h>
 #include <dlfcn.h>
 
@@ -249,6 +250,14 @@ success:
 
 static int load_lib(seal_state *S, const char *name)
 {
+    if (strcmp(name, "math") == 0) {
+        sealopen_math(S);
+        return 0;
+    } else if (strcmp(name, "system") == 0) {
+        sealopen_system(S);
+        return 0;
+    }
+
     included_file_t ift = fallback_file(name);
     if (ift.file_type == INCLUDED_FILE_TYPE_NIL) {
         vm_error(S, "neither \'%s.seal\' nor \'%s.so\' file found", name, name);

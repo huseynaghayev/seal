@@ -1,16 +1,16 @@
 #include "state.h"
-#include "core.h"
 #include "parser.h"
 #include "compiler.h"
 #include "value.h"
 #include "vm.h"
+#include "libs.h"
 #include <stdio.h>
 #include <stdarg.h>
 
 
 #define GLOBALS_START_SIZE 64
-#define STACK_START_SIZE 1024
 #define CALL_FRAME_START_SIZE 64
+#define STACK_START_SIZE (CALL_FRAME_START_SIZE * 10)
 
 static const char *const _type_names[] = {
     [SEAL_TNULL] = "null",
@@ -46,8 +46,7 @@ seal_state *seal_state_new()
 
     S->repl_mode = false;
 
-    // Initialize core if needed
-    seal_core_init(S);
+    sealopen_core(S);
 
     return S;
 }

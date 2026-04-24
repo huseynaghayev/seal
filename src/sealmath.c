@@ -1,4 +1,4 @@
-#include <seal.h>
+#include "seal.h"
 #include <math.h>
 
 static void seal_abs(seal_state *S)
@@ -217,7 +217,7 @@ static const seal_reg mathlib[] = {
     { NULL, NULL }
 };
 
-SEAL_API void sealopen_math(seal_state *S)
+void sealopen_math(seal_state *S)
 {
     seal_newlib(S, mathlib);
     seal_pushfloat(S, M_PI);

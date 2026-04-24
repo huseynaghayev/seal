@@ -3,7 +3,7 @@ CC = gcc
 CFLAGS =
 LDFLAGS = -rdynamic
 DEFS   = -DUSE_GNU_READL=1
-LIBS   = -lreadline
+LIBS   = -lreadline -lm
 SRCDIR = src
 TARGET = seal
 
