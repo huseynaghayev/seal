@@ -2,6 +2,7 @@
 #define STATE_H
 
 
+#include "seal.h"
 #include "value.h"
 #include "lexer.h"
 #include <setjmp.h>
@@ -52,6 +53,7 @@ typedef struct seal_state {
     int ci_idx;    /* call info index */
     struct call_info *ci; /* current call info */
     seal_byte *ip; /* instruction pointer */
+    struct seal_hashmap *packages; /* loaded packages */
 } seal_state;
 
 
@@ -118,6 +120,8 @@ int seal_setindex(seal_state *S, int list_i, int i);
  */
 int seal_setfield(seal_state *S, int map_i, const char *key);
 
+// TODO: fix seal.h state.h same function declarations
+/*
 typedef struct {
     const char *name;
     seal_Cfunction f;
@@ -128,6 +132,6 @@ typedef struct {
     seal_setglobal(S, name) \
 )
 void seal_newlib(seal_state *S, const seal_reg *reg);
-
+*/
 
 #endif /* STATE_H */

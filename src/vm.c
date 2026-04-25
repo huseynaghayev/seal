@@ -248,13 +248,28 @@ success:
     return ift;
 }
 
+static int is_lib_loaded(seal_state *S, const char *name)
+{
+    struct h_entry *e;
+    e = hashmap_search(S->packages, name);
+    return !nullhentry(e);
+}
+
+#define add2loaded_libs(S, name) \
+    hashmap_insert((S)->packages, name, SEAL_VBOOL(true))
+
 static int load_lib(seal_state *S, const char *name)
 {
+    if (is_lib_loaded(S, name))
+        return 0;
+
     if (strcmp(name, "math") == 0) {
         sealopen_math(S);
+        add2loaded_libs(S, "math");
         return 0;
     } else if (strcmp(name, "system") == 0) {
         sealopen_system(S);
+        add2loaded_libs(S, "system");
         return 0;
     }
 
@@ -294,6 +309,7 @@ static int load_lib(seal_state *S, const char *name)
         }
     }
 
+    add2loaded_libs(S, ift.full_path);
     return 0;
 }
 

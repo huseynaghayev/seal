@@ -1,6 +1,10 @@
 #include "seal.h"
 #include <time.h>
 
+#if SEAL_DEBUG
+#include "state.h"
+#endif
+
 #if defined(__linux__)
 #include <unistd.h>
 static const char *osname = "Linux";
@@ -60,5 +64,9 @@ void sealopen_system(seal_state *S)
     seal_setfield(S, -2, "arch");
     seal_pushstring(S, SEAL_VERSION);
     seal_setfield(S, -2, "version");
+#if SEAL_DEBUG
+    seal_push(S, SEAL_VMAP(S->packages));
+    seal_setfield(S, -2, "packages");
+#endif
     seal_setglobal(S, "System");
 }
