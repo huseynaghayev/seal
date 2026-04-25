@@ -72,6 +72,15 @@ static const char *const _type_names[] = {
 /* arithmetic */
 #define int_op(S, op, a, b)   seal_pushint(S, as_int(a) op as_int(b))
 #define num_op(S, op, a, b)   seal_pushfloat(S, as_num(a) op as_num(b))
+#define str_op(S, a, b) do { \
+    int len = as_str(a)->len + as_str(b)->len; \
+    char *s = SEAL_MALLOC(len + 1); \
+    /* TODO: use memcpy or strpcpy for speed */ \
+    strcpy(s, as_strv(a)); \
+    strcat(s, as_strv(b)); \
+    /* TODO: fix string ownership */ \
+    seal_pushstring(S, s); \
+} while (0)
 
 #define bin_op(S, op, a, b) do { \
     if (is_int(a) && is_int(b)) \
@@ -80,6 +89,17 @@ static const char *const _type_names[] = {
         num_op(S, op, a, b); \
     else \
         bin_op_err(S, op, a, b); \
+} while (0)
+
+#define add_op(S, a, b) do { \
+    if (is_int(a) && is_int(b)) \
+        int_op(S, +, a, b); \
+    else if (is_num(a) && is_num(b)) \
+        num_op(S, +, a, b); \
+    else if (is_str(a) && is_str(b)) \
+        str_op(S, a, b); \
+    else \
+        bin_op_err(S, +, a, b); \
 } while (0)
 
 #define mod_op(S, a, b) do { \
@@ -271,6 +291,12 @@ static int load_lib(seal_state *S, const char *name)
         sealopen_system(S);
         add2loaded_libs(S, "system");
         return 0;
+    } else if (strcmp(name, "string") == 0) {
+        sealopen_string(S);
+        add2loaded_libs(S, "string");
+        seal_getglobal(S, "String");
+        S->string_lib = as_map(seal_pop(S));
+        return 0;
     }
 
     included_file_t ift = fallback_file(name);
@@ -415,7 +441,7 @@ int eval(seal_state *S)
         /* binaries */
         case OP_ADD:
             get_ab(S, a, b);
-            bin_op(S, +, a, b);
+            add_op(S, a, b);
             break;
         case OP_SUB:
             get_ab(S, a, b);
@@ -549,7 +575,18 @@ int eval(seal_state *S)
             idx  = FETCH(S) << 8;
             idx |= FETCH(S);
             const char *key = as_strv(GET_CONST(S, idx));
-            if (!is_map(seal_getstack(S, -1))) {
+            switch (seal_getstack(S, -1).type) {
+            case SEAL_TMAP:
+                break;
+            case SEAL_TSTRING:
+                if (!S->string_lib)
+                    goto error;
+
+                seal_pop(S);
+                seal_push(S, SEAL_VMAP(S->string_lib));
+                break;
+error:
+            default:
                 vm_error(S, "cannot index \'%s\'", valt_name(seal_getstack(S, -1)));
             }
             int status = seal_getfield(S, -1, key);

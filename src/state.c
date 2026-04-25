@@ -36,6 +36,7 @@ seal_state *seal_state_new()
 
     S->globals = hashmap_Nnew(GLOBALS_START_SIZE);
     S->packages = hashmap_Nnew(8);
+    S->string_lib = NULL;
 
     S->ci_arr = SEAL_MALLOC(sizeof(struct call_info) * CALL_FRAME_START_SIZE);
     S->ci_idx = -1;

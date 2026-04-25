@@ -54,6 +54,7 @@ typedef struct seal_state {
     struct call_info *ci; /* current call info */
     seal_byte *ip; /* instruction pointer */
     struct seal_hashmap *packages; /* loaded packages */
+    struct seal_hashmap *string_lib;
 } seal_state;
 
 
@@ -120,7 +121,7 @@ int seal_setindex(seal_state *S, int list_i, int i);
  */
 int seal_setfield(seal_state *S, int map_i, const char *key);
 
-// TODO: fix seal.h state.h same function declarations
+/* TODO: fix seal.h state.h same function declarations */
 /*
 typedef struct {
     const char *name;
