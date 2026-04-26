@@ -93,14 +93,11 @@ static inline token eat(parser *p, int t)
 
 /* AST */
 static ast __NODE_NOP   = { .type = AST_NOP   };
-static ast __NODE_NULL  = { .type = AST_NULL  };
-static ast __NODE_TRUE  = { .type = AST_TRUE  };
-static ast __NODE_FALSE = { .type = AST_FALSE };
 
 #define NODE_NOP   (&__NODE_NOP)
-#define NODE_NULL  (&__NODE_NULL)
-#define NODE_TRUE  (&__NODE_TRUE)
-#define NODE_FALSE (&__NODE_FALSE)
+#define NODE_NULL  ast_new(p, AST_NULL)
+#define NODE_TRUE  ast_new(p, AST_TRUE)
+#define NODE_FALSE ast_new(p, AST_FALSE)
 
 #define atype(a)  ((a)->type)
 #define islval(a) ( \
