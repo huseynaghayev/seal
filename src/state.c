@@ -36,7 +36,21 @@ seal_state *seal_state_new()
 
     S->globals = hashmap_Nnew(GLOBALS_START_SIZE);
     S->packages = hashmap_Nnew(8);
+
+#if SEAL_DEBUG
+    sealopen_string(S);
+    hashmap_insert(S->packages, "string", SEAL_VBOOL(true));
+    seal_getglobal(S, "String");
+    S->string_lib = SEAL_AS_MAP(seal_pop(S));
+
+    sealopen_list(S);
+    hashmap_insert(S->packages, "list", SEAL_VBOOL(true));
+    seal_getglobal(S, "List");
+    S->list_lib = SEAL_AS_MAP(seal_pop(S));
+#else
     S->string_lib = NULL;
+    S->list_lib = NULL;
+#endif /* SEAL_DEBUG */
 
     S->ci_arr = SEAL_MALLOC(sizeof(struct call_info) * CALL_FRAME_START_SIZE);
     S->ci_idx = -1;
@@ -256,8 +270,11 @@ int seal_call(seal_state *S, int argc)
     }
 
     if (S->ci_idx >= 0) {
-        struct chunk *prev_chunk = SEAL_AS_SFUNC(S->stack[S->ci->func_idx]).c;
-        S->ci->line = get_line(prev_chunk, S->ip);
+        struct seal_func *prev_f = SEAL_AS_FUNC(S->stack[S->ci->func_idx]);
+        if (prev_f->type == FUNCTION_TYPE_SEAL) {
+            struct chunk *prev_chunk = SEAL_AS_SFUNC(S->stack[S->ci->func_idx]).c;
+            S->ci->line = get_line(prev_chunk, S->ip);
+        }
     }
 
     S->ci++;
@@ -356,6 +373,14 @@ const char *seal_tostring(seal_state *S, int i)
         checkval_err(S, i, SEAL_T##type, out); \
     return SEAL_AS_##type(v);
 
+void seal_checktype(seal_state *S, int i, int type)
+{
+    struct seal_value v;
+    int out;
+    if (!val_is(S, i, type, v, out))
+        checkval_err(S, i, type, out);
+}
+
 seal_bool seal_checkbool(seal_state *S, int i)
 {
     check_body(BOOL);
@@ -398,6 +423,11 @@ const char *seal_checkstring(seal_state *S, int i)
 
 /* push */
 
+void seal_pushidx(seal_state *S, int i)
+{
+    seal_push(S, seal_getstack(S, i));
+}
+
 void seal_pushnull(seal_state *S)
 {
     seal_push(S, SEAL_VNULL);
@@ -433,7 +463,32 @@ void seal_pushCfunc(seal_state *S, seal_Cfunction f)
     seal_push(S, SEAL_VFUNC(func));
 }
 
-void seal_makelist(seal_state *S, int size);
+#define ofpow2(n) ( \
+    (n)--, \
+    (n) |= (n) >> 1, \
+    (n) |= (n) >> 2, \
+    (n) |= (n) >> 4, \
+    (n) |= (n) >> 8, \
+    (n) |= (n) >> 16, \
+    (n)++ \
+)
+
+void seal_makelist(seal_state *S, int size)
+{
+    if (size == 0) {
+        seal_push(S, SEAL_VLIST(list_new(0)));
+    } else {
+        int n = size;
+        ofpow2(n);
+        struct seal_list *l = list_new(n);
+        struct seal_value *base = &seal_getstack(S, -size);
+        for (int i = 0; i < size; i++) {
+            list_pushval(l, *base++);
+        }
+        S->sp -= size;
+        seal_push(S, SEAL_VLIST(l));
+    }
+}
 
 void seal_makemap(seal_state *S, int size)
 {

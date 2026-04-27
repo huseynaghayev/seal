@@ -58,12 +58,12 @@ struct seal_string *string_new(const char *s, bool collect, bool dup)
 /* list */
 struct seal_list *list_new(int cap)
 {
-    struct seal_list *list = SEAL_MALLOC(
-            sizeof(struct seal_list) + cap * sizeof(struct seal_value)
-        );
+    struct seal_list *list = SEAL_MALLOC(sizeof(struct seal_list));
 
     if (!list)
         return NULL;
+
+    list->vals = cap > 0 ? SEAL_MALLOC(cap * sizeof(struct seal_value)) : NULL;
 
     list->marked = false;
     list->len = 0;
@@ -71,6 +71,15 @@ struct seal_list *list_new(int cap)
     list->collect = true;
 
     return list;
+}
+
+void list_pushval(struct seal_list *l, struct seal_value v)
+{
+    if (l->len >= l->cap) {
+        l->cap = l->cap > 0 ? l->cap * 2 : 1;
+        l->vals = SEAL_REALLOC(l->vals, l->cap * sizeof(struct seal_value));
+    }
+    l->vals[l->len++] = v;
 }
 
 /* hashmap */

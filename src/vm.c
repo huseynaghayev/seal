@@ -201,7 +201,9 @@ static void store_callstack(seal_state *S)
     offset += snprintf(S->stktrc + offset, SEAL_STKTRC_BUFSIZ - offset,
               "call stack traceback:\n");
     int i = S->ci_idx;
-    S->ci->line = get_line(CUR_SFUNC(S).c, S->ip /* - 1 */);
+    if (as_func((S)->stack[(S)->ci->func_idx])->type == FUNCTION_TYPE_SEAL) {
+        S->ci->line = get_line(CUR_SFUNC(S).c, S->ip /* - 1 */);
+    }
     while (i >= 0) {
         offset += snprintf(S->stktrc + offset, SEAL_STKTRC_BUFSIZ - offset,
                   "\t");
@@ -296,6 +298,12 @@ static int load_lib(seal_state *S, const char *name)
         add2loaded_libs(S, "string");
         seal_getglobal(S, "String");
         S->string_lib = as_map(seal_pop(S));
+        return 0;
+    } else if (strcmp(name, "list") == 0) {
+        sealopen_string(S);
+        add2loaded_libs(S, "list");
+        seal_getglobal(S, "List");
+        S->list_lib = as_map(seal_pop(S));
         return 0;
     }
 
@@ -551,11 +559,14 @@ int eval(seal_state *S)
             break;
 
         /* lists and maps */
-        /*
         case OP_NEWLIST:
+            seal_newlist(S);
             break;
         case OP_MAKELIST:
+            n = FETCH(S);
+            seal_makelist(S, n);
             break;
+        /*
         case OP_PUSHLIST:
             break;
         */
@@ -584,6 +595,13 @@ int eval(seal_state *S)
 
                 seal_pop(S);
                 seal_push(S, SEAL_VMAP(S->string_lib));
+                break;
+            case SEAL_TLIST:
+                if (!S->list_lib)
+                    goto error;
+
+                seal_pop(S);
+                seal_push(S, SEAL_VMAP(S->list_lib));
                 break;
 error:
             default:

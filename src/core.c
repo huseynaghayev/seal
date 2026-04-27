@@ -27,8 +27,23 @@ static void print_val(value *v)
         printf("%s", SEAL_AS_STRINGVAL(*v));
         break;
     case SEAL_TLIST:
-        printf("list: %p", (void*)SEAL_AS_LIST(*v));
+    {
+        //printf("list: %p", (void*)SEAL_AS_LIST(*v));
+        putchar('[');
+        struct seal_list *l = SEAL_AS_LIST(*v);
+        int len = l->len;
+        for (int i = 0; i < len; i++) {
+            print_val(&l->vals[i]);
+            if (i < len - 1) {
+                putchar(',');
+                putchar(' ');
+            } else {
+                break;
+            }
+        }
+        putchar(']');
         break;
+    }
     case SEAL_TMAP:
     {
         //printf("map: %p", (void*)SEAL_AS_MAP(*v));

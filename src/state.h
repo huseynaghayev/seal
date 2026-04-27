@@ -55,6 +55,7 @@ typedef struct seal_state {
     seal_byte *ip; /* instruction pointer */
     struct seal_hashmap *packages; /* loaded packages */
     struct seal_hashmap *string_lib;
+    struct seal_hashmap *list_lib;
 } seal_state;
 
 
@@ -82,6 +83,7 @@ seal_float  seal_tofloat(seal_state *S, int i);
 seal_float  seal_tonumber(seal_state *S, int i);
 const char *seal_tostring(seal_state *S, int i);
 
+void        seal_checktype(seal_state *S, int i, int type);
 seal_bool   seal_checkbool(seal_state *S, int i);
 seal_int    seal_checkint(seal_state *S, int i);
 seal_float  seal_checkfloat(seal_state *S, int i);
@@ -90,6 +92,7 @@ const char *seal_checkstring(seal_state *S, int i);
 
 /* push */
 
+void seal_pushidx(seal_state *S, int i);
 void seal_pushnull(seal_state *S);
 void seal_pushbool(seal_state *S, int b);
 void seal_pushint(seal_state *S, seal_int n);

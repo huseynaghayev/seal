@@ -101,10 +101,11 @@ struct seal_string *string_new(const char *s, bool collect, bool dup);
 struct seal_list {
     GC_Header;
     Array_Specs;
-    struct seal_value vals[];
+    struct seal_value *vals;
 };
 
 struct seal_list *list_new(int cap);
+void list_pushval(struct seal_list *l, struct seal_value v);
 
 /* hashmap */
 #define nullhentry(e) ((e) == NULL || (e)->key == NULL)

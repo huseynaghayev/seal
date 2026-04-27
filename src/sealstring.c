@@ -11,6 +11,7 @@ static void str_format(seal_state *S)
 
 static void str_lower(seal_state *S)
 {
+    seal_checkargc(S, 1);
     char *s = strdup(seal_checkstring(S, 0));
     int l = strlen(s);
     for (int i = 0; i < l; i++) {
@@ -21,6 +22,7 @@ static void str_lower(seal_state *S)
 
 static void str_upper(seal_state *S)
 {
+    seal_checkargc(S, 1);
     char *s = strdup(seal_checkstring(S, 0));
     int l = strlen(s);
     for (int i = 0; i < l; i++) {
@@ -31,6 +33,7 @@ static void str_upper(seal_state *S)
 
 static void str_islower(seal_state *S)
 {
+    seal_checkargc(S, 1);
     const char *s = seal_checkstring(S, 0);
     int l = strlen(s);
     if (l < 0) {
@@ -39,7 +42,7 @@ static void str_islower(seal_state *S)
     }
     bool result = true;
     for (int i = 0; i < l; i++) {
-        if (!isupper(s[i])) {
+        if (!islower(s[i])) {
             result = false;
             break;
         }
@@ -49,6 +52,7 @@ static void str_islower(seal_state *S)
 
 static void str_isupper(seal_state *S)
 {
+    seal_checkargc(S, 1);
     const char *s = seal_checkstring(S, 0);
     int l = strlen(s);
     if (l < 0) {
@@ -67,6 +71,7 @@ static void str_isupper(seal_state *S)
 
 static void str_startwith(seal_state *S)
 {
+    seal_checkargc(S, 2);
     const char *str = seal_checkstring(S, 0);
     const char *start = seal_checkstring(S, 1);
     int lenstr = strlen(str);
@@ -88,6 +93,7 @@ static void str_startwith(seal_state *S)
 
 static void str_endwith(seal_state *S)
 {
+    seal_checkargc(S, 2);
     const char *str = seal_checkstring(S, 0);
     const char *end = seal_checkstring(S, 1);
     int lenstr = strlen(str);
@@ -110,6 +116,7 @@ static void str_endwith(seal_state *S)
 
 static void str_len(seal_state *S)
 {
+    seal_checkargc(S, 1);
     const char *s = seal_checkstring(S, 0);
     seal_pushint(S, strlen(s));
 }

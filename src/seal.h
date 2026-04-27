@@ -61,6 +61,7 @@ SEAL_API seal_float  seal_tofloat(seal_state *S, int i);
 SEAL_API seal_float  seal_tonumber(seal_state *S, int i);
 SEAL_API const char *seal_tostring(seal_state *S, int i);
 
+SEAL_API void        seal_checktype(seal_state *S, int i, int type);
 SEAL_API seal_bool   seal_checkbool(seal_state *S, int i);
 SEAL_API seal_int    seal_checkint(seal_state *S, int i);
 SEAL_API seal_float  seal_checkfloat(seal_state *S, int i);
@@ -69,6 +70,7 @@ SEAL_API const char *seal_checkstring(seal_state *S, int i);
 
 /* push */
 
+SEAL_API void seal_pushidx(seal_state *S, int i);
 SEAL_API void seal_pushnull(seal_state *S);
 SEAL_API void seal_pushbool(seal_state *S, int b);
 SEAL_API void seal_pushint(seal_state *S, seal_int n);
