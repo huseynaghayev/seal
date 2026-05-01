@@ -37,6 +37,18 @@ seal_state *seal_state_new()
     S->globals = hashmap_Nnew(GLOBALS_START_SIZE);
     S->packages = hashmap_Nnew(8);
 
+    S->ci_arr = SEAL_MALLOC(sizeof(struct call_info) * CALL_FRAME_START_SIZE);
+    S->ci_idx = -1;
+    S->ci = S->ci_arr + S->ci_idx;
+    S->ip = NULL;
+
+    S->l.lexemes = NULL;
+    S->l.S = S;
+
+    S->repl_mode = false;
+
+    sealopen_core(S);
+
 #if SEAL_DEBUG
     sealopen_string(S);
     hashmap_insert(S->packages, "string", SEAL_VBOOL(true));
@@ -51,18 +63,6 @@ seal_state *seal_state_new()
     S->string_lib = NULL;
     S->list_lib = NULL;
 #endif /* SEAL_DEBUG */
-
-    S->ci_arr = SEAL_MALLOC(sizeof(struct call_info) * CALL_FRAME_START_SIZE);
-    S->ci_idx = -1;
-    S->ci = S->ci_arr + S->ci_idx;
-    S->ip = NULL;
-
-    S->l.lexemes = NULL;
-    S->l.S = S;
-
-    S->repl_mode = false;
-
-    sealopen_core(S);
 
     return S;
 }

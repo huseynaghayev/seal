@@ -49,7 +49,7 @@ static void list_remove(seal_state *S)
     struct seal_list *l = SEAL_AS_LIST(seal_getstack(S, 0));
     int len = l->len;
     if (idx >= len || (idx < 0 && (idx = len + idx) < 0)) {
-        seal_throw(S, "at List.remove: index out of bounds");
+        seal_throw(S, "at List.remove: index is out of bounds");
     }
     struct seal_value v = l->vals[idx];
     if (idx == len - 1) {
@@ -70,7 +70,6 @@ static const seal_reg listlib[] = {
     REG(push),
     REG(pop),
     REG(remove),
-    //REG(map),
     { NULL, NULL }
 };
 
