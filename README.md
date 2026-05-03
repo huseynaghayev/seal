@@ -21,6 +21,11 @@ person.talk = define(self) // first class functions
     print("My name is", self.name, "and I am", self.age, "years old") 
 
 person->talk() // same as person.talk(person)
+
+String.underscore = define(self)
+    return "__" + self->upper() + "__"
+
+print("seal"->underscore()) // __SEAL__
 ```
 
 ## Embedding
