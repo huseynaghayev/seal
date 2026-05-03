@@ -317,7 +317,7 @@ static int load_lib(seal_state *S, const char *name)
         /* TODO: ERROR HANDLING */
         void *handler = dlopen(ift.full_path, RTLD_NOW | RTLD_LOCAL);
         if (!handler) {
-            seal_throw(S, "dlopen failed: %s", dlerror());
+            vm_error(S, "dlopen failed: %s", dlerror());
             return 1;
         }
         char fname[64];
@@ -330,8 +330,8 @@ static int load_lib(seal_state *S, const char *name)
         sprintf(fname, "sealopen_%s", pure_name);
         seal_Cfunction open_func = dlsym(handler, fname);
         if (!open_func) {
-            seal_throw(S, "ensure \'%s\' function exists in \'%s\' library",
-                       fname, ift.full_path);
+            vm_error(S, "ensure \'%s\' function exists in \'%s\' library",
+                     fname, ift.full_path);
         }
         open_func(S);
         //dlclose(handler);
@@ -582,6 +582,7 @@ int eval(seal_state *S)
             break;
         */
         case OP_GETFIELD:
+        case OP_GETFIELD_SAFE:
         {
             idx  = FETCH(S) << 8;
             idx |= FETCH(S);
@@ -608,7 +609,10 @@ error:
                 vm_error(S, "cannot index \'%s\'", valt_name(seal_getstack(S, -1)));
             }
             int status = seal_getfield(S, -1, key);
-            if (status == 1) { /* not found */
+            /* if not safe (aka get field)
+             * else, null is already pushed
+             */
+            if (op == OP_GETFIELD && status == 1) { /* not found */
                 vm_error(S, "does not have \'%s\' key", key);
             }
 
@@ -618,10 +622,6 @@ error:
             (void)seal_pop(S);
             break;
         }
-        /*
-        case OP_GETFIELD_SAFE:
-            break;
-        */
         case OP_SETFIELD:
         {
             idx  = FETCH(S) << 8;
@@ -635,9 +635,29 @@ error:
             seal_getstack(S, -1) = v; /* replace map with value */
             break;
         }
-        /*
         case OP_GETINDEX:
+        {
+            struct seal_value idx = seal_pop(S);
+            struct seal_value obj = seal_pop(S);
+
+            if (SEAL_IS_LIST(obj) && SEAL_IS_INT(idx)) {
+                struct seal_list *l = SEAL_AS_LIST(obj);
+                int i = SEAL_AS_INT(idx);
+                int ai = i >= 0 ? i : l->len + i;
+                if (ai < 0 || ai >= l->len)
+                    vm_error(S, "index %d out of bounds", i);
+                seal_push(S, l->vals[ai]);
+            } else if (SEAL_IS_MAP(obj) && SEAL_IS_STRING(idx)) {
+                struct h_entry *e = hashmap_search(SEAL_AS_MAP(obj), SEAL_AS_STRINGVAL(idx));
+                if (nullhentry(e))
+                    vm_error(S, "does not have \'%s\' key", SEAL_AS_STRINGVAL(idx));
+                seal_push(S, e->val);
+            } else {
+                vm_error(S, "cannot index \'%s\' with \'%s\'", valt_name(obj), valt_name(idx));
+            }
             break;
+        }
+        /*
         case OP_SETINDEX:
             break;
         */
