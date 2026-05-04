@@ -1,6 +1,5 @@
 CC = gcc
-# CFLAGS = -Wall -Wextra -g
-CFLAGS =
+CFLAGS = -O2
 LDFLAGS = -rdynamic
 DEFS   = -DUSE_GNU_READL=1
 LIBS   = -lreadline -lm

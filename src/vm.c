@@ -2,6 +2,7 @@
 #include "compiler.h"
 #include "state.h"
 #include "libs.h"
+#include "value.h"
 #include <stdio.h>
 #include <dlfcn.h>
 
@@ -300,7 +301,7 @@ static int load_lib(seal_state *S, const char *name)
         S->string_lib = as_map(seal_pop(S));
         return 0;
     } else if (strcmp(name, "list") == 0) {
-        sealopen_string(S);
+        sealopen_list(S);
         add2loaded_libs(S, "list");
         seal_getglobal(S, "List");
         S->list_lib = as_map(seal_pop(S));
@@ -355,7 +356,11 @@ int eval(seal_state *S)
     signed short jmp_offset;
     call_info *prev_ci;
     struct seal_value popped;
+    struct seal_value val;
     struct seal_value a, b; /* a - left, b - right */
+    struct seal_value obj, ival;
+    const char *name, *key;
+    int status;
 
     for (;;) {
         op = FETCH(S);
@@ -395,9 +400,11 @@ int eval(seal_state *S)
         case OP_DUP:
             seal_dup(S);
             break;
-        /*
         case OP_COPY:
-        */
+            idx = FETCH(S);
+            a = seal_getstack(S, -1 - idx);
+            seal_push(S, a);
+            break;
         case OP_SWAP:
             idx = FETCH(S);
             a = seal_getstack(S, -1);
@@ -526,15 +533,13 @@ int eval(seal_state *S)
             break;
         /* symbols */
         case OP_GETGLOBAL:
-        {
             idx  = FETCH(S) << 8;
             idx |= FETCH(S);
-            const char *name = as_strv(GET_CONST(S, idx));
+            name = as_strv(GET_CONST(S, idx));
             if (seal_getglobal(S, name)) {
                 vm_error(S, "\'%s\' is not defined", name);
             }
             break;
-        }
         case OP_GETGLOBAL_SAFE:
             idx  = FETCH(S) << 8;
             idx |= FETCH(S);
@@ -583,10 +588,9 @@ int eval(seal_state *S)
         */
         case OP_GETFIELD:
         case OP_GETFIELD_SAFE:
-        {
             idx  = FETCH(S) << 8;
             idx |= FETCH(S);
-            const char *key = as_strv(GET_CONST(S, idx));
+            key = as_strv(GET_CONST(S, idx));
             switch (seal_getstack(S, -1).type) {
             case SEAL_TMAP:
                 break;
@@ -594,21 +598,21 @@ int eval(seal_state *S)
                 if (!S->string_lib)
                     goto error;
 
-                seal_pop(S);
+                (void)seal_pop(S);
                 seal_push(S, SEAL_VMAP(S->string_lib));
                 break;
             case SEAL_TLIST:
                 if (!S->list_lib)
                     goto error;
 
-                seal_pop(S);
+                (void)seal_pop(S);
                 seal_push(S, SEAL_VMAP(S->list_lib));
                 break;
 error:
             default:
                 vm_error(S, "cannot index \'%s\'", valt_name(seal_getstack(S, -1)));
             }
-            int status = seal_getfield(S, -1, key);
+            status = seal_getfield(S, -1, key);
             /* if not safe (aka get field)
              * else, null is already pushed
              */
@@ -621,56 +625,64 @@ error:
             /* pop value */
             (void)seal_pop(S);
             break;
-        }
         case OP_SETFIELD:
-        {
             idx  = FETCH(S) << 8;
             idx |= FETCH(S);
-            const char *key = as_strv(GET_CONST(S, idx));
-            struct seal_value v = seal_getstack(S, -1);
+            key = as_strv(GET_CONST(S, idx));
+            val = seal_getstack(S, -1);
             if (!is_map(seal_getstack(S, -2))) {
                 vm_error(S, "cannot index \'%s\'", valt_name(seal_getstack(S, -2)));
             }
-            int status = seal_setfield(S, -2, key);
-            seal_getstack(S, -1) = v; /* replace map with value */
+            status = seal_setfield(S, -2, key);
+            seal_getstack(S, -1) = val; /* replace map with value */
             break;
-        }
         case OP_GETINDEX:
-        {
-            struct seal_value idx = seal_pop(S);
-            struct seal_value obj = seal_pop(S);
+            ival = seal_pop(S);
+            obj = seal_pop(S);
 
-            if (SEAL_IS_LIST(obj) && SEAL_IS_INT(idx)) {
-                struct seal_list *l = SEAL_AS_LIST(obj);
-                int i = SEAL_AS_INT(idx);
+            if (is_list(obj) && is_int(ival)) {
+                struct seal_list *l = as_list(obj);
+                int i = as_int(ival);
                 int ai = i >= 0 ? i : l->len + i;
                 if (ai < 0 || ai >= l->len)
                     vm_error(S, "index %d out of bounds", i);
                 seal_push(S, l->vals[ai]);
-            } else if (SEAL_IS_MAP(obj) && SEAL_IS_STRING(idx)) {
-                struct h_entry *e = hashmap_search(SEAL_AS_MAP(obj), SEAL_AS_STRINGVAL(idx));
+            } else if (is_map(obj) && is_str(ival)) {
+                struct h_entry *e = hashmap_search(as_map(obj), as_strv(ival));
                 if (nullhentry(e))
-                    vm_error(S, "does not have \'%s\' key", SEAL_AS_STRINGVAL(idx));
+                    vm_error(S, "does not have \'%s\' key", as_strv(ival));
                 seal_push(S, e->val);
             } else {
-                vm_error(S, "cannot index \'%s\' with \'%s\'", valt_name(obj), valt_name(idx));
+                vm_error(S, "cannot index \'%s\' with \'%s\'", valt_name(obj), valt_name(ival));
             }
             break;
-        }
-        /*
         case OP_SETINDEX:
+            popped = seal_pop(S);
+            ival = seal_pop(S);
+            obj  = seal_pop(S);
+
+            if (is_list(obj) && is_int(ival)) {
+                struct seal_list *l = as_list(obj);
+                int i = as_int(ival);
+                int ai = i >= 0 ? i : l->len + i;
+                if (ai < 0 || ai >= l->len)
+                    vm_error(S, "index %d out of bounds", i);
+                seal_push(S, l->vals[ai] = popped);
+            } else if (is_map(obj) && is_str(ival)) {
+                hashmap_insert(as_map(obj), as_strv(ival), popped);
+                seal_push(S, popped);
+            } else {
+                vm_error(S, "cannot index \'%s\' with \'%s\'", valt_name(obj), valt_name(ival));
+            }
             break;
-        */
 
          /* other */
         case OP_INCLUDE:
-        {
             idx  = FETCH(S) << 8;
             idx |= FETCH(S);
-            const char *name = as_strv(GET_CONST(S, idx));
+            name = as_strv(GET_CONST(S, idx));
             load_lib(S, name);
             break;
-        }
 #if SEAL_DEBUG
         default:
             vm_error(S, "\"%s\": unspecified operation", get_opname(op));

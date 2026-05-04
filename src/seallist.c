@@ -27,9 +27,13 @@ static void list_map(seal_state *S)
 
 static void list_push(seal_state *S)
 {
-    seal_checkargc(S, 2);
+    seal_checkargcvar(S, 2);
+    int n = seal_gettop(S);
     seal_checktype(S, 0, SEAL_TLIST);
-    list_pushval(SEAL_AS_LIST(seal_getstack(S, 0)), seal_getstack(S, 1));
+    struct seal_list *l = SEAL_AS_LIST(seal_getstack(S, 0));
+    for (int i = 1; i < n; i++) {
+        list_pushval(l, seal_getstack(S, i));
+    }
     seal_pushnull(S);
 }
 

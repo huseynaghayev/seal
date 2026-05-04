@@ -630,32 +630,57 @@ static void compile_assign_field(proto *p, ast *var, ast *val, int op, scope *s)
         emit(p, OP_SETFIELD, key);
         emit16(p, i, key);
     } else {
-        int b = augop2byte(op);
         emitn(p, OP_DUP);
         emit(p, OP_GETFIELD, key);
         emit16(p, i, key);
         compile_node(p, val, s);
+        int b = augop2byte(op);
         emitn(p, b);
         emit(p, OP_SETFIELD, key);
         emit16(p, i, key);
     }
 }
 
+static void compile_assign_index(proto *p, ast *var, ast *val, int op, scope *s)
+{
+    ast *m = var->as.index.m;
+    compile_node(p, m, s);
+    ast *i = var->as.index.i;
+    compile_node(p, i, s);
+    if (op == IMOP_ASSIGN) {
+        /* compile assigned expr */
+        compile_node(p, val, s);
+        /* compile OP_SETINDEX */
+        emit(p, OP_SETINDEX, m);
+    } else {
+        emitn(p, OP_COPY);
+        emitn(p, 2);
+        emitn(p, OP_COPY);
+        emitn(p, 2);
+        emit(p, OP_GETINDEX, i);
+        compile_node(p, val, s);
+        int b = augop2byte(op);
+        emitn(p, b);
+        emit(p, OP_SETINDEX, i);
+    }
+}
+
 static void compile_assign(proto *p, ast *n, scope *s)
 {
-    /* TODO: compile all assign types */
-    //SEAL_ASSERT(n->as.assign.op == IMOP_ASSIGN);
-    SEAL_ASSERT(n->as.assign.var->type == AST_NAME ||
-                n->as.assign.var->type == AST_FIELD);
-
     ast *var = n->as.assign.var;
     ast *val = n->as.assign.val;
     int op = n->as.assign.op;
 
-    if (var->type == AST_NAME) {
+    switch (var->type) {
+    case AST_NAME:
         compile_assign_name(p, var, val, op, s);
-    } else if (var->type == AST_FIELD) {
+        break;
+    case AST_FIELD:
         compile_assign_field(p, var, val, op, s);
+        break;
+    case AST_INDEX:
+        compile_assign_index(p, var, val, op, s);
+        break;
     }
 }
 
@@ -728,6 +753,9 @@ static void compile_dowhile(proto *p, ast *n, scope *s)
 
 static void compile_for(proto *p, ast *n, scope *s)
 {
+    (void)p;
+    (void)n;
+    (void)s;
     SEAL_ASSERT(0);
 }
 
