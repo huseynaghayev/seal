@@ -515,7 +515,7 @@ static ast *parse_func_def(parser *p)
     /* lambda */
     if (!match(p, TK_NEWLINE)) {
         ast *r = ast_new(p, AST_RETURN);
-        r->as.retstmt.val = parse_expr(p, true);
+        r->as.retstmt.val = parse_expr(p, false);
         f->as.func.body = r;
 
         decfunclvl(p);

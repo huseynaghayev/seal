@@ -348,7 +348,7 @@ static int load_lib(seal_state *S, const char *name)
     return 0;
 }
 
-int eval(seal_state *S)
+int eval(seal_state *S, int till)
 {
     seal_byte op;
     int idx;
@@ -448,7 +448,7 @@ int eval(seal_state *S)
             S->sp = S->ci->func_idx + 1; /* always point to empty slot */
             S->ci = prev_ci;
             S->ci_idx--;
-            if (S->ci_idx < 0) {
+            if (S->ci_idx < till) {
                 return 0;
             }
             break;

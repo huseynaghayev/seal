@@ -35,6 +35,7 @@ SEAL_API const char *seal_geterror(seal_state *S);
 SEAL_API int seal_dostring(seal_state *S, const char *str);
 SEAL_API int seal_dofile(seal_state *S, const char *file_name);
 SEAL_API int seal_call(seal_state *S, int argc);
+SEAL_API int seal_icall(seal_state *S, int argc);
 
 /* stack */
 SEAL_API int seal_gettop(seal_state *S);

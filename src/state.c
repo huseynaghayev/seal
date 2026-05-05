@@ -202,7 +202,7 @@ int seal_dostring(seal_state *S, const char *str)
         seal_push(S, fval);
         seal_call(S, 0);
         if (S->ci_idx == 0) {
-            if (eval(S)) { /* fail */
+            if (eval(S, S->ci_idx)) { /* fail */
                 S->sp = prev_sp;
                 S->ci_idx = prev_ci_idx;
                 S->ci = prev_ci;
@@ -305,6 +305,15 @@ int seal_call(seal_state *S, int argc)
     }
 
     return 0;
+}
+
+int seal_icall(seal_state *S, int argc)
+{
+    int status = seal_call(S, argc);
+    if (status)
+        return status;
+
+    return eval(S, S->ci_idx);
 }
 
 int seal_gettop(seal_state *S)

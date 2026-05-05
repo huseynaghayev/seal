@@ -68,6 +68,7 @@ const char *seal_geterror(seal_state *S);
 int seal_dostring(seal_state *S, const char *str);
 int seal_dofile(seal_state *S, const char *file_name);
 int seal_call(seal_state *S, int argc);
+int seal_icall(seal_state *S, int argc);
 
 int seal_gettop(seal_state *S);
 void seal_checkargcopt(seal_state *S, int min, int is_var);
