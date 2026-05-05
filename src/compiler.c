@@ -899,7 +899,11 @@ struct chunk compile(struct seal_state *S,
     scope s = {0};
     s.h = h ? h : hashmap_Nnew(SEAL_LOCAL_MAX);
     compile_node(&p, n, &s);
-    if (S && S->repl_mode && p.code[p.code_size - 1] == OP_POP) {
+    if (S &&
+        S->repl_mode &&
+        p.code_size > 0 &&
+        p.code[p.code_size - 1] == OP_POP
+    ) {
         p.code[p.code_size - 1] = OP_GETGLOBAL;
         emit16(&p, get_string_idx(&p, "print"), NULL);
         emitn(&p, OP_SWAP);
