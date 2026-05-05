@@ -59,6 +59,9 @@ seal_state *seal_state_new()
     hashmap_insert(S->packages, "list", SEAL_VBOOL(true));
     seal_getglobal(S, "List");
     S->list_lib = SEAL_AS_MAP(seal_pop(S));
+
+    sealopen_map(S);
+    hashmap_insert(S->packages, "map", SEAL_VBOOL(true));
 #else
     S->string_lib = NULL;
     S->list_lib = NULL;

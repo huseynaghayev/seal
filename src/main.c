@@ -90,7 +90,9 @@ repl:
         clear();
     } else if (strcmp(input, "exit") == 0) {
         goto end;
-    } else if (strcmp(input, "stack") == 0) {
+    }
+#if DEBUG
+    else if (strcmp(input, "stack") == 0) {
         print_stack(S);
     } else if (strcmp(input, "G") == 0) {
         printf("Globals: cap: %d, size %d\n", S->globals->cap, S->globals->len);
@@ -103,7 +105,9 @@ repl:
                 }
             }
         }
-    } else {
+    }
+#endif
+    else {
         if (seal_dostring(S, input)) {
             fprintf(stderr, "%s\n", S->errmsg);
             fprintf(stderr, "%s\n", S->stktrc);
