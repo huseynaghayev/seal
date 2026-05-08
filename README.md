@@ -1,5 +1,5 @@
 # Seal
-An open source scripting language that is beautiful, efficient and embeddable.
+A scripting language that is beautiful, efficient and embeddable.
 
 ## Official Web Page
 https://seallang.org
