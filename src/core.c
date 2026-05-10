@@ -4,7 +4,7 @@
 
 typedef struct seal_value value;
 
-static void print_val(value *v)
+static void print_val(value *v, int inside_obj)
 {
     switch (v->type) {
     case SEAL_TNULL:
@@ -24,7 +24,14 @@ static void print_val(value *v)
         break;
     }
     case SEAL_TSTRING:
+        if (inside_obj)
+            putchar('\'');
+
         printf("%s", SEAL_AS_STRINGVAL(*v));
+
+        if (inside_obj)
+            putchar('\'');
+
         break;
     case SEAL_TLIST:
     {
@@ -33,7 +40,7 @@ static void print_val(value *v)
         struct seal_list *l = SEAL_AS_LIST(*v);
         int len = l->len;
         for (int i = 0; i < len; i++) {
-            print_val(&l->vals[i]);
+            print_val(&l->vals[i], true);
             if (i < len - 1) {
                 putchar(',');
                 putchar(' ');
@@ -54,7 +61,7 @@ static void print_val(value *v)
             struct h_entry e = SEAL_AS_MAP(*v)->entries[i];
             if (e.key) {
                 printf("%s = ", e.key);
-                print_val(&e.val);
+                print_val(&e.val, true);
                 printed++;
                 if (printed < len) {
                     putchar(',');
@@ -79,7 +86,7 @@ static void core_print(seal_state *S)
     value *args = S->stack + S->sp - n;
 
     for (int i = 0; i < n; i++) {
-        print_val(args + i);
+        print_val(args + i, false);
         if (i < n - 1)
             putchar(' ');
     }
@@ -94,7 +101,7 @@ static void core_read(seal_state *S)
     value *args = S->stack + S->sp - n;
 
     for (int i = 0; i < n; i++) {
-        print_val(args + i);
+        print_val(args + i, false);
         if (i < n - 1)
             putchar(' ');
     }
