@@ -39,6 +39,7 @@ SEAL_API int seal_icall(seal_state *S, int argc);
 
 /* stack */
 SEAL_API int seal_gettop(seal_state *S);
+SEAL_API void seal_movetop(seal_state *S, int offset);
 /* checking */
 SEAL_API void seal_checkargcopt(seal_state *S, int min, int is_var);
 #define seal_checkargc(S, c) seal_checkargcopt(S, c, false)

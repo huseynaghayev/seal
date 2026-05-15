@@ -324,6 +324,11 @@ int seal_gettop(seal_state *S)
     return S->sp - S->ci->func_idx - 1;
 }
 
+void seal_movetop(seal_state *S, int offset)
+{
+    S->sp += offset;
+}
+
 void seal_checkargcopt(seal_state *S, int min, int is_var)
 {
     int n = seal_gettop(S);
@@ -361,7 +366,7 @@ seal_float seal_tofloat(seal_state *S, int i)
     return SEAL_AS_FLOAT(seal_getstack(S, i));
 }
 
-seal_float  seal_tonumber(seal_state *S, int i)
+seal_float seal_tonumber(seal_state *S, int i)
 {
     struct seal_value v = seal_getstack(S, i);
     return SEAL_AS_NUM(v);

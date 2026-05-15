@@ -31,43 +31,31 @@ static void str_upper(seal_state *S)
     seal_pushstring(S, s);
 }
 
-static void str_islower(seal_state *S)
-{
-    seal_checkargc(S, 1);
-    const char *s = seal_checkstring(S, 0);
-    int l = strlen(s);
-    if (l < 0) {
-        seal_pushbool(S, false);
-        return;
-    }
-    bool result = true;
-    for (int i = 0; i < l; i++) {
-        if (!islower(s[i])) {
-            result = false;
-            break;
-        }
-    }
-    seal_pushbool(S, result);
+#define is_func_creator(__name) \
+static void str_##__name(seal_state *S) \
+{ \
+    seal_checkargc(S, 1); \
+    const char *s = seal_checkstring(S, 0); \
+    int l = strlen(s); \
+    if (l == 0) { \
+        seal_pushbool(S, false); \
+        return; \
+    } \
+    bool result = true; \
+    for (int i = 0; i < l; i++) { \
+        if (!__name(s[i])) { \
+            result = false; \
+            break; \
+        } \
+    } \
+    seal_pushbool(S, result); \
 }
 
-static void str_isupper(seal_state *S)
-{
-    seal_checkargc(S, 1);
-    const char *s = seal_checkstring(S, 0);
-    int l = strlen(s);
-    if (l < 0) {
-        seal_pushbool(S, false);
-        return;
-    }
-    bool result = true;
-    for (int i = 0; i < l; i++) {
-        if (!isupper(s[i])) {
-            result = false;
-            break;
-        }
-    }
-    seal_pushbool(S, result);
-}
+is_func_creator(isalnum)
+is_func_creator(isalpha)
+is_func_creator(isdigit)
+is_func_creator(islower)
+is_func_creator(isupper)
 
 static void str_startwith(seal_state *S)
 {
@@ -126,6 +114,9 @@ static void str_len(seal_state *S)
 static const seal_reg strlib[] = {
     REG(lower),
     REG(upper),
+    REG(isalnum),    
+    REG(isalpha),
+    REG(isdigit),
     REG(islower),
     REG(isupper),
     REG(startwith),
