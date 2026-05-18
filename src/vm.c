@@ -644,7 +644,18 @@ error:
             ival = seal_pop(S);
             obj = seal_pop(S);
 
-            if (is_list(obj) && is_int(ival)) {
+            if (is_str(obj) && is_int(ival)) {
+                struct seal_string *s = as_str(obj);
+                int i = as_int(ival);
+                int ai = i >= 0 ? i : s->len + i;
+                if (ai < 0 || ai >= s->len)
+                    vm_error(S, "index %d out of bounds", i);
+
+                char *c = SEAL_MALLOC(2);
+                *c = s->val[ai];
+                *(c + 1) = '\0';
+                seal_pushstring(S, c);
+            } else if (is_list(obj) && is_int(ival)) {
                 struct seal_list *l = as_list(obj);
                 int i = as_int(ival);
                 int ai = i >= 0 ? i : l->len + i;
