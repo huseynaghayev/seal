@@ -312,8 +312,9 @@ int seal_call(seal_state *S, int argc)
 
 int seal_icall(seal_state *S, int argc)
 {
+    int ci_idx = S->ci_idx;
     int status = seal_call(S, argc);
-    if (status)
+    if (status || ci_idx == S->ci_idx)
         return status;
 
     return eval(S, S->ci_idx);
