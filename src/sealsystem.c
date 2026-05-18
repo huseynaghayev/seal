@@ -67,6 +67,8 @@ void sealopen_system(seal_state *S)
 #if SEAL_DEBUG
     seal_push(S, SEAL_VMAP(S->packages));
     seal_setfield(S, -2, "packages");
+    seal_push(S, SEAL_VMAP(S->globals));
+    seal_setfield(S, -2, "globals");
 #endif
     seal_setglobal(S, "System");
 }

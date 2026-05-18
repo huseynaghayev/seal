@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "sealconf.h"
+#include "gc.h"
 
 
 #define SEAL_TNULL    0
@@ -73,8 +74,7 @@ struct seal_value {
 };
 
 #define GC_Header \
-    bool marked; \
-    bool collect
+    bool marked
 
 #define Array_Specs \
     int cap; \
@@ -89,13 +89,9 @@ struct seal_string {
 
 const char *string_duplen(const char *s, int len);
 const char *string_concat(const char *a, const char *b);
-struct seal_string *string_new(const char *s, bool collect, bool dup);
+struct seal_string *string_new(const char *s, bool dup, gc *g);
 
 #define string_dup(s) string_duplen(s, -1)
-
-#define string_CDnew(s) string_new(s, true, true)
-#define string_Cnew(s)  string_new(s, true, false)
-#define string_Nnew(s)  string_new(s, false, false)
 
 /* list */
 struct seal_list {
@@ -104,7 +100,7 @@ struct seal_list {
     struct seal_value *vals;
 };
 
-struct seal_list *list_new(int cap);
+struct seal_list *list_new(int cap, gc *g);
 void list_pushval(struct seal_list *l, struct seal_value v);
 
 /* hashmap */
@@ -124,7 +120,7 @@ struct seal_hashmap {
     struct h_entry *entries;
 };
 
-struct seal_hashmap *hashmap_new(int cap, bool collect);
+struct seal_hashmap *hashmap_new(int cap, gc *g);
 
 struct h_entry *hashmap_searchlen(struct seal_hashmap *map,
                                   const char *key,
@@ -144,8 +140,7 @@ int hashmap_remove(struct seal_hashmap *map, const char *key);
 int hashmap_free(struct seal_hashmap *map, bool free_key);
 
 
-#define hashmap_Cnew(cap) hashmap_new(cap, true)
-#define hashmap_Nnew(cap) hashmap_new(cap, false)
+#define hashmap_Nnew(cap) hashmap_new(cap, NULL)
 
 #define hashmap_search(map, key) hashmap_searchlen(map, key, -1)
 

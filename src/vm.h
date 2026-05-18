@@ -9,4 +9,4 @@ int eval(seal_state *S, int till);
 void print_stack(seal_state *S);
 #endif
 
-#endif
+#endif /* VM_H */

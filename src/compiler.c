@@ -152,16 +152,9 @@ static void store(proto *p, value v)
     p->pool[p->pool_size++] = v;
 }
 
-static struct seal_string *alloc_seal_string(const char *s)
+static inline struct seal_string *alloc_seal_string(const char *s)
 {
-    struct seal_string *v = SEAL_MALLOC(sizeof(struct seal_string));
-    *v = (struct seal_string) {
-        .val = s,
-        .len = strlen(s),
-        .collect = false,
-    };
-
-    return v;
+    return string_new(s, false, NULL);
 }
 
 static int search_str_inpool(proto *p, const char *s)

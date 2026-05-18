@@ -37,26 +37,24 @@ const char *string_concat(const char *a, const char *b)
     return res;
 }
 
-struct seal_string *string_new(const char *s, bool collect, bool dup)
+struct seal_string *string_new(const char *s, bool dup, gc *g)
 {
     struct seal_string *str = SEAL_MALLOC(sizeof(struct seal_string));
     
     if (!str)
         return NULL;
 
-    str->collect = collect;
-    if (collect)
-        str->marked = false;
-
     str->len = strlen(s);
-
     str->val = dup ? string_dup(s) : s;
+
+    if (g)
+        gc_register(g, str, SEAL_TSTRING);
 
     return str;
 }
 
 /* list */
-struct seal_list *list_new(int cap)
+struct seal_list *list_new(int cap, gc *g)
 {
     struct seal_list *list = SEAL_MALLOC(sizeof(struct seal_list));
 
@@ -68,7 +66,9 @@ struct seal_list *list_new(int cap)
     list->marked = false;
     list->len = 0;
     list->cap = cap;
-    list->collect = true;
+
+    if (g)
+        gc_register(g, list, SEAL_TLIST);
 
     return list;
 }
@@ -100,7 +100,7 @@ static unsigned int hashswl(const char *key, int len)
 
 #define hentrynew(k, v) (struct h_entry) { hash(k), (k), strlen(k), (v), true }
 
-struct seal_hashmap *hashmap_new(int cap, bool collect)
+struct seal_hashmap *hashmap_new(int cap, gc *g)
 {
     struct seal_hashmap *map = SEAL_MALLOC(sizeof(struct seal_hashmap));
     
@@ -111,7 +111,9 @@ struct seal_hashmap *hashmap_new(int cap, bool collect)
     map->marked = false;
     map->cap = cap;
     map->len = 0;
-    map->collect = collect;
+
+    if (g)
+        gc_register(g, map, SEAL_TMAP);
 
     return map;
 }
@@ -230,15 +232,15 @@ int hashmap_free(struct seal_hashmap *map, bool free_key)
     if (!map)
         return 1;
 
-    for (int i = 0; i < map->cap; i++) {
-        struct h_entry e = map->entries[i];
-        if (!e.key)
-            continue;
+    if (free_key) {
+        for (int i = 0; i < map->cap; i++) {
+            struct h_entry e = map->entries[i];
+            if (!e.key)
+                continue;
 
-        if (free_key)
+            //if (free_key)
             SEAL_FREE((char*)e.key);
-
-        if (map->collect) {} /* gc collect seal value */
+        }
     }
 
     free(map->entries);

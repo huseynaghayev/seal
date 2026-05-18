@@ -13,6 +13,8 @@
 #define SEAL_ERR_COMPILE  3
 #define SEAL_ERR_RUNTIME  4
 
+#define GC_THRESHOLD 128
+
 #define seal_set_errcode(S, code) ((S)->status = (code))
 
 #define seal_push(S, v) ((S)->stack[(S)->sp++] = (v))
@@ -49,6 +51,7 @@ typedef struct seal_state {
     struct seal_value *stack; /* stack array */
     stack_idx sp;    /* stack pointer, always point to first empty slot */
     struct seal_hashmap *globals; /* globals map */
+    gc gc;
     struct call_info *ci_arr;     /* call info array */
     int ci_idx;    /* call info index */
     struct call_info *ci; /* current call info */
@@ -139,5 +142,7 @@ typedef struct {
 )
 void seal_newlib(seal_state *S, const seal_reg *reg);
 */
+
+void seal_gc(seal_state *S);
 
 #endif /* STATE_H */

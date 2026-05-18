@@ -25,7 +25,9 @@ static const char *const _type_names[] = {
 
 seal_state *seal_state_new()
 {
-    seal_state *S = SEAL_MALLOC(sizeof(seal_state));
+    seal_state *S = SEAL_CALLOC(1, sizeof(seal_state));
+
+    S->gc.S = S;
 
     S->file_name = "<stdin>";
 
@@ -143,9 +145,7 @@ static void free_chunk(struct chunk *c, int free_cp) {
     for (int i = 0; i < c->pool_size; i++) {
         struct seal_value v = c->pool[i];
         if (SEAL_IS_STRING(v)) {
-            if (SEAL_AS_STRING(v)->collect) {
-                SEAL_FREE((void*)SEAL_AS_STRING(v)->val);
-            }
+            SEAL_FREE((void*)SEAL_AS_STRING(v)->val);
             SEAL_FREE(v.as.string);
         } else if (SEAL_IS_FUNC(v)) {
             if (SEAL_AS_FUNC(v)->type == FUNCTION_TYPE_SEAL) {
@@ -468,7 +468,7 @@ void seal_pushfloat(seal_state *S, seal_float f)
 
 void seal_pushstring(seal_state *S, const char *str)
 {
-    struct seal_string *s = string_new(str, false, false);
+    struct seal_string *s = string_new(str, false, &S->gc);
     seal_push(S, SEAL_VSTRING(s));
 }
 
@@ -494,11 +494,11 @@ void seal_pushCfunc(seal_state *S, seal_Cfunction f)
 void seal_makelist(seal_state *S, int size)
 {
     if (size == 0) {
-        seal_push(S, SEAL_VLIST(list_new(0)));
+        seal_push(S, SEAL_VLIST(list_new(0, &S->gc)));
     } else {
         int n = size;
         ofpow2(n);
-        struct seal_list *l = list_new(n);
+        struct seal_list *l = list_new(n, &S->gc);
         struct seal_value *base = &seal_getstack(S, -size);
         for (int i = 0; i < size; i++) {
             list_pushval(l, *base++);
@@ -511,10 +511,10 @@ void seal_makelist(seal_state *S, int size)
 void seal_makemap(seal_state *S, int size)
 {
     if (size == 0) {
-        seal_push(S, SEAL_VMAP(hashmap_Cnew(8)));
+        seal_push(S, SEAL_VMAP(hashmap_new(8, &S->gc)));
     } else {
         /* TODO: fix hashmap size */
-        struct seal_value m = SEAL_VMAP(hashmap_Cnew(size / HASHMAP_LOAD_FACTOR));
+        struct seal_value m = SEAL_VMAP(hashmap_new(size / HASHMAP_LOAD_FACTOR, &S->gc));
         struct seal_value *base = &seal_getstack(S, -size * 2);
         struct seal_value v;
         const char *key;
@@ -604,4 +604,55 @@ void seal_newlib(seal_state *S, const seal_reg *reg)
         seal_setfield(S, -2, reg->name);
         reg++;
     }
+}
+
+static void gc_mark(struct seal_value *v)
+{
+    int size;
+    struct h_entry e;
+    switch (v->type) {
+    case SEAL_TSTRING:
+        SEAL_AS_STRING(*v)->marked = true;
+        break;
+    case SEAL_TLIST:
+        if (SEAL_AS_LIST(*v)->marked) return;
+        SEAL_AS_LIST(*v)->marked = true;
+        size = SEAL_AS_LIST(*v)->len;
+        for (int i = 0; i < size; i++) {
+            gc_mark(&SEAL_AS_LIST(*v)->vals[i]);
+        }
+        break;
+    case SEAL_TMAP:
+        if (SEAL_AS_MAP(*v)->marked) return;
+        SEAL_AS_MAP(*v)->marked = true;
+        size = SEAL_AS_MAP(*v)->cap;
+        for (int i = 0; i < size; i++) {
+            e = SEAL_AS_MAP(*v)->entries[i];
+            if (e.key) {
+                gc_mark(&e.val);
+            }
+        }
+        break;
+    }
+}
+
+void seal_gc(seal_state *S)
+{
+    /* first, check locals */
+    struct seal_value *v = S->stack;
+    while (v - S->stack < S->sp) {
+        gc_mark(v++);
+    }
+
+    /* second, check globals */
+    struct h_entry *e;
+    for (int i = 0; i < S->globals->cap; i++) {
+        e = &S->globals->entries[i];
+        if (e->key) {
+            gc_mark(&e->val);
+        }
+    }
+
+    /* then sweep */
+    gc_sweep(&S->gc);
 }
