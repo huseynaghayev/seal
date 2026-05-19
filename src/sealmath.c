@@ -1,5 +1,8 @@
 #include "seal.h"
 #include <math.h>
+#include <time.h> /* for random */
+#include <stdint.h> /* uintptr_t */
+#include "state.h" /* random_state */
 
 static void seal_abs(seal_state *S)
 {
@@ -187,6 +190,36 @@ static void seal_isfinite(seal_state *S)
     seal_pushbool(S, isfinite(seal_checknumber(S, 0)));
 }
 
+static void seal_random(seal_state *S)
+{
+    S->random_state = S->random_state * 1664525 + 1013904223;
+    unsigned int r = S->random_state;
+    int min, max;
+    switch (seal_gettop(S)) {
+    case 0:
+        seal_pushfloat(S, (seal_float)r / (seal_float)0xFFFFFFFF);
+        break;
+    case 1:
+        max = seal_checkint(S, 0);
+        if (max <= 0) {
+            seal_throw(S, "Math.random(max): \'max\' must be greater than zero");
+        }
+        seal_pushint(S, r % max);
+        break;
+    case 2:
+        min = seal_checkint(S, 0);
+        max = seal_checkint(S, 1);
+        if (max <= min) {
+            seal_throw(S, "Math.random(min, max): \'max\' must be greater than \'min\'");
+        }
+        seal_pushint(S, min + (signed int)(r % (unsigned int)(max - min)));
+        break;
+    case 3:
+        seal_throw(S, "Math.random(...): at most 2 arguments can be given");
+        break;
+    }
+}
+
 #define REG(name) { #name, seal_##name }
 
 static const seal_reg mathlib[] = {
@@ -214,11 +247,14 @@ static const seal_reg mathlib[] = {
     REG(isnan),
     REG(isinf),
     REG(isfinite),
+    REG(random),
     { NULL, NULL }
 };
 
 void sealopen_math(seal_state *S)
 {
+    S->random_state = (unsigned int)time(NULL) ^ (uintptr_t)S;
+
     seal_newlib(S, mathlib);
     seal_pushfloat(S, M_PI);
     seal_setfield(S, -2, "PI");

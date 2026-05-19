@@ -59,6 +59,7 @@ typedef struct seal_state {
     struct seal_hashmap *packages; /* loaded packages */
     struct seal_hashmap *string_lib;
     struct seal_hashmap *list_lib;
+    unsigned int random_state;
 } seal_state;
 
 
