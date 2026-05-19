@@ -154,7 +154,7 @@ static void store(proto *p, value v)
 
 static inline struct seal_string *alloc_seal_string(const char *s)
 {
-    return string_new(s, false, NULL);
+    return string_new(s, false, true, NULL);
 }
 
 static int search_str_inpool(proto *p, const char *s)

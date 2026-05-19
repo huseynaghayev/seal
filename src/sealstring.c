@@ -17,7 +17,7 @@ static void str_lower(seal_state *S)
     for (int i = 0; i < l; i++) {
         s[i] = tolower(s[i]);
     }
-    seal_pushstring(S, s);
+    seal_pushstringn(S, s);
 }
 
 static void str_upper(seal_state *S)
@@ -28,7 +28,7 @@ static void str_upper(seal_state *S)
     for (int i = 0; i < l; i++) {
         s[i] = toupper(s[i]);
     }
-    seal_pushstring(S, s);
+    seal_pushstringn(S, s);
 }
 
 #define is_func_creator(__name) \

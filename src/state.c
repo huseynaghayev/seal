@@ -466,9 +466,9 @@ void seal_pushfloat(seal_state *S, seal_float f)
     seal_push(S, SEAL_VFLOAT(f));
 }
 
-void seal_pushstring(seal_state *S, const char *str)
+void seal_pushstringx(seal_state *S, const char *str, bool dup, bool is_const)
 {
-    struct seal_string *s = string_new(str, false, &S->gc);
+    struct seal_string *s = string_new(str, dup, is_const, &S->gc);
     seal_push(S, SEAL_VSTRING(s));
 }
 

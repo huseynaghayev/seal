@@ -125,7 +125,7 @@ static void core_exit(seal_state *S)
 static void core_typeof(seal_state *S)
 {
     seal_checkargc(S, 1);
-    seal_pushstring(S, seal_gettypename(S, 0));
+    seal_pushstringc(S, seal_gettypename(S, 0));
 }
 
 void sealopen_core(seal_state *S)

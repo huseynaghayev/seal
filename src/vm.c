@@ -80,7 +80,7 @@ static const char *const _type_names[] = {
     strcpy(s, as_strv(a)); \
     strcat(s, as_strv(b)); \
     /* TODO: fix string ownership */ \
-    seal_pushstring(S, s); \
+    seal_pushstringn(S, s); \
 } while (0)
 
 #define bin_op(S, op, a, b) do { \
@@ -651,9 +651,7 @@ error:
                 if (ai < 0 || ai >= s->len)
                     vm_error(S, "index %d out of bounds", i);
 
-                char *c = SEAL_MALLOC(2);
-                *c = s->val[ai];
-                *(c + 1) = '\0';
+                char c[2] = { s->val[ai], '\0' };
                 seal_pushstring(S, c);
             } else if (is_list(obj) && is_int(ival)) {
                 struct seal_list *l = as_list(obj);

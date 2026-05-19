@@ -37,7 +37,9 @@ void gc_sweep(gc *g)
             if (marked) {
                 s->marked = false;    
             } else {
-                SEAL_FREE((void *)s->val);
+                if (!s->is_const)
+                    SEAL_FREE((void *)s->val);
+
                 SEAL_FREE(s);
             }
             break;

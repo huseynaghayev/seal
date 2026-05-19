@@ -83,13 +83,14 @@ struct seal_value {
 /* string */
 struct seal_string {
     GC_Header;
+    bool is_const;
     int len;
     const char *val;
 };
 
 const char *string_duplen(const char *s, int len);
 const char *string_concat(const char *a, const char *b);
-struct seal_string *string_new(const char *s, bool dup, gc *g);
+struct seal_string *string_new(const char *s, bool dup, bool is_const, gc *g);
 
 #define string_dup(s) string_duplen(s, -1)
 

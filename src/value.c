@@ -37,7 +37,7 @@ const char *string_concat(const char *a, const char *b)
     return res;
 }
 
-struct seal_string *string_new(const char *s, bool dup, gc *g)
+struct seal_string *string_new(const char *s, bool dup, bool is_const, gc *g)
 {
     struct seal_string *str = SEAL_MALLOC(sizeof(struct seal_string));
     
@@ -46,6 +46,7 @@ struct seal_string *string_new(const char *s, bool dup, gc *g)
 
     str->len = strlen(s);
     str->val = dup ? string_dup(s) : s;
+    str->is_const = is_const;
 
     if (g)
         gc_register(g, str, SEAL_TSTRING);

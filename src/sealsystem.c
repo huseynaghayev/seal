@@ -58,11 +58,11 @@ static const seal_reg syslib[] = {
 void sealopen_system(seal_state *S)
 {
     seal_newlib(S, syslib);
-    seal_pushstring(S, osname);
+    seal_pushstringc(S, osname);
     seal_setfield(S, -2, "name");
-    seal_pushstring(S, arch);
+    seal_pushstringc(S, arch);
     seal_setfield(S, -2, "arch");
-    seal_pushstring(S, SEAL_VERSION);
+    seal_pushstringc(S, SEAL_VERSION);
     seal_setfield(S, -2, "version");
 #if SEAL_DEBUG
     seal_push(S, SEAL_VMAP(S->packages));
