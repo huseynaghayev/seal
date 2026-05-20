@@ -330,13 +330,28 @@ void seal_movetop(seal_state *S, int offset)
     S->sp += offset;
 }
 
-void seal_checkargcopt(seal_state *S, int min, int is_var)
+void seal_checkargcrange(seal_state *S, int min, int max)
 {
     int n = seal_gettop(S);
-    if (n != min) {
-        if (!is_var || (is_var && n < min)) {
-            seal_throw(S, "expected %s%d argument%s, got %d",
-                       is_var ? "at least " : "", min, min == 1 ? "" : "s", n);
+    if (max < 0) { /* at least */
+        if (n < min) {
+            seal_throw(S, "expected at least %d argument%s, got %d",
+                       min, min == 1 ? "" : "s", n);
+        }
+    } else if (min < 0) { /* at most */
+        if (n > max) {
+            seal_throw(S, "expected at most %d argument%s, got %d",
+                       max, max == 1 ? "" : "s", n);
+        }
+    } else if (min == max) { /* exact */
+        if (n != min) {
+            seal_throw(S, "expected %d argument%s, got %d",
+                       min, min == 1 ? "" : "s", n);
+        }
+    } else { /* range */
+        if (n < min || n > max) {
+            seal_throw(S, "expected %d to %d arguments, got %d",
+                       min, max, n);
         }
     }
 }

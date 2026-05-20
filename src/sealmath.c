@@ -126,7 +126,7 @@ static void math_trunc(seal_state *S)
 
 static void math_min(seal_state *S)
 {
-    seal_checkargcvar(S, 2);
+    seal_checkargcmin(S, 2);
     int n = seal_gettop(S);
 
     double m = seal_checknumber(S, 0);
@@ -150,7 +150,7 @@ static void math_min(seal_state *S)
 
 static void math_max(seal_state *S)
 {
-    seal_checkargcvar(S, 2);
+    seal_checkargcmin(S, 2);
     int n = seal_gettop(S);
 
     double m = seal_checknumber(S, 0);
@@ -192,6 +192,7 @@ static void math_isfinite(seal_state *S)
 
 static void math_random(seal_state *S)
 {
+    seal_checkargcmax(S, 2);
     S->random_state = S->random_state * 1664525 + 1013904223;
     unsigned int r = S->random_state;
     int min, max;
@@ -213,9 +214,6 @@ static void math_random(seal_state *S)
             seal_throw(S, "Math.random(min, max): \'max\' must be greater than \'min\'");
         }
         seal_pushint(S, min + (signed int)(r % (unsigned int)(max - min)));
-        break;
-    case 3:
-        seal_throw(S, "Math.random(...): at most 2 arguments can be given");
         break;
     }
 }

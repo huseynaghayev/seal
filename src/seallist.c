@@ -12,7 +12,7 @@ static void list_len(seal_state *S)
 
 static void list_push(seal_state *S)
 {
-    seal_checkargcvar(S, 2);
+    seal_checkargcmin(S, 2);
     int n = seal_gettop(S);
     seal_checktype(S, 0, SEAL_TLIST);
     struct seal_list *l = SEAL_AS_LIST(seal_getstack(S, 0));

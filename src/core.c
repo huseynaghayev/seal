@@ -97,13 +97,11 @@ static void core_print(seal_state *S)
 
 static void core_read(seal_state *S)
 {
-    int n = seal_gettop(S);
-    value *args = S->stack + S->sp - n;
+    seal_checkargcmax(S, 1);
 
-    for (int i = 0; i < n; i++) {
-        print_val(args + i, false);
-        if (i < n - 1)
-            putchar(' ');
+
+    if (seal_gettop(S) > 0) {
+        print_val(&seal_getstack(S, 0), false);
     }
 
     char buf[512];
@@ -114,8 +112,12 @@ static void core_read(seal_state *S)
 
 static void core_exit(seal_state *S)
 {
-    seal_checkargc(S, 1);
-    exit(seal_checkint(S, 0));
+    seal_checkargcmax(S, 1);
+    int code = 0;
+    if (seal_gettop(S) > 0) {
+        code = seal_checkint(S, 0);
+    }
+    exit(code);
     seal_pushnull(S); /* Pointless, because program was already terminated.
                        * But keep it as a convention.
                        */

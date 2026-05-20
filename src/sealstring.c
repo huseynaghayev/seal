@@ -2,14 +2,14 @@
 #include <string.h>
 #include <ctype.h>
 
-static void str_format(seal_state *S)
+static void string_format(seal_state *S)
 {
     //seal_checkargcvar(S, 1);
     //const char *fmt = seal_checkstring(S, 0);
     seal_pushnull(S);
 }
 
-static void str_lower(seal_state *S)
+static void string_lower(seal_state *S)
 {
     seal_checkargc(S, 1);
     char *s = strdup(seal_checkstring(S, 0));
@@ -20,7 +20,7 @@ static void str_lower(seal_state *S)
     seal_pushstringn(S, s);
 }
 
-static void str_upper(seal_state *S)
+static void string_upper(seal_state *S)
 {
     seal_checkargc(S, 1);
     char *s = strdup(seal_checkstring(S, 0));
@@ -32,7 +32,7 @@ static void str_upper(seal_state *S)
 }
 
 #define is_func_creator(__name) \
-static void str_##__name(seal_state *S) \
+static void string_##__name(seal_state *S) \
 { \
     seal_checkargc(S, 1); \
     const char *s = seal_checkstring(S, 0); \
@@ -57,7 +57,7 @@ is_func_creator(isdigit)
 is_func_creator(islower)
 is_func_creator(isupper)
 
-static void str_startwith(seal_state *S)
+static void string_startwith(seal_state *S)
 {
     seal_checkargc(S, 2);
     const char *str = seal_checkstring(S, 0);
@@ -79,7 +79,7 @@ static void str_startwith(seal_state *S)
     seal_pushbool(S, result);
 }
 
-static void str_endwith(seal_state *S)
+static void string_endwith(seal_state *S)
 {
     seal_checkargc(S, 2);
     const char *str = seal_checkstring(S, 0);
@@ -102,14 +102,22 @@ static void str_endwith(seal_state *S)
     seal_pushbool(S, result);
 }
 
-static void str_len(seal_state *S)
+static void string_len(seal_state *S)
 {
     seal_checkargc(S, 1);
     const char *s = seal_checkstring(S, 0);
     seal_pushint(S, strlen(s));
 }
 
-#define REG(name) { #name, str_##name }
+static void string_split(seal_state *S)
+{
+    seal_checkargc(S, 2);
+    const char *s = seal_checkstring(S, 0);
+    const char *sub = seal_checkstring(S, 1);
+    int n = 0;
+}
+
+#define REG(name) { #name, string_##name }
 
 static const seal_reg strlib[] = {
     REG(lower),

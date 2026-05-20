@@ -76,9 +76,10 @@ int seal_icall(seal_state *S, int argc);
 
 int seal_gettop(seal_state *S);
 void seal_movetop(seal_state *S, int offset);
-void seal_checkargcopt(seal_state *S, int min, int is_var);
-#define seal_checkargc(S, c) seal_checkargcopt(S, c, false)
-#define seal_checkargcvar(S, c) seal_checkargcopt(S, c, true)
+void seal_checkargcrange(seal_state *S, int min, int max);
+#define seal_checkargc(S, c) seal_checkargcrange(S, c, c)
+#define seal_checkargcmin(S, c) seal_checkargcrange(S, c, -1)
+#define seal_checkargcmax(S, c) seal_checkargcrange(S, -1, c)
 int seal_gettype(seal_state *S, int i);
 const char *seal_gettypename(seal_state *S, int i);
 
