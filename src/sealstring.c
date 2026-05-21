@@ -111,10 +111,56 @@ static void string_len(seal_state *S)
 
 static void string_split(seal_state *S)
 {
-    seal_checkargc(S, 2);
+    seal_checkargcrange(S, 1, 2);
     const char *s = seal_checkstring(S, 0);
-    const char *sub = seal_checkstring(S, 1);
+    const char *sep;
+    if (seal_gettop(S) == 2)
+        sep = seal_checkstring(S, 1);
+    else
+        sep = " ";
+
     int n = 0;
+    int slen = strlen(s);
+    int seplen = strlen(sep);
+    int len = 0;
+    int i = 0;
+    if (seplen == 0) {
+        while (*s) {
+            seal_pushlstring(S, s, 1);
+            s++;
+        }
+        seal_makelist(S, slen);
+        return;
+    }
+    while (i < slen) {
+        bool matched = true;
+        if (i + seplen < slen) {
+            for (int j = 0; j < seplen; j++) {
+                if (s[i + j] != sep[j]) {
+                    matched = false;
+                    break;
+                }
+            }
+        }
+
+        if (matched) {
+            if (len != 0) {
+                seal_pushlstring(S, s + (i - len), len);
+                n++;
+                len = 0;
+            }
+            i += seplen;
+        } else {
+            len++;
+            i++;
+        }
+    }
+    if (len != 0) {
+        seal_pushlstring(S, s + (i - len), len);
+        n++;
+    }
+
+    seal_makelist(S, n);
 }
 
 #define REG(name) { #name, string_##name }
@@ -130,6 +176,7 @@ static const seal_reg strlib[] = {
     REG(startwith),
     REG(endwith),
     REG(len),
+    REG(split),
     { NULL, NULL }
 };
 

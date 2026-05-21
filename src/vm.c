@@ -79,7 +79,6 @@ static const char *const _type_names[] = {
     /* TODO: use memcpy or strpcpy for speed */ \
     strcpy(s, as_strv(a)); \
     strcat(s, as_strv(b)); \
-    /* TODO: fix string ownership */ \
     seal_pushstringn(S, s); \
 } while (0)
 
