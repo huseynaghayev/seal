@@ -746,10 +746,36 @@ static void compile_dowhile(proto *p, ast *n, scope *s)
 
 static void compile_for(proto *p, ast *n, scope *s)
 {
-    (void)p;
-    (void)n;
-    (void)s;
-    SEAL_ASSERT(0);
+    h_entry *e = hashmap_search(s->h, n->as.forstmt.it);
+    if (e == NULL) {
+        /* HASHMAP IS FULL */
+        SEAL_ASSERT(0 && "maximum amount of locals is 256");
+    }
+    if (e->key == NULL) {
+        /* VARIABLE IS NOT SET YET */
+        int idx = s->h->len;
+        hashmap_insert_e(s->h, e, n->as.forstmt.it, SEAL_VINT(idx));
+    }
+    int it_slot_idx = e->val.as.integer;
+
+    compile_node(p, n->as.forstmt.ited, s);
+
+    emitn(p, OP_FORPREP);
+    int next_jump = p->code_size;
+    emit16dummy(p);
+    push_loop(p, p->code_size);
+    int loop_begin_pos = p->code_size;
+
+    compile_node(p, n->as.forstmt.body, s);
+    jmpreplace16cur(p, next_jump);
+    emitn(p, OP_FORNEXT);
+    emitn(p, it_slot_idx);
+    int loop_jump = p->code_size;
+    emit16dummy(p);
+    jmpreplace16(p, loop_begin_pos, loop_jump);
+
+    backpatch_stops(p);
+    pop_loop(p);
 }
 
 static void compile_skip(proto *p)
@@ -967,6 +993,8 @@ static const OpSpec op_specs[] = {
     [OP_JTRUE]   = { "jump if true",  2 },
     [OP_JFALSE]  = { "jump if false", 2 },
     [OP_JNULL]   = { "jump if null", 2 },
+    [OP_FORPREP] = { "for prep", 2 },
+    [OP_FORNEXT] = { "for next", 3 },
     [OP_CALL] = { "call", 1 },
     [OP_RETURN]  = { "return", 0 },
     /* binaries */
@@ -1084,6 +1112,21 @@ void dump_chunk(struct chunk *c)
                 break;
             }
             case OP_JMP: case OP_JTRUE: case OP_JFALSE: case OP_JNULL: {
+                short n = c->code[++i];
+                n <<= 8;
+                n |= c->code[++i];
+                printf("%d -> [%d]", n, i + 1 + n);
+                break;
+            }
+            case OP_FORPREP: {
+                short n = c->code[++i];
+                n <<= 8;
+                n |= c->code[++i];
+                printf("%d -> [%d]", n, i + 1 + n);
+                break;
+            }
+            case OP_FORNEXT: {
+                printf("slot: %d, ", c->code[++i]);
                 short n = c->code[++i];
                 n <<= 8;
                 n |= c->code[++i];

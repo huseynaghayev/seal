@@ -263,10 +263,21 @@ static ast *parse_dowhile(parser *p)
 static ast *parse_for(parser *p)
 {
     inclooplvl(p);
+    ast *f = ast_new(p, AST_FOR);
+    eat(p, TK_FOR);
+    f->as.forstmt.it = eatval(p, TK_ID);
+    eat(p, TK_IN);
+    f->as.forstmt.ited = parse_expr(p, true);
+    if (matchadv(p, TK_DO)) {
+        f->as.forstmt.body = parse_inlstmt(p);
+    } else {
+        newl(p);
+        indent(p);
+            f->as.forstmt.body = parse_stmts(p);
+        dedent(p);
+    }
     declooplvl(p);
-    /* TODO */
-    perror(p, cur(p), "for loop is not implemented");
-    return NODE_NOP;
+    return f;
 }
 
 static ast *parse_inlstmt(parser *p)

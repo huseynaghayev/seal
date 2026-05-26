@@ -31,6 +31,10 @@ enum {
     OP_JTRUE,  /* If TOP != (null | false) then IP += (signed)2NEXT */
     OP_JFALSE, /* If TOP == (null | false) then IP += (signed)2NEXT */
     OP_JNULL,  /* If TOP == null then IP += (signed)2NEXT */
+    OP_FORPREP, /* Jump to FORNEXT (2NEXT) */
+    OP_FORNEXT, /* Jump to right after FORPREP + 2NEXT
+                 * (NEXT for local idx, 2NEXT for JUMP offset
+                 */
     OP_CALL,   /* Get NEXT size arguments and call function */
     OP_RETURN, /* Get back to previous call frame */
     /* binaries

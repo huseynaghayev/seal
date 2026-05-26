@@ -440,6 +440,43 @@ int eval(seal_state *S, int till)
             if (is_null(popped))
                 S->ip += jmp_offset;
             break;
+        case OP_FORPREP:
+            seal_push(S, SEAL_VINT(-1));
+            jmp_offset = FETCH(S) << 8;
+            jmp_offset |= FETCH(S);
+            S->ip += jmp_offset;
+            break;
+        case OP_FORNEXT:
+            idx = ++as_int(seal_getstack(S, -1));
+            obj  = seal_getstack(S, -2);
+            n = FETCH(S);
+            switch (obj.type) {
+            case SEAL_TSTRING:
+                if (idx < as_str(obj)->len) {
+                    seal_pushlstring(S, as_strv(obj) + idx, 1);
+                    popped = seal_pop(S);
+                    seal_getstack(S, n) = popped;
+                } else {
+                    goto exit_forloop;
+                }
+                break;
+            case SEAL_TLIST:
+                if (idx < as_list(obj)->len) {
+                    seal_push(S, as_list(obj)->vals[idx]);
+                    popped = seal_pop(S);
+                    seal_getstack(S, n) = popped;
+                } else {
+                    goto exit_forloop;
+                }
+                break;
+            }
+            jmp_offset = FETCH(S) << 8;
+            jmp_offset |= FETCH(S);
+            S->ip += jmp_offset;
+            break;
+exit_forloop:
+            S->ip += 2;
+            break;
         case OP_CALL:
             seal_call(S, FETCH(S));
             break;
