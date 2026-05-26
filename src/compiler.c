@@ -51,6 +51,7 @@ typedef struct {
 
 /* forward declarations */
 static void compile_node(proto *p, ast *n, scope *s);
+static void compile_assign(proto *p, ast *var, ast *val, int op, scope *s);
 
 /* macros */
 #define tnode(n) ((n)->type)
@@ -409,10 +410,10 @@ static void compile_field(proto *p, ast *n, scope *s)
 
 static void compile_unary(proto *p, ast *n, scope *s)
 {
-    compile_node(p, n->as.unary.e, s);
-
     seal_byte opcode;
-    switch (n->as.unary.op) {
+    ast val_1;
+    int op = n->as.unary.op;
+    switch (op) {
     case IMOP_UNARY_MINUS:
         opcode = OP_NEG;
         break;
@@ -424,12 +425,21 @@ static void compile_unary(proto *p, ast *n, scope *s)
         break;
     case IMOP_PREFIX_INC:
     case IMOP_PREFIX_DEC:
+        val_1 = (ast) { .type = AST_INT, .as.i = 1 };
+        compile_assign(
+            p,
+            n->as.unary.e,
+            &val_1,
+            op == IMOP_PREFIX_INC ? IMOP_ADD_ASSIGN : IMOP_SUB_ASSIGN,
+            s);
+        return;
     case IMOP_POSTFIX_INC:
     case IMOP_POSTFIX_DEC:
         SEAL_ASSERT(0 && "++ and -- not compiled");
         break;
     }
 
+    compile_node(p, n->as.unary.e, s);
     emit(p, opcode, n);
 }
 
@@ -647,9 +657,9 @@ static void compile_assign_index(proto *p, ast *var, ast *val, int op, scope *s)
         emit(p, OP_SETINDEX, m);
     } else {
         emitn(p, OP_COPY);
-        emitn(p, 2);
+        emitn(p, 1);
         emitn(p, OP_COPY);
-        emitn(p, 2);
+        emitn(p, 1);
         emit(p, OP_GETINDEX, i);
         compile_node(p, val, s);
         int b = augop2byte(op);
@@ -658,12 +668,8 @@ static void compile_assign_index(proto *p, ast *var, ast *val, int op, scope *s)
     }
 }
 
-static void compile_assign(proto *p, ast *n, scope *s)
+static void compile_assign(proto *p, ast *var, ast *val, int op, scope *s)
 {
-    ast *var = n->as.assign.var;
-    ast *val = n->as.assign.val;
-    int op = n->as.assign.op;
-
     switch (var->type) {
     case AST_NAME:
         compile_assign_name(p, var, val, op, s);
@@ -873,7 +879,13 @@ static void compile_node(proto *p, ast *n, scope *s)
         compile_ternary(p, n, s);
         break;
     case AST_ASSIGN:
-        compile_assign(p, n, s);
+        compile_assign(
+            p,
+            n->as.assign.var,
+            n->as.assign.val,
+            n->as.assign.op,
+            s
+        );
         break;
     case AST_COMMA:
         compile_comma(p, n, s);
@@ -987,7 +999,7 @@ static const OpSpec op_specs[] = {
     [OP_PUSH16] = { "push16", 2 },
     [OP_POP]  = { "pop", 0 },
     [OP_DUP]  = { "dup", 0 },
-    [OP_COPY] = { "copy", 0 },
+    [OP_COPY] = { "copy", 1 },
     [OP_SWAP] = { "swap", 1 },
     [OP_JMP]  = { "jump", 2 },
     [OP_JTRUE]   = { "jump if true",  2 },
