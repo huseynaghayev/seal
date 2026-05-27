@@ -51,7 +51,7 @@ typedef struct {
 
 /* forward declarations */
 static void compile_node(proto *p, ast *n, scope *s);
-static void compile_assign(proto *p, ast *var, ast *val, int op, scope *s);
+static void compile_assign(proto *p, ast *var, ast *val, int op, scope *s, bool postfix);
 
 /* macros */
 #define tnode(n) ((n)->type)
@@ -425,18 +425,17 @@ static void compile_unary(proto *p, ast *n, scope *s)
         break;
     case IMOP_PREFIX_INC:
     case IMOP_PREFIX_DEC:
+    case IMOP_POSTFIX_INC:
+    case IMOP_POSTFIX_DEC:
         val_1 = (ast) { .type = AST_INT, .as.i = 1 };
         compile_assign(
             p,
             n->as.unary.e,
             &val_1,
-            op == IMOP_PREFIX_INC ? IMOP_ADD_ASSIGN : IMOP_SUB_ASSIGN,
-            s);
+            (op == IMOP_PREFIX_INC || op == IMOP_POSTFIX_INC) ? IMOP_ADD_ASSIGN : IMOP_SUB_ASSIGN,
+            s,
+            op == IMOP_POSTFIX_INC || op == IMOP_POSTFIX_DEC);
         return;
-    case IMOP_POSTFIX_INC:
-    case IMOP_POSTFIX_DEC:
-        SEAL_ASSERT(0 && "++ and -- not compiled");
-        break;
     }
 
     compile_node(p, n->as.unary.e, s);
@@ -571,7 +570,7 @@ static seal_byte augop2byte(int op)
     return b;
 }
 
-static void compile_assign_name(proto *p, ast *var, ast *val, int op, scope *s)
+static void compile_assign_name(proto *p, ast *var, ast *val, int op, scope *s, bool postfix)
 {
     if (op == IMOP_ASSIGN) {
         compile_node(p, val, s);
@@ -599,10 +598,15 @@ static void compile_assign_name(proto *p, ast *var, ast *val, int op, scope *s)
             int str_idx = get_string_idx(p, var->as.name.s);
             emit(p, OP_GETGLOBAL, var);
             emit16(p, str_idx, var);
+            if (postfix)
+                emitn(p, OP_DUP);
+
             compile_node(p, val, s);
             emitn(p, b);
             emit(p, OP_SETGLOBAL, var);
             emit16(p, str_idx, var);
+            if (postfix)
+                emitn(p, OP_POP);
         } else {
             h_entry *e = hashmap_search(s->h, var->as.name.s);
             if (nullhentry(e)) {
@@ -612,15 +616,20 @@ static void compile_assign_name(proto *p, ast *var, ast *val, int op, scope *s)
             int local_idx = e->val.as.integer;
             emit(p, OP_GETLOCAL, var);
             emit(p, local_idx, var);
+            if (postfix)
+                emitn(p, OP_DUP);
+
             compile_node(p, val, s);
             emitn(p, b);
             emit(p, OP_SETLOCAL, var);
             emit(p, local_idx, var);
+            if (postfix)
+                emitn(p, OP_POP);
         }
     }
 }
 
-static void compile_assign_field(proto *p, ast *var, ast *val, int op, scope *s)
+static void compile_assign_field(proto *p, ast *var, ast *val, int op, scope *s, bool postfix)
 {
     compile_node(p, var->as.field.m, s);
     ast *key = var->as.field.f;
@@ -636,15 +645,24 @@ static void compile_assign_field(proto *p, ast *var, ast *val, int op, scope *s)
         emitn(p, OP_DUP);
         emit(p, OP_GETFIELD, key);
         emit16(p, i, key);
+        if (postfix) {
+            emitn(p, OP_SWAP);
+            emitn(p, 1);
+            emitn(p, OP_COPY);
+            emitn(p, 1);
+        }
         compile_node(p, val, s);
         int b = augop2byte(op);
         emitn(p, b);
         emit(p, OP_SETFIELD, key);
         emit16(p, i, key);
+        if (postfix) {
+            emitn(p, OP_POP);
+        }
     }
 }
 
-static void compile_assign_index(proto *p, ast *var, ast *val, int op, scope *s)
+static void compile_assign_index(proto *p, ast *var, ast *val, int op, scope *s, bool postfix)
 {
     ast *m = var->as.index.m;
     compile_node(p, m, s);
@@ -661,24 +679,41 @@ static void compile_assign_index(proto *p, ast *var, ast *val, int op, scope *s)
         emitn(p, OP_COPY);
         emitn(p, 1);
         emit(p, OP_GETINDEX, i);
+        if (postfix)
+            emitn(p, OP_DUP);
+
         compile_node(p, val, s);
         int b = augop2byte(op);
         emitn(p, b);
-        emit(p, OP_SETINDEX, i);
+        if (postfix) {
+            emitn(p, OP_SWAP);
+            emitn(p, 1);
+            emitn(p, OP_SWAP);
+            emitn(p, 3);
+            emitn(p, OP_SWAP);
+            emitn(p, 2);
+            emitn(p, OP_SWAP);
+            emitn(p, 1);
+        }
+
+        emit(p, OP_SETINDEX, m);
+
+        if (postfix)
+            emitn(p, OP_POP);
     }
 }
 
-static void compile_assign(proto *p, ast *var, ast *val, int op, scope *s)
+static void compile_assign(proto *p, ast *var, ast *val, int op, scope *s, bool postfix)
 {
     switch (var->type) {
     case AST_NAME:
-        compile_assign_name(p, var, val, op, s);
+        compile_assign_name(p, var, val, op, s, postfix);
         break;
     case AST_FIELD:
-        compile_assign_field(p, var, val, op, s);
+        compile_assign_field(p, var, val, op, s, postfix);
         break;
     case AST_INDEX:
-        compile_assign_index(p, var, val, op, s);
+        compile_assign_index(p, var, val, op, s, postfix);
         break;
     }
 }
@@ -884,7 +919,8 @@ static void compile_node(proto *p, ast *n, scope *s)
             n->as.assign.var,
             n->as.assign.val,
             n->as.assign.op,
-            s
+            s,
+            false
         );
         break;
     case AST_COMMA:

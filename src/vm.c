@@ -775,13 +775,14 @@ static void print_val(struct seal_value *v)
 
 void print_stack(seal_state *S)
 {
-    stack_idx i = 0;
-    while (i < S->sp) {
+    stack_idx i = S->sp - 1;
+    while (i >= 0) {
         printf("[%2d]: ", i);
         print_val(S->stack + i);
         putchar('\n');
-        i++;
+        i--;
     }
+    printf("----------END STACK----------\n");
 }
 
 #endif
