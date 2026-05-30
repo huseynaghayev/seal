@@ -20,7 +20,8 @@ static const char *const _type_names[] = {
     [SEAL_TSTRING] = "string",
     [SEAL_TLIST] = "list",
     [SEAL_TMAP] = "map",
-    [SEAL_TFUNCTION] = "function"
+    [SEAL_TFUNCTION] = "function",
+    [SEAL_TUSERDATA] = "userdata"
 };
 
 seal_state *seal_state_new()
@@ -393,6 +394,11 @@ const char *seal_tostring(seal_state *S, int i)
     return SEAL_AS_STRINGVAL(seal_getstack(S, i));
 }
 
+void *seal_touserdata(seal_state *S, int i)
+{
+    return SEAL_AS_USERDATA(seal_getstack(S, i));
+}
+
 #define val_is(S, i, t, v, out) (v = seal_getstack(S, i), (out = v.type) == (t))
 
 #define checkval_err(S, i, exp, got) \
@@ -452,6 +458,11 @@ const char *seal_checkstring(seal_state *S, int i)
     }
 
     return SEAL_AS_STRINGVAL(v);
+}
+
+void *seal_checkuserdata(seal_state *S, int i)
+{
+    check_body(USERDATA);
 }
 
 /* push */
@@ -547,6 +558,11 @@ void seal_makemap(seal_state *S, int size)
         S->sp -= size * 2;
         seal_push(S, m);
     }
+}
+
+void seal_pushuserdata(seal_state *S, void *p)
+{
+    seal_push(S, SEAL_VUSERDATA(p));
 }
 
 /* get */

@@ -20,6 +20,7 @@ typedef void (*seal_Cfunction) (seal_state *S);
 #define SEAL_TLIST   5
 #define SEAL_TMAP    6
 #define SEAL_TFUNCTION  7
+#define SEAL_TUSERDATA  8
 
 #define SEAL_TFUNC_SEAL 0
 #define SEAL_TFUNC_C  1
@@ -55,7 +56,8 @@ SEAL_API const char *seal_gettypename(seal_state *S, int i);
 #define seal_isstring(S, i) (seal_gettype(S, i) == SEAL_TSTRING)
 #define seal_islist(S, i)   (seal_gettype(S, i) == SEAL_TLIST)
 #define seal_ismap(S, i)    (seal_gettype(S, i) == SEAL_TMAP)
-#define seal_isfunc(S, i)   (seal_gettype(S, i) == SEAL_TFUNCTION)
+#define seal_isfunction(S, i)   (seal_gettype(S, i) == SEAL_TFUNCTION)
+#define seal_isuserdata(S, i)   (seal_gettype(S, i) == SEAL_TUSERDATA)
 
 /* values */
 SEAL_API seal_bool   seal_tobool(seal_state *S, int i);
@@ -63,6 +65,7 @@ SEAL_API seal_int    seal_toint(seal_state *S, int i);
 SEAL_API seal_float  seal_tofloat(seal_state *S, int i);
 SEAL_API seal_float  seal_tonumber(seal_state *S, int i);
 SEAL_API const char *seal_tostring(seal_state *S, int i);
+SEAL_API void       *seal_touserdata(seal_state *S, int i);
 
 SEAL_API void        seal_checktype(seal_state *S, int i, int type);
 SEAL_API seal_bool   seal_checkbool(seal_state *S, int i);
@@ -70,6 +73,7 @@ SEAL_API seal_int    seal_checkint(seal_state *S, int i);
 SEAL_API seal_float  seal_checkfloat(seal_state *S, int i);
 SEAL_API seal_float  seal_checknumber(seal_state *S, int i);
 SEAL_API const char *seal_checkstring(seal_state *S, int i);
+SEAL_API void       *seal_checkuserdata(seal_state *S, int i);
 
 /* push */
 
@@ -88,6 +92,7 @@ SEAL_API void seal_makelist(seal_state *S, int size);
 #define seal_newlist(S) seal_makelist(S, 0)
 SEAL_API void seal_makemap(seal_state *S, int size);
 #define seal_newmap(S) seal_makemap(S, 0)
+SEAL_API void seal_pushuserdata(seal_state *S, void *p);
 
 /* get */
 /* return 0 if it exists, 1 if not found (nothing is pushed) */

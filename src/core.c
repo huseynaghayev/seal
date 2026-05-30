@@ -77,6 +77,9 @@ static void print_val(value *v, int inside_obj)
     case SEAL_TFUNCTION:
         printf("function: %p", (void*)SEAL_AS_FUNC(*v));
         break;
+    case SEAL_TUSERDATA:
+        printf("userdata: %p", SEAL_AS_USERDATA(*v));
+        break;
     }
 }
 

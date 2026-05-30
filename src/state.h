@@ -89,6 +89,7 @@ seal_int    seal_toint(seal_state *S, int i);
 seal_float  seal_tofloat(seal_state *S, int i);
 seal_float  seal_tonumber(seal_state *S, int i);
 const char *seal_tostring(seal_state *S, int i);
+void       *seal_touserdata(seal_state *S, int i);
 
 void        seal_checktype(seal_state *S, int i, int type);
 seal_bool   seal_checkbool(seal_state *S, int i);
@@ -96,6 +97,7 @@ seal_int    seal_checkint(seal_state *S, int i);
 seal_float  seal_checkfloat(seal_state *S, int i);
 seal_float  seal_checknumber(seal_state *S, int i);
 const char *seal_checkstring(seal_state *S, int i);
+void       *seal_checkuserdata(seal_state *S, int i);
 
 /* push */
 
@@ -114,6 +116,7 @@ void seal_makelist(seal_state *S, int size);
 #define seal_newlist(S) seal_makelist(S, 0)
 void seal_makemap(seal_state *S, int size);
 #define seal_newmap(S) seal_makemap(S, 0)
+void seal_pushuserdata(seal_state *S, void *p);
 
 /* get */
 /* return 0 if it exists, 1 if not found (nothing is pushed) */

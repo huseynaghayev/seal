@@ -16,6 +16,7 @@
 #define SEAL_TLIST   5
 #define SEAL_TMAP    6
 #define SEAL_TFUNCTION  7
+#define SEAL_TUSERDATA  8
 
 
 #define SEAL_IS_NULL(v) ((v).type == SEAL_TNULL)
@@ -27,6 +28,7 @@
 #define SEAL_IS_LIST(v) ((v).type == SEAL_TLIST)
 #define SEAL_IS_MAP(v)  ((v).type == SEAL_TMAP)
 #define SEAL_IS_FUNC(v) ((v).type == SEAL_TFUNCTION)
+#define SEAL_IS_USERDATA(v) ((v).type == SEAL_TUSERDATA)
 
 #define SEAL_AS_BOOL(v) ((v).as.boolean)
 #define SEAL_AS_INT(v)  ((v).as.integer)
@@ -39,6 +41,7 @@
 #define SEAL_AS_FUNC(v)  ((v).as.func)
 #define SEAL_AS_SFUNC(v) (SEAL_AS_FUNC(v)->as.s)
 #define SEAL_AS_CFUNC(v) (SEAL_AS_FUNC(v)->as.c)
+#define SEAL_AS_USERDATA(v) ((v).as.udata)
 
 #define SEAL_VAL(t, f, v) ((struct seal_value) { .type = t, .as.f = v })
 #define SEAL_VNULL ((struct seal_value) { SEAL_TNULL })
@@ -49,6 +52,7 @@
 #define SEAL_VLIST(v) SEAL_VAL(SEAL_TLIST, list, v)
 #define SEAL_VMAP(v)  SEAL_VAL(SEAL_TMAP, map, v)
 #define SEAL_VFUNC(v) SEAL_VAL(SEAL_TFUNCTION, func, v)
+#define SEAL_VUSERDATA(v) SEAL_VAL(SEAL_TUSERDATA, udata, v)
 
 
 /* forward declarations */
@@ -70,6 +74,7 @@ struct seal_value {
         struct seal_list    *list;
         struct seal_hashmap *map;
         struct seal_func *func; /* prototype */
+        void *udata;
     } as;
 };
 

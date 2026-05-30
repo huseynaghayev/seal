@@ -36,7 +36,8 @@ static const char *const _type_names[] = {
     [SEAL_TSTRING] = "string",
     [SEAL_TLIST] = "list",
     [SEAL_TMAP] = "map",
-    [SEAL_TFUNCTION] = "function"
+    [SEAL_TFUNCTION] = "function",
+    [SEAL_TUSERDATA] = "userdata"
 };
 
 #define vtype(v) ((v).type)
