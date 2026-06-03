@@ -78,6 +78,8 @@ struct seal_value {
     } as;
 };
 
+void seal_print_val(struct seal_value *v, bool inside_obj);
+
 #define GC_Header \
     bool marked
 

@@ -2,6 +2,85 @@
 #include <stdio.h> /* snprintf */
 
 
+void seal_print_val(struct seal_value *v, bool inside_obj)
+{
+    switch (v->type) {
+    case SEAL_TNULL:
+        printf("null");
+        break;
+    case SEAL_TBOOL:
+        printf("%s", SEAL_AS_BOOL(*v) ? "true" : "false");
+        break;
+    case SEAL_TINT:
+        printf("%lld", SEAL_AS_INT(*v));
+        break;
+    case SEAL_TFLOAT:
+    {
+        char buf[32];
+        seal_format_float(SEAL_AS_FLOAT(*v), buf, sizeof(buf));
+        printf("%s", buf);
+        break;
+    }
+    case SEAL_TSTRING:
+        if (inside_obj)
+            putchar('\'');
+
+        printf("%s", SEAL_AS_STRINGVAL(*v));
+
+        if (inside_obj)
+            putchar('\'');
+
+        break;
+    case SEAL_TLIST:
+    {
+        //printf("list: %p", (void*)SEAL_AS_LIST(*v));
+        putchar('[');
+        struct seal_list *l = SEAL_AS_LIST(*v);
+        int len = l->len;
+        for (int i = 0; i < len; i++) {
+            print_val(&l->vals[i], true);
+            if (i < len - 1) {
+                putchar(',');
+                putchar(' ');
+            } else {
+                break;
+            }
+        }
+        putchar(']');
+        break;
+    }
+    case SEAL_TMAP:
+    {
+        //printf("map: %p", (void*)SEAL_AS_MAP(*v));
+        putchar('{');
+        int printed = 0;
+        int len = SEAL_AS_MAP(*v)->len;
+        for (int i = 0; i < SEAL_AS_MAP(*v)->cap; i++) {
+            struct h_entry e = SEAL_AS_MAP(*v)->entries[i];
+            if (e.key) {
+                printf("%s = ", e.key);
+                print_val(&e.val, true);
+                printed++;
+                if (printed < len) {
+                    putchar(',');
+                    putchar(' ');
+                } else {
+                    break;
+                }
+            }
+        }
+        putchar('}');
+        break;
+    }
+    case SEAL_TFUNCTION:
+        printf("function: %p", (void*)SEAL_AS_FUNC(*v));
+        break;
+    case SEAL_TUSERDATA:
+        printf("userdata: %p", SEAL_AS_USERDATA(*v));
+        break;
+    }
+}
+
 /* float */
 int seal_format_float(seal_float f, char *buf, int bufsiz)
 {

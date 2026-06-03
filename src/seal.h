@@ -85,8 +85,8 @@ SEAL_API void seal_pushfloat(seal_state *S, seal_float f);
 SEAL_API void seal_pushstringx(seal_state *S, const char *str, int len, bool dup, bool is_const);
 #define seal_pushstring(S, str)  seal_pushstringx(S, str, -1, true, false)
 #define seal_pushlstring(S, str, l) seal_pushstringx(S, str, l, false, false)
-#define seal_pushstringn(S, str) seal_pushstringx(S, str, -1, false, false)
-#define seal_pushstringc(S, str) seal_pushstringx(S, str, -1, false, true)
+#define seal_pushallocdstring(S, str) seal_pushstringx(S, str, -1, false, false)
+#define seal_pushconststring(S, str) seal_pushstringx(S, str, -1, false, true)
 SEAL_API void seal_pushCfunc(seal_state *S, seal_Cfunction f);
 SEAL_API void seal_makelist(seal_state *S, int size);
 #define seal_newlist(S) seal_makelist(S, 0)

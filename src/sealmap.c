@@ -30,7 +30,7 @@ static void map_keys(seal_state *S)
     struct seal_hashmap *m = SEAL_AS_MAP(seal_getstack(S, 0));
     for (int i = 0; i < m->cap; i++) {
         if (m->entries[i].key) {
-            seal_pushstringc(S, m->entries[i].key);
+            seal_pushconststring(S, m->entries[i].key);
         }
     }
     seal_makelist(S, m->len);

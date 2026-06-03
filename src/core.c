@@ -4,92 +4,13 @@
 
 typedef struct seal_value value;
 
-static void print_val(value *v, int inside_obj)
-{
-    switch (v->type) {
-    case SEAL_TNULL:
-        printf("null");
-        break;
-    case SEAL_TBOOL:
-        printf("%s", SEAL_AS_BOOL(*v) ? "true" : "false");
-        break;
-    case SEAL_TINT:
-        printf("%lld", SEAL_AS_INT(*v));
-        break;
-    case SEAL_TFLOAT:
-    {
-        char buf[32];
-        seal_format_float(SEAL_AS_FLOAT(*v), buf, sizeof(buf));
-        printf("%s", buf);
-        break;
-    }
-    case SEAL_TSTRING:
-        if (inside_obj)
-            putchar('\'');
-
-        printf("%s", SEAL_AS_STRINGVAL(*v));
-
-        if (inside_obj)
-            putchar('\'');
-
-        break;
-    case SEAL_TLIST:
-    {
-        //printf("list: %p", (void*)SEAL_AS_LIST(*v));
-        putchar('[');
-        struct seal_list *l = SEAL_AS_LIST(*v);
-        int len = l->len;
-        for (int i = 0; i < len; i++) {
-            print_val(&l->vals[i], true);
-            if (i < len - 1) {
-                putchar(',');
-                putchar(' ');
-            } else {
-                break;
-            }
-        }
-        putchar(']');
-        break;
-    }
-    case SEAL_TMAP:
-    {
-        //printf("map: %p", (void*)SEAL_AS_MAP(*v));
-        putchar('{');
-        int printed = 0;
-        int len = SEAL_AS_MAP(*v)->len;
-        for (int i = 0; i < SEAL_AS_MAP(*v)->cap; i++) {
-            struct h_entry e = SEAL_AS_MAP(*v)->entries[i];
-            if (e.key) {
-                printf("%s = ", e.key);
-                print_val(&e.val, true);
-                printed++;
-                if (printed < len) {
-                    putchar(',');
-                    putchar(' ');
-                } else {
-                    break;
-                }
-            }
-        }
-        putchar('}');
-        break;
-    }
-    case SEAL_TFUNCTION:
-        printf("function: %p", (void*)SEAL_AS_FUNC(*v));
-        break;
-    case SEAL_TUSERDATA:
-        printf("userdata: %p", SEAL_AS_USERDATA(*v));
-        break;
-    }
-}
-
 static void core_print(seal_state *S)
 {
     int n = seal_gettop(S);
     value *args = S->stack + S->sp - n;
 
     for (int i = 0; i < n; i++) {
-        print_val(args + i, false);
+        seal_print_val(args + i, false);
         if (i < n - 1)
             putchar(' ');
     }
@@ -104,7 +25,7 @@ static void core_read(seal_state *S)
 
 
     if (seal_gettop(S) > 0) {
-        print_val(&seal_getstack(S, 0), false);
+        seal_print_val(&seal_getstack(S, 0), false);
     }
 
     char buf[512];
@@ -129,7 +50,7 @@ static void core_exit(seal_state *S)
 static void core_typeof(seal_state *S)
 {
     seal_checkargc(S, 1);
-    seal_pushstringc(S, seal_gettypename(S, 0));
+    seal_pushconststring(S, seal_gettypename(S, 0));
 }
 
 static void core_string(seal_state *S)
@@ -138,7 +59,7 @@ static void core_string(seal_state *S)
     seal_checkargc(S, 1);
     switch (seal_gettype(S, 0)) {
     case SEAL_TBOOL:
-        seal_pushstringc(S, seal_tobool(S, 0) ? "true" : "false");
+        seal_pushconststring(S, seal_tobool(S, 0) ? "true" : "false");
         break;
     case SEAL_TINT:
         snprintf(buf, sizeof(buf), "%lld", seal_toint(S, 0)); 
@@ -152,7 +73,7 @@ static void core_string(seal_state *S)
         seal_pushidx(S, 0);
         break;
     default:
-        seal_pushstringc(S, seal_gettypename(S, 0));
+        seal_pushconststring(S, seal_gettypename(S, 0));
         break;
     }
 }

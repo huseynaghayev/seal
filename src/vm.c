@@ -80,7 +80,7 @@ static const char *const _type_names[] = {
     /* TODO: use memcpy or strpcpy for speed */ \
     strcpy(s, as_strv(a)); \
     strcat(s, as_strv(b)); \
-    seal_pushstringn(S, s); \
+    seal_pushallocdstring(S, s); \
 } while (0)
 
 #define bin_op(S, op, a, b) do { \
