@@ -281,32 +281,34 @@ static int is_lib_loaded(seal_state *S, const char *name)
 #define add2loaded_libs(S, name) \
     hashmap_insert((S)->packages, name, SEAL_VBOOL(true))
 
+#define __streq(a, b) (strcmp(a, b) == 0)
+
 static int load_lib(seal_state *S, const char *name)
 {
     if (is_lib_loaded(S, name))
         return 0;
 
-    if (strcmp(name, "math") == 0) {
+    if (__streq(name, "math")) {
         sealopen_math(S);
         add2loaded_libs(S, "math");
         return 0;
-    } else if (strcmp(name, "system") == 0) {
+    } else if (__streq(name, "system")) {
         sealopen_system(S);
         add2loaded_libs(S, "system");
         return 0;
-    } else if (strcmp(name, "string") == 0) {
+    } else if (__streq(name, "string")) {
         sealopen_string(S);
         add2loaded_libs(S, "string");
         seal_getglobal(S, "String");
         S->string_lib = as_map(seal_pop(S));
         return 0;
-    } else if (strcmp(name, "list") == 0) {
+    } else if (__streq(name, "list")) {
         sealopen_list(S);
         add2loaded_libs(S, "list");
         seal_getglobal(S, "List");
         S->list_lib = as_map(seal_pop(S));
         return 0;
-    } else if (strcmp(name, "map") == 0) {
+    } else if (__streq(name, "map")) {
         sealopen_map(S);
         add2loaded_libs(S, "map");
         return 0;
@@ -476,6 +478,7 @@ int eval(seal_state *S, int till)
             S->ip += jmp_offset;
             break;
 exit_forloop:
+            S->sp -= 2;
             S->ip += 2;
             break;
         case OP_CALL:
