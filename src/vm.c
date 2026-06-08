@@ -312,6 +312,10 @@ static int load_lib(seal_state *S, const char *name)
         sealopen_map(S);
         add2loaded_libs(S, "map");
         return 0;
+    } else if (__streq(name, "io")) {
+        sealopen_io(S);
+        add2loaded_libs(S, "io");
+        return 0;
     }
 
     included_file_t ift = fallback_file(name);

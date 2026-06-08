@@ -38,7 +38,7 @@ void seal_print_val(struct seal_value *v, bool inside_obj)
         struct seal_list *l = SEAL_AS_LIST(*v);
         int len = l->len;
         for (int i = 0; i < len; i++) {
-            print_val(&l->vals[i], true);
+            seal_print_val(&l->vals[i], true);
             if (i < len - 1) {
                 putchar(',');
                 putchar(' ');
@@ -59,7 +59,7 @@ void seal_print_val(struct seal_value *v, bool inside_obj)
             struct h_entry e = SEAL_AS_MAP(*v)->entries[i];
             if (e.key) {
                 printf("%s = ", e.key);
-                print_val(&e.val, true);
+                seal_print_val(&e.val, true);
                 printed++;
                 if (printed < len) {
                     putchar(',');
