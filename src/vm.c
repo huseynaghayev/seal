@@ -615,10 +615,15 @@ exit_forloop:
             n = FETCH(S);
             seal_makelist(S, n);
             break;
-        /*
-        case OP_PUSHLIST:
+        case OP_PUSHLIST: {
+            n = FETCH(S);
+            struct seal_list *l = as_list(seal_getstack(S, -n - 1));
+            for (int i = n; i > 0; i--) {
+                list_pushval(l, seal_getstack(S, -i));
+            }
+            S->sp -= n;
             break;
-        */
+        }
         case OP_NEWMAP:
             seal_newmap(S);
             break;
