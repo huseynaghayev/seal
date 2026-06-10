@@ -15,8 +15,8 @@
 
 /* semantic versioning of Seal */
 #define SEAL_VERSION_MAJOR "0"
-#define SEAL_VERSION_MINOR "1"
-#define SEAL_VERSION_PATCH "1"
+#define SEAL_VERSION_MINOR "2"
+#define SEAL_VERSION_PATCH "0"
 
 /* full version */
 #define SEAL_VERSION SEAL_VERSION_MAJOR "." SEAL_VERSION_MINOR "." SEAL_VERSION_PATCH

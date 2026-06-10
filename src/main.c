@@ -50,6 +50,15 @@ int main(int argc, char **argv)
         fclose(fp);
         S = seal_state_new();
         S->file_name = argv[1];
+
+        /* Command line arguments */
+        for (int i = 1; i < argc; i++) {
+            seal_pushconststring(S, argv[i]);
+        }
+        seal_makelist(S, argc - 1);
+        seal_setglobal(S, "Args");
+        /* ---------------------- */
+
         int status = seal_dostring(S, STREAM);
         if (status) {
             fprintf(stderr, "%s\n", S->errmsg);
