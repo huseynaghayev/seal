@@ -134,7 +134,7 @@ static void string_split(seal_state *S)
     }
     while (i < slen) {
         bool matched = true;
-        if (i + seplen < slen) {
+        if (i + seplen <= slen) {
             for (int j = 0; j < seplen; j++) {
                 if (s[i + j] != sep[j]) {
                     matched = false;
