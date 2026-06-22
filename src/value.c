@@ -176,7 +176,7 @@ static unsigned int hashswl(const char *key, int len)
     return hash;
 }
 
-#define hash(k) hashswl(key, -1)
+#define hash(k) hashswl(k, -1)
 
 #define hentrynew(k, v) (struct h_entry) { hash(k), (k), strlen(k), (v), true }
 
