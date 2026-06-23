@@ -147,6 +147,22 @@ static void list_all(seal_state *S)
     seal_pushbool(S, result);
 }
 
+static void list_each(seal_state *S)
+{
+    seal_checkargc(S, 2);
+    seal_checktype(S, 0, SEAL_TLIST);
+    seal_checktype(S, 1, SEAL_TFUNCTION);
+    struct seal_list *l = SEAL_AS_LIST(seal_getstack(S, 0));
+    struct seal_value f = seal_getstack(S, 1);
+    for (int i = 0; i < l->len; i++) {
+        seal_push(S, f);
+        seal_push(S, l->vals[i]);
+        seal_icall(S, 1);
+        seal_pop(S); /* discard the result */
+    }
+    seal_pushnull(S);
+}
+
 #define REG(name) { #name, list_##name }
 
 static const seal_reg listlib[] = {
@@ -159,6 +175,7 @@ static const seal_reg listlib[] = {
     REG(reduce),
     REG(any),
     REG(all),
+    REG(each),
     { NULL, NULL }
 };
 

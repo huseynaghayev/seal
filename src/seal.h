@@ -95,9 +95,18 @@ SEAL_API void seal_makemap(seal_state *S, int size);
 SEAL_API void seal_pushuserdata(seal_state *S, void *p);
 
 /* get */
+/* if not iterable then
+ *  return -1
+ * else
+ *  its length */
+SEAL_API int seal_getlength(seal_state *S, int i);
 /* return 0 if it exists, 1 if not found (nothing is pushed) */
 SEAL_API int seal_getglobal(seal_state *S, const char *name); /* push value on top */
-SEAL_API int seal_getindex(seal_state *S, int i);
+/* return 0 if it exists
+ * 1 if not found (null is pushed for now)
+ * -1 if not list (null is pushed for now)
+ */
+SEAL_API int seal_getindex(seal_state *S, int list_i, int i);
 /* return 0 if it exists
  * 1 if not found (null is pushed for now)
  * -1 if not map (null is pushed for now)

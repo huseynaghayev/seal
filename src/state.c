@@ -566,6 +566,30 @@ void seal_pushuserdata(seal_state *S, void *p)
 }
 
 /* get */
+
+/* if not iterable then
+ * return -1
+ * else
+ * its length */
+int seal_getlength(seal_state *S, int i)
+{
+    struct seal_value v = seal_getstack(S, i);
+    int len = -1;
+    switch (v.type) {
+    case SEAL_TSTRING:
+        len = SEAL_AS_STRING(v)->len;
+        break;
+    case SEAL_TLIST:
+        len = SEAL_AS_LIST(v)->len;
+        break;
+    case SEAL_TMAP:
+        len = SEAL_AS_MAP(v)->len;
+        break;
+    }
+
+    return len;
+}
+
 /* return 0 if it exists, 1 if not found (nothing is pushed) */
 int seal_getglobal(seal_state *S, const char *name) /* push value on top */
 {
@@ -578,7 +602,30 @@ int seal_getglobal(seal_state *S, const char *name) /* push value on top */
     return 0;
 }
 
-int seal_getindex(seal_state *S, int i);
+/* return 0 if it exists
+ * 1 if not found (null is pushed for now)
+ * -1 if not list (null is pushed for now)
+ */
+int seal_getindex(seal_state *S, int list_i, int i)
+{
+    struct seal_value v = seal_getstack(S, list_i);
+    if (!SEAL_IS_LIST(v)) {
+        /* TODO: throw error when it is not list */
+        seal_pushnull(S);
+        return -1;
+    }
+    struct seal_list *l = SEAL_AS_LIST(v);
+    int ai = i >= 0 ? i : l->len + i;
+    if (ai < 0 || ai >= l->len) {
+        /* TODO: throw error when item is not found
+         * but return null for now
+         */
+        seal_pushnull(S);
+        return 1;
+    }
+    seal_push(S, l->vals[ai]);
+    return 0;
+}
 
 /* return 0 if it exists
  * 1 if not found (null is pushed for now)
@@ -590,7 +637,7 @@ int seal_getfield(seal_state *S, int map_i, const char *key)
     if (!SEAL_IS_MAP(m)) {
         /* TODO: throw error when it is not map */
         seal_pushnull(S);
-        return 1;
+        return -1;
     }
     struct h_entry *e;
     e = hashmap_search(SEAL_AS_MAP(m), key);
