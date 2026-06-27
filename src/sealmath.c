@@ -205,7 +205,7 @@ static void math_random(seal_state *S)
         if (max <= 0) {
             seal_throw(S, "Math.random(max): \'max\' must be greater than zero");
         }
-        seal_pushint(S, r % max);
+        seal_pushint(S, (r >> 16) % max);
         break;
     case 2:
         min = seal_checkint(S, 0);
@@ -213,7 +213,7 @@ static void math_random(seal_state *S)
         if (max <= min) {
             seal_throw(S, "Math.random(min, max): \'max\' must be greater than \'min\'");
         }
-        seal_pushint(S, min + (signed int)(r % (unsigned int)(max - min)));
+        seal_pushint(S, min + (signed int)((r >> 16) % (unsigned int)(max - min)));
         break;
     }
 }
