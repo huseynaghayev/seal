@@ -13,7 +13,7 @@ static void string_lower(seal_state *S)
 {
     seal_checkargc(S, 1);
     char *s = strdup(seal_checkstring(S, 0));
-    int l = strlen(s);
+    int l = seal_getlength(S, 0);
     for (int i = 0; i < l; i++) {
         s[i] = tolower(s[i]);
     }
@@ -24,7 +24,7 @@ static void string_upper(seal_state *S)
 {
     seal_checkargc(S, 1);
     char *s = strdup(seal_checkstring(S, 0));
-    int l = strlen(s);
+    int l = seal_getlength(S, 0);
     for (int i = 0; i < l; i++) {
         s[i] = toupper(s[i]);
     }
@@ -36,7 +36,7 @@ static void string_##__name(seal_state *S) \
 { \
     seal_checkargc(S, 1); \
     const char *s = seal_checkstring(S, 0); \
-    int l = strlen(s); \
+    int l = seal_getlength(S, 0); \
     if (l == 0) { \
         seal_pushbool(S, false); \
         return; \
@@ -62,8 +62,8 @@ static void string_startwith(seal_state *S)
     seal_checkargc(S, 2);
     const char *str = seal_checkstring(S, 0);
     const char *start = seal_checkstring(S, 1);
-    int lenstr = strlen(str);
-    int lenstart = strlen(start);
+    int lenstr = seal_getlength(S, 0);
+    int lenstart = seal_getlength(S, 1);
     if (lenstart > lenstr) {
         seal_pushbool(S, false);
         return;
@@ -84,8 +84,8 @@ static void string_endwith(seal_state *S)
     seal_checkargc(S, 2);
     const char *str = seal_checkstring(S, 0);
     const char *end = seal_checkstring(S, 1);
-    int lenstr = strlen(str);
-    int lenend = strlen(end);
+    int lenstr = seal_getlength(S, 0);
+    int lenend = seal_getlength(S, 1);
     if (lenend > lenstr) {
         seal_pushbool(S, false);
         return;
@@ -105,8 +105,8 @@ static void string_endwith(seal_state *S)
 static void string_len(seal_state *S)
 {
     seal_checkargc(S, 1);
-    const char *s = seal_checkstring(S, 0);
-    seal_pushint(S, strlen(s));
+    seal_checktype(S, 0, SEAL_TSTRING);
+    seal_pushint(S, seal_getlength(S, 0));
 }
 
 static void string_split(seal_state *S)
@@ -120,7 +120,7 @@ static void string_split(seal_state *S)
         sep = " ";
 
     int n = 0;
-    int slen = strlen(s);
+    int slen = seal_getlength(S, 0);
     int seplen = strlen(sep);
     int len = 0;
     int i = 0;
@@ -163,6 +163,30 @@ static void string_split(seal_state *S)
     seal_makelist(S, n);
 }
 
+static void string_sub(seal_state *S)
+{
+    /* TODO: handle error and negative end cases */
+    seal_checkargcrange(S, 2, 3);
+    const char *s = seal_checkstring(S, 0);
+    int start = seal_checkint(S, 1);
+    int end;
+    int len = seal_getlength(S, 0);
+    if (seal_gettop(S) == 3) {
+        end = seal_checkint(S, 2);
+    } else {
+        end = len;
+    }
+    if (start >= 0) {
+        s += start;
+    } else {
+        s += len + start;
+    }
+    if (end <= 0) {
+        end = len + end;
+    }
+    seal_pushlstring(S, s, end - start);
+}
+
 #define REG(name) { #name, string_##name }
 
 static const seal_reg strlib[] = {
@@ -177,6 +201,7 @@ static const seal_reg strlib[] = {
     REG(endwith),
     REG(len),
     REG(split),
+    REG(sub),
     { NULL, NULL }
 };
 
