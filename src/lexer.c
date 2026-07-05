@@ -262,12 +262,15 @@ end:
 
 static const char *get_string(lexer *l, char cterm)
 {
+    if (cterm == '`') {
+        matchadv(l, '\n');
+    }
     size_t len = 0;
     const char *start = &cur(l);
     char *read, *write;
     read = write = (char *)&cur(l);
-    while (!iseof(l) && !match(l, '\n') && !match(l, cterm)) {
-        if (*read == '\\') {
+    while (!iseof(l) && (cterm == '`' || !match(l, '\n')) && !match(l, cterm)) {
+        if (cterm != '`' && *read == '\\') {
             read++;
             advance(l);
             char esc;
@@ -417,7 +420,7 @@ static token nexttoken(lexer *l)
         case ')': case ']': case '}':
             parenpop(l, c);
             return tokchar(c);
-        case '\'': case '\"':
+        case '\'': case '\"': case '`':
             return toklit(TK_STRING, get_string(l, c));
         case '$': case ',': case '~':
         case '?': case ':':
