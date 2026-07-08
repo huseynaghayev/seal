@@ -187,6 +187,8 @@ void sealopen_system(seal_state *S)
     seal_pushconststring(S, SEAL_VERSION);
     seal_setfield(S, -2, "version");
 #if SEAL_DEBUG
+    seal_push(S, SEAL_VMAP(S->metamaps));
+    seal_setfield(S, -2, "metamaps");
     seal_push(S, SEAL_VMAP(S->packages));
     seal_setfield(S, -2, "packages");
     seal_push(S, SEAL_VMAP(S->globals));

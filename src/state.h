@@ -58,6 +58,7 @@ typedef struct seal_state {
     struct call_info *ci; /* current call info */
     seal_byte *ip; /* instruction pointer */
     struct seal_hashmap *packages; /* loaded packages */
+    struct seal_hashmap *metamaps; /* system and user defined metamaps */
     struct seal_hashmap *string_lib;
     struct seal_hashmap *list_lib;
     unsigned int random_state;

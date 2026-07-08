@@ -37,8 +37,9 @@ seal_state *seal_state_new()
 
     S->sp = 0;
 
-    S->globals = hashmap_Nnew(GLOBALS_START_SIZE);
-    S->packages = hashmap_Nnew(8);
+    S->globals  = hashmap_Nnew(GLOBALS_START_SIZE);
+    S->packages = hashmap_Nnew(HASHMAP_DEFAULT_START_SIZE);
+    S->metamaps = hashmap_Nnew(HASHMAP_DEFAULT_START_SIZE);
 
     S->ci_arr = SEAL_MALLOC(sizeof(struct call_info) * CALL_FRAME_START_SIZE);
     S->ci_idx = -1;
@@ -396,7 +397,7 @@ const char *seal_tostring(seal_state *S, int i)
 
 void *seal_touserdata(seal_state *S, int i)
 {
-    return SEAL_AS_USERDATA(seal_getstack(S, i));
+    return SEAL_AS_USERDATA(seal_getstack(S, i))->ptr;
 }
 
 #define val_is(S, i, t, v, out) (v = seal_getstack(S, i), (out = v.type) == (t))
@@ -462,7 +463,13 @@ const char *seal_checkstring(seal_state *S, int i)
 
 void *seal_checkuserdata(seal_state *S, int i)
 {
-    check_body(USERDATA);
+    struct seal_value v;
+    int out;
+    if (!val_is(S, i, SEAL_TUSERDATA, v, out)) {
+        checkval_err(S, i, SEAL_TUSERDATA, out);
+    }
+
+    return SEAL_AS_USERDATA(v)->ptr;
 }
 
 /* push */
@@ -543,7 +550,7 @@ void seal_makelist(seal_state *S, int size)
 void seal_makemap(seal_state *S, int size)
 {
     if (size == 0) {
-        seal_push(S, SEAL_VMAP(hashmap_new(8, &S->gc)));
+        seal_push(S, SEAL_VMAP(hashmap_new(HASHMAP_DEFAULT_START_SIZE, &S->gc)));
     } else {
         /* TODO: fix hashmap size */
         struct seal_value m = SEAL_VMAP(hashmap_new(size / HASHMAP_LOAD_FACTOR, &S->gc));
@@ -562,7 +569,8 @@ void seal_makemap(seal_state *S, int size)
 
 void seal_pushuserdata(seal_state *S, void *p)
 {
-    seal_push(S, SEAL_VUSERDATA(p));
+    struct seal_udata *u = udata_new(p, &S->gc);
+    seal_push(S, SEAL_VUSERDATA(u));
 }
 
 /* get */
@@ -677,23 +685,95 @@ int seal_setfield(seal_state *S, int map_i, const char *key)
     return is_new;
 }
 
-void seal_newlib(seal_state *S, const seal_reg *reg)
+/* metamaps */
+
+/* registers (if not already registered) a named metamap in the state's
+ * internal registry, and pushes it either way.
+ * returns 1 if newly created, 0 if it
+ * already existed (sits on top of stack).
+ */
+int seal_newmetamap(seal_state *S, const char *name)
 {
-    seal_newmap(S);
+    struct seal_hashmap *m = hashmap_Nnew(HASHMAP_DEFAULT_START_SIZE);
+    int is_new = hashmap_insert(S->metamaps, name, SEAL_VMAP(m));
+    seal_push(S, SEAL_VMAP(m));
+    return is_new;
+}
+
+/* push the named metamap onto stack.
+ * if does not exist, return 1
+ * if exists, return 0
+ */
+int seal_getmetamap(seal_state *S, const char *name)
+{
+    struct h_entry *e = hashmap_search(S->metamaps, name);
+    if (nullhentry(e)) {
+        seal_pushnull(S);
+        return 1;
+    }
+
+    seal_push(S, e->val);
+    return 0;
+}
+
+/* set top value's metamap to named metamap.
+ * if cannot assign metamap to top value,
+ * throw error.
+ * else return 0.
+ * keeps top value.
+ */
+int seal_setmetamap(seal_state *S, const char *name)
+{
+    struct seal_value v = seal_getstack(S, -1);
+    struct h_entry *e = hashmap_search(S->metamaps, name);
+    if (nullhentry(e)) {
+        seal_throw(S, "\'%s\' metamap is not defined", name);
+    }
+    struct seal_hashmap *m = SEAL_AS_MAP(e->val);
+    switch (v.type) {
+    case SEAL_TUSERDATA:
+        SEAL_AS_USERDATA(v)->metamap = m;
+        break;
+    default:
+        seal_throw(S, "cannot assign metamap to \'%s\' type", seal_gettypename(S, -1));
+        break;
+    }
+
+    return 0;
+}
+
+void seal_regfields(seal_state *S, const seal_reg *reg)
+{
     while (reg->name) {
         seal_pushCfunc(S, reg->f);
-        SEAL_AS_CFUNC(S->stack[S->sp - 1]).name = reg->name;
+        SEAL_AS_CFUNC(seal_getstack(S, -1)).name = reg->name;
      /* ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-      * TODO: make this better */
+        * TODO: make this better
+        */
         seal_setfield(S, -2, reg->name);
         reg++;
+    }
+}
+
+static void gc_mark(struct seal_value *v);
+
+static inline void gc_mark_map(struct seal_hashmap *m)
+{
+    if (m->marked) return;
+    m->marked = true;
+    int size = m->cap;
+    struct h_entry e;
+    for (int i = 0; i < size; i++) {
+        e = m->entries[i];
+        if (e.key) {
+            gc_mark(&e.val);
+        }
     }
 }
 
 static void gc_mark(struct seal_value *v)
 {
     int size;
-    struct h_entry e;
     switch (v->type) {
     case SEAL_TSTRING:
         SEAL_AS_STRING(*v)->marked = true;
@@ -707,14 +787,13 @@ static void gc_mark(struct seal_value *v)
         }
         break;
     case SEAL_TMAP:
-        if (SEAL_AS_MAP(*v)->marked) return;
-        SEAL_AS_MAP(*v)->marked = true;
-        size = SEAL_AS_MAP(*v)->cap;
-        for (int i = 0; i < size; i++) {
-            e = SEAL_AS_MAP(*v)->entries[i];
-            if (e.key) {
-                gc_mark(&e.val);
-            }
+        gc_mark_map(SEAL_AS_MAP(*v));
+        break;
+    case SEAL_TUSERDATA:
+        if (SEAL_AS_USERDATA(*v)->marked) return;
+        SEAL_AS_USERDATA(*v)->marked = true;
+        if (SEAL_AS_USERDATA(*v)->metamap) {
+            gc_mark_map(SEAL_AS_USERDATA(*v)->metamap);
         }
         break;
     }

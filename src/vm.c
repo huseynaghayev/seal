@@ -15,6 +15,7 @@
 #define is_map    SEAL_IS_MAP
 #define is_func   SEAL_IS_FUNC
 #define is_num    SEAL_IS_NUM
+#define is_udata  SEAL_IS_USERDATA
 
 #define as_bool   SEAL_AS_BOOL
 #define as_int    SEAL_AS_INT
@@ -27,6 +28,7 @@
 #define as_sfunc  SEAL_AS_SFUNC
 #define as_cfunc  SEAL_AS_CFUNC
 #define as_num    SEAL_AS_NUM
+#define as_udata  SEAL_AS_USERDATA
 
 static const char *const _type_names[] = {
     [SEAL_TNULL] = "null",
@@ -644,7 +646,8 @@ exit_forloop:
             idx  = FETCH(S) << 8;
             idx |= FETCH(S);
             key = as_strv(GET_CONST(S, idx));
-            switch (seal_getstack(S, -1).type) {
+            val = seal_getstack(S, -1);
+            switch (val.type) {
             case SEAL_TMAP:
                 break;
             case SEAL_TSTRING:
@@ -660,6 +663,13 @@ exit_forloop:
 
                 (void)seal_pop(S);
                 seal_push(S, SEAL_VMAP(S->list_lib));
+                break;
+            case SEAL_TUSERDATA:
+                if (!as_udata(val)->metamap)
+                    goto error;
+
+                (void)seal_pop(S);
+                seal_push(S, SEAL_VMAP(as_udata(val)->metamap));
                 break;
 error:
             default:

@@ -123,6 +123,29 @@ SEAL_API int seal_setindex(seal_state *S, int list_i, int i);
  */
 SEAL_API int seal_setfield(seal_state *S, int map_i, const char *key);
 
+/* metamaps */
+
+/* registers (if not already registered) a named metamap in the state's
+ * internal registry, and pushes it either way.
+ * returns 1 if newly created, 0 if it
+ * already existed (sits on top of stack).
+ */
+SEAL_API int seal_newmetamap(seal_state *S, const char *name);
+
+/* push the named metamap onto stack.
+ * if does not exist, return 1
+ * if exists, return 0
+ */
+SEAL_API int seal_getmetamap(seal_state *S, const char *name);
+
+/* set top value's metamap to named metamap.
+ * if cannot assign metamap to top value,
+ * throw error.
+ * else return 0.
+ * keeps top value.
+ */
+SEAL_API int seal_setmetamap(seal_state *S, const char *name);
+
 typedef struct {
     const char *name;
     seal_Cfunction f;
@@ -132,6 +155,9 @@ typedef struct {
     seal_pushCfunc(S, f), \
     seal_setglobal(S, name) \
 )
-SEAL_API void seal_newlib(seal_state *S, const seal_reg *reg);
+
+SEAL_API void seal_regfields(seal_state *S, const seal_reg *reg);
+
+#define seal_newlib(S, reg) (seal_newmap(S), seal_regfields(S, reg))
 
 #endif /* SEAL_H */

@@ -43,7 +43,7 @@
 #define SEAL_AS_CFUNC(v) (SEAL_AS_FUNC(v)->as.c)
 #define SEAL_AS_USERDATA(v) ((v).as.udata)
 
-#define SEAL_VAL(t, f, v) ((struct seal_value) { .type = t, .as.f = v })
+#define SEAL_VAL(t, f, v) ((struct seal_value) { .type = (t), .as.f = (v) })
 #define SEAL_VNULL ((struct seal_value) { SEAL_TNULL })
 #define SEAL_VBOOL(v)  SEAL_VAL(SEAL_TBOOL, boolean, v)
 #define SEAL_VINT(v)   SEAL_VAL(SEAL_TINT, integer, v)
@@ -60,6 +60,7 @@ struct seal_string;
 struct seal_list;
 struct seal_hashmap;
 struct seal_func;
+struct seal_udata;
 
 int seal_format_float(seal_float f, char *buf, int bufsiz);
 
@@ -74,7 +75,7 @@ struct seal_value {
         struct seal_list    *list;
         struct seal_hashmap *map;
         struct seal_func *func; /* prototype */
-        void *udata;
+        struct seal_udata *udata;
     } as;
 };
 
@@ -114,6 +115,8 @@ void list_pushval(struct seal_list *l, struct seal_value v);
 /* hashmap */
 #define nullhentry(e) ((e) == NULL || (e)->key == NULL)
 
+#define HASHMAP_DEFAULT_START_SIZE 8
+
 struct h_entry {
     unsigned int hash;
     const char *key;
@@ -135,6 +138,9 @@ struct h_entry *hashmap_searchlen(struct seal_hashmap *map,
                                   int len);
 
 /* key must be owned carefully outside */
+/* if new, return 1
+ * else 0
+ */
 int hashmap_insert(struct seal_hashmap *map,
                    const char *key,
                    struct seal_value val);
@@ -148,6 +154,7 @@ int hashmap_remove(struct seal_hashmap *map, const char *key);
 int hashmap_free(struct seal_hashmap *map, bool free_key);
 
 
+/* create hashmap without GC tracking it */
 #define hashmap_Nnew(cap) hashmap_new(cap, NULL)
 
 #define hashmap_search(map, key) hashmap_searchlen(map, key, -1)
@@ -185,5 +192,14 @@ struct seal_func *func_new(const char *name,
                            seal_byte psize,
                            seal_byte locsize);
 */
+
+/* userdata */
+struct seal_udata {
+    GC_Header;
+    void *ptr;
+    struct seal_hashmap *metamap;
+};
+
+struct seal_udata *udata_new(void *data, gc *g);
 
 #endif /* VALUE_H */

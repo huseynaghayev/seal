@@ -123,6 +123,7 @@ struct seal_string *string_new(const char *s, bool dup, bool is_const, gc *g)
     if (!str)
         return NULL;
 
+    str->marked = false;
     str->len = strlen(s);
     str->val = dup ? string_dup(s) : s;
     str->is_const = is_const;
@@ -176,9 +177,9 @@ static unsigned int hashswl(const char *key, int len)
     return hash;
 }
 
-#define hash(k) hashswl(k, -1)
+#define hashwol(k) hashswl(k, -1)
 
-#define hentrynew(k, v) (struct h_entry) { hash(k), (k), strlen(k), (v), true }
+#define hentrynew(k, v) (struct h_entry) { hashwol(k), (k), strlen(k), (v), true }
 
 struct seal_hashmap *hashmap_new(int cap, gc *g)
 {
@@ -202,7 +203,8 @@ struct h_entry *hashmap_searchlen(struct seal_hashmap *map,
                                   const char *key,
                                   int len)
 {
-    unsigned int idx = (len < 0 ? hash(key) : hashswl(key, len)) % map->cap;
+    unsigned int hashed = (len < 0 ? hashwol(key) : hashswl(key, len));
+    unsigned int idx = hashed % map->cap;
     struct h_entry *tombstone = NULL;
 
     struct h_entry *e;
@@ -216,9 +218,10 @@ struct h_entry *hashmap_searchlen(struct seal_hashmap *map,
             } else {
                 return tombstone != NULL ? tombstone : e;
             }
-        } else if (len < 0 ?
-                   strcmp(e->key, key) == 0 :
-                   e->keysize == len && strncmp(e->key, key, len) == 0) {
+        } else if ((hashed == e->hash) &&
+                   (len < 0 ?
+                    strcmp(e->key, key) == 0 :
+                    e->keysize == len && strncmp(e->key, key, len) == 0)) {
             return e;
         }
         idx = (idx + 1) % map->cap;
@@ -327,4 +330,25 @@ int hashmap_free(struct seal_hashmap *map, bool free_key)
     free(map);
 
     return 0;
+}
+
+/* function */
+
+
+/* userdata */
+struct seal_udata *udata_new(void *data, gc *g)
+{
+    struct seal_udata *ud = SEAL_MALLOC(sizeof(struct seal_udata));
+
+    if (!ud)
+        return NULL;
+
+    ud->marked = false;
+    ud->ptr = data;
+    ud->metamap = NULL;
+
+    if (g)
+        gc_register(g, ud, SEAL_TUSERDATA);
+
+    return ud;
 }

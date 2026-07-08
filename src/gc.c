@@ -27,6 +27,7 @@ void gc_sweep(gc *g)
     struct seal_string *s;
     struct seal_list *l;
     struct seal_hashmap *m;
+    struct seal_udata *u;
     for (int i = 0; i < g->len; i++) {
         gc_obj *go = &g->objs[i];
         bool marked;
@@ -60,6 +61,19 @@ void gc_sweep(gc *g)
                 m->marked = false;    
             } else {
                 hashmap_free(m, false);
+            }
+            break;
+        case SEAL_TUSERDATA:
+            u = go->p;
+            marked = u->marked;
+            if (marked) {
+                u->marked = false;
+            } else {
+                /* Do not free, let user handle that */
+                /*
+                SEAL_FREE(u->ptr);
+                */
+                SEAL_FREE(u);
             }
             break;
         }

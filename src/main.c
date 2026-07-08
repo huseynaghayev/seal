@@ -9,15 +9,15 @@
 #include "state.h"
 #include "vm.h"
 
-#define STREAM_SIZE (1024 * 1024 * 2)
-static char STREAM[STREAM_SIZE];
 #define SRC_SIZE 512
 
+#if DEBUG
 #define dump_cache(l) do { \
     for (int i = 0; i < (l)->cachedtk_len; i++) { \
         printf("dumped: %s\n", tkname((l)->cachedtks[i].type)); \
     } \
 } while (0)
+#endif /* DEBUG */
 
 #define clear() (printf("\033[2J\033[H"))
 
@@ -26,27 +26,24 @@ int main(int argc, char **argv)
     seal_state *S;
     if (argc > 1) {
         if (strcmp(argv[1], "--version") == 0) {
-            printf("Seal %s by Huseyn Aghayev (c) 2024-2026\nhttps://seallang.org\n", SEAL_VERSION);
+            printf("Seal %s by %s (c) %s\n%s\n", SEAL_VERSION, SEAL_AUTHOR_NAME, SEAL_COPYRIGHT_YEARS, SEAL_WEBSITE_LINK);
             return 0;
         }
         FILE *fp = fopen(argv[1], "r"); 
         struct stat path_stat;
         if (!fp) {
-            fprintf(stderr, "seal: cannot open %s: No such file or directory\n", argv[1]);
+            fprintf(stderr, "seal: cannot open %s: no such file or directory\n", argv[1]);
             return 1;
         } else if (stat(argv[1], &path_stat),
                    (S_ISDIR(path_stat.st_mode))) {
-            fprintf(stderr, "seal: cannot read %s: Is a directory\n", argv[1]);
+            fprintf(stderr, "seal: cannot read %s: is a directory\n", argv[1]);
             fclose(fp);
             return 1;
         } else if (!S_ISREG(path_stat.st_mode)) {
-            fprintf(stderr, "seal: cannot read %s: Is unusual type\n", argv[1]);
+            fprintf(stderr, "seal: cannot read %s: is unusual type\n", argv[1]);
             fclose(fp);
             return 1;
         }
-        int read = fread(STREAM, 1, STREAM_SIZE - 1, fp);
-        //printf("%d\n", read);
-        STREAM[read] = '\0';
         fclose(fp);
         S = seal_state_new();
         S->file_name = argv[1];
@@ -59,7 +56,7 @@ int main(int argc, char **argv)
         seal_setglobal(S, "Args");
         /* ---------------------- */
 
-        int status = seal_dostring(S, STREAM);
+        int status = seal_dofile(S, argv[1]);
         if (status) {
             fprintf(stderr, "%s\n", S->errmsg);
             fprintf(stderr, "%s\n", S->stktrc);

@@ -15,11 +15,15 @@
 
 /* semantic versioning of Seal */
 #define SEAL_VERSION_MAJOR "0"
-#define SEAL_VERSION_MINOR "2"
+#define SEAL_VERSION_MINOR "3"
 #define SEAL_VERSION_PATCH "0"
 
 /* full version */
 #define SEAL_VERSION SEAL_VERSION_MAJOR "." SEAL_VERSION_MINOR "." SEAL_VERSION_PATCH
+
+#define SEAL_AUTHOR_NAME "Huseyn Aghayev"
+#define SEAL_COPYRIGHT_YEARS "2024-2026"
+#define SEAL_WEBSITE_LINK "https://seallang.org"
 
 #define SEAL_DEBUG 1
 
