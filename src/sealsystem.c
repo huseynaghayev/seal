@@ -11,6 +11,15 @@
 static const char *osname = "Linux";
 #elif defined(_WIN32)
 #include <windows.h>
+#define putenv_s _putenv_s
+
+#include <direct.h> /* _getcwd, _chdir */
+#define getcwd _getcwd
+#define chdir _chdir
+
+#include <io.h> /* _access */
+#define access _access
+
 static const char *osname = "Windows";
 #elif defined(__APPLE__) && defined(__MACH__)
 #include <unistd.h>
@@ -106,8 +115,17 @@ static void system_setenv(seal_state *S)
     bool overwrite = true;
     if (seal_gettop(S) > 2) {
         overwrite = seal_checkbool(S, 2);
+        if (!overwrite && getenv(name) != NULL) {
+            seal_pushbool(S, false);
+            return;
+        }
     }
-    bool status = setenv(name, val, overwrite) == 0;
+    bool status;
+#ifdef _WIN32
+    status = putenv_s(name, val) == 0;
+#else
+    status = setenv(name, val, true) == 0;
+#endif
     seal_pushbool(S, status);
 }
 
@@ -115,7 +133,12 @@ static void system_unsetenv(seal_state *S)
 {
     seal_checkargc(S, 1);
     const char *name = seal_checkstring(S, 0);
-    int status = unsetenv(name) == 0;
+    bool status;
+#ifdef _WIN32
+    status = putenv_s(name, "") == 0;
+#else
+    status = unsetenv(name) == 0;
+#endif
     seal_pushbool(S, status);
 }
 
