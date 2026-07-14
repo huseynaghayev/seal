@@ -31,7 +31,7 @@ print("seal"->underscore()) // __SEAL__
 ## Embedding
 Since Seal is written in C, it is easily embeddable into any C/C++ applications.
 ```c
-#include <seal.h>
+#include <seal/seal.h>
 #include <stdio.h>
 
 static void seal_factor(seal_state *S)

@@ -1,15 +1,11 @@
 *.seal
 seal
-vgcore*
-TODO.txt
 !examples/*.seal
 *.exe
-seal_visitor
-*.swp
 *.so
 *.dll
 *.o
-!modules/*.seal
-*.json
 *.txt
 .clangd
+config.mk
+libs/

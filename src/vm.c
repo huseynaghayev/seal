@@ -4,7 +4,20 @@
 #include "libs.h"
 #include "value.h"
 #include <stdio.h>
+
+#ifdef _WIN32
+#include <windows.h>
+typedef HMODULE DL_HANDLE;
+#define DL_OPEN(path) LoadLibraryA(path)
+#define DL_SYM(handle, name) ((void *)GetProcAddress(handle, name))
+#define DL_EXT ".dll"
+#else
 #include <dlfcn.h>
+typedef void *DL_HANDLE;
+#define DL_OPEN(path) dlopen(path, RTLD_NOW | RTLD_LOCAL)
+#define DL_SYM(handle, name) dlsym(handle, name)
+#define DL_EXT ".so"
+#endif
 
 #define is_null   SEAL_IS_NULL
 #define is_bool   SEAL_IS_BOOL
@@ -238,7 +251,7 @@ included_file_t fallback_file(const char *name)
     included_file_t ift = { INCLUDED_FILE_TYPE_NIL, NULL };
     FILE *f = NULL;
 
-    sprintf(full_path, "%s%s.so", path, name);
+    sprintf(full_path, "%s%s"DL_EXT, path, name);
     f = try_file(full_path);
     if (f) {
         ift.file_type = INCLUDED_FILE_TYPE_LIB;
@@ -252,7 +265,7 @@ included_file_t fallback_file(const char *name)
         goto success;
     }
 
-    sprintf(full_path, "./%s.so", name);
+    sprintf(full_path, "./%s"DL_EXT, name);
     f = try_file(full_path);
     if (f) {
         ift.file_type = INCLUDED_FILE_TYPE_LIB;
@@ -322,15 +335,19 @@ static int load_lib(seal_state *S, const char *name)
 
     included_file_t ift = fallback_file(name);
     if (ift.file_type == INCLUDED_FILE_TYPE_NIL) {
-        vm_error(S, "neither \'%s.seal\' nor \'%s.so\' file found", name, name);
+        vm_error(S, "neither \'%s.seal\' nor \'%s."DL_EXT"\' file found", name, name);
         return 1;
     }
 
     if (ift.file_type == INCLUDED_FILE_TYPE_LIB) {
         /* TODO: ERROR HANDLING */
-        void *handler = dlopen(ift.full_path, RTLD_NOW | RTLD_LOCAL);
-        if (!handler) {
+        DL_HANDLE handle = DL_OPEN(ift.full_path);
+        if (!handle) {
+#ifdef _WIN32
+            vm_error(S, "LoadLibrary failed: error code %lu", GetLastError());
+#else
             vm_error(S, "dlopen failed: %s", dlerror());
+#endif
             return 1;
         }
         char fname[64];
@@ -341,13 +358,13 @@ static int load_lib(seal_state *S, const char *name)
             pure_name++; /* skip '/' */
 
         sprintf(fname, "sealopen_%s", pure_name);
-        seal_Cfunction open_func = dlsym(handler, fname);
+        seal_Cfunction open_func = DL_SYM(handle, fname);
         if (!open_func) {
             vm_error(S, "ensure \'%s\' function exists in \'%s\' library",
                      fname, ift.full_path);
         }
         open_func(S);
-        //dlclose(handler);
+        //dlclose(handle);
     } else {
         if (seal_dofile(S, ift.full_path)) { /* throw error */
             strncpy(S->prev_errmsg, S->errmsg, SEAL_ERRMSG_BUFSIZ);
