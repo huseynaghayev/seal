@@ -187,6 +187,22 @@ static void string_sub(seal_state *S)
     seal_pushlstring(S, s, end - start);
 }
 
+static void string_index(seal_state *S)
+{
+    /* TODO: handle error and negative end cases */
+    seal_checkargc(S, 2);
+    const char *s = seal_checkstring(S, 0);
+    const char *sub = seal_checkstring(S, 1);
+    int n = -1;
+
+    const char *res = strstr(s, sub);
+    if (res) {
+        n = res - s;
+    }
+
+    seal_pushint(S, n);
+}
+
 #define REG(name) { #name, string_##name }
 
 static const seal_reg strlib[] = {
@@ -202,6 +218,7 @@ static const seal_reg strlib[] = {
     REG(len),
     REG(split),
     REG(sub),
+    REG(index),
     { NULL, NULL }
 };
 

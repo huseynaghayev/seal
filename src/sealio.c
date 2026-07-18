@@ -53,11 +53,16 @@ static void file_write(seal_state *S)
 
 static void file_read(seal_state *S)
 {
-    seal_checkargc(S, 1);
+    seal_checkargcrange(S, 1, 2);
     FILE *file = seal_checkuserdata(S, 0);
-    fseek(file, 0, SEEK_END);
-    size_t fsize = ftell(file);
-    fseek(file, 0, SEEK_SET);
+    size_t fsize;
+    if (seal_gettop(S) == 1) {
+        fseek(file, 0, SEEK_END);
+        fsize = ftell(file);
+        fseek(file, 0, SEEK_SET);
+    } else {
+        fsize = seal_checkint(S, 1);
+    }
     char *content = SEAL_MALLOC(fsize + 1);
     fread(content, 1, fsize, file);
     content[fsize] = '\0';
@@ -132,6 +137,14 @@ static void file_readlines(seal_state *S)
     seal_makelist(S, size);
 }
 
+static void file_flush(seal_state *S)
+{
+    seal_checkargc(S, 1);
+    FILE *file = seal_checkuserdata(S, 0);
+    fflush(file);
+    seal_pushnull(S);
+}
+
 #define REG_IO(name) { #name, io_##name }
 
 static const seal_reg iolib[] = {
@@ -148,6 +161,7 @@ static const seal_reg file_methods[] = {
     REG_FILE(readline),
     REG_FILE(readlines),
     REG_FILE(write),
+    REG_FILE(flush),
     { NULL, NULL }
 };
 
@@ -157,5 +171,19 @@ void sealopen_io(seal_state *S)
     seal_regfields(S, file_methods);
     seal_movetop(S, -1);
     seal_newlib(S, iolib);
+
+    /* stdin, stdout, stderr */
+    seal_pushuserdata(S, stdin);
+    seal_setmetamap(S, FILE_METAMAP_NAME);
+    seal_setfield(S, -2, "stdin");
+
+    seal_pushuserdata(S, stdout);
+    seal_setmetamap(S, FILE_METAMAP_NAME);
+    seal_setfield(S, -2, "stdout");
+
+    seal_pushuserdata(S, stderr);
+    seal_setmetamap(S, FILE_METAMAP_NAME);
+    seal_setfield(S, -2, "stderr");
+
     seal_setglobal(S, "IO");
 }
