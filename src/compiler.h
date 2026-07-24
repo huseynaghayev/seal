@@ -35,6 +35,7 @@ enum {
     OP_FORNEXT, /* Jump to right after FORPREP + 2NEXT
                  * (NEXT for local idx, 2NEXT for JUMP offset
                  */
+    OP_FORSTOP, /* Clean for loop setup */
     OP_CALL,   /* Get NEXT size arguments and call function */
     OP_RETURN, /* Get back to previous call frame */
     /* binaries

@@ -28,18 +28,24 @@ typedef struct {
     int last_seen_line; /* for constant node values */
     struct {
         int begin_pos;
+        int is_for;
         signed short last_stop;
+        signed short last_skip; /* for loops */
     } loops[MAX_LOOP_DEPTH];
     int loop_count;
     const char *file_name;
 } proto;
 
-#define push_loop(p, begin) ( \
-    (p)->loops[(p)->loop_count++].begin_pos = (begin) \
+#define push_loop(p, begin, _is_for) ( \
+    (p)->loops[(p)->loop_count].begin_pos = (begin), \
+    (p)->loops[(p)->loop_count].is_for = (_is_for), \
+    (p)->loop_count++ \
 )
 
 #define pop_loop(p) ( \
-    (p)->loops[--(p)->loop_count].last_stop = 0 \
+    --(p)->loop_count, \
+    (p)->loops[(p)->loop_count].last_stop = 0, \
+    (p)->loops[(p)->loop_count].last_skip = 0 \
 )
 
 #define cur_loop(p) ((p)->loops[(p)->loop_count - 1])
@@ -106,6 +112,19 @@ static void backpatch_stops(proto *p)
     }
 }
 
+static void backpatch_skips(proto *p)
+{
+    signed short cur = cur_loop(p).last_skip;
+    signed short prev;
+    while (cur != 0) {
+        int i = cur + cur_loop(p).begin_pos;
+        prev = p->code[i] << 8;
+        prev |= p->code[i + 1];
+        jmpreplace16(p, p->code_size, i);
+        cur = prev;
+    }
+}
+
 static void emit(proto *p, seal_byte b, ast *n)
 {
     if (!p->code || p->code_cap == 0) {
@@ -153,10 +172,7 @@ static void store(proto *p, value v)
     p->pool[p->pool_size++] = v;
 }
 
-static inline struct seal_string *alloc_seal_string(const char *s)
-{
-    return string_new(s, false, true, NULL);
-}
+#define alloc_seal_string(s) string_new(s, false, true, NULL)
 
 static int search_str_inpool(proto *p, const char *s)
 {
@@ -754,7 +770,7 @@ static void compile_if(proto *p, ast *n, scope *s)
 static void compile_while(proto *p, ast *n, scope *s)
 {
     int begin_pos = p->code_size;
-    push_loop(p, begin_pos);
+    push_loop(p, begin_pos, false);
 
     compile_node(p, n->as.whilestmt.cond, s);
     emitn(p, OP_JFALSE);
@@ -804,12 +820,13 @@ static void compile_for(proto *p, ast *n, scope *s)
     emitn(p, OP_FORPREP);
     int next_jump = p->code_size;
     emit16dummy(p);
-    push_loop(p, p->code_size);
+    push_loop(p, p->code_size, true);
     int loop_begin_pos = p->code_size;
 
     compile_node(p, n->as.forstmt.body, s);
     jmpreplace16cur(p, next_jump);
-    emitn(p, OP_FORNEXT);
+    backpatch_skips(p); /* all skips skip to here to advance iterator */
+    emit(p, OP_FORNEXT, n);
     emitn(p, it_slot_idx);
     int loop_jump = p->code_size;
     emit16dummy(p);
@@ -821,14 +838,25 @@ static void compile_for(proto *p, ast *n, scope *s)
 
 static void compile_skip(proto *p)
 {
-    emitn(p, OP_JMP);
-    int skip_jump = p->code_size;
-    emit16dummy(p);
-    jmpreplace16(p, cur_loop(p).begin_pos, skip_jump);
+    if (cur_loop(p).is_for) {
+        emitn(p, OP_JMP);
+        int addr = p->code_size - cur_loop(p).begin_pos;
+        SEAL_ASSERT(addr <= SHRT_MAX && addr >= SHRT_MIN);
+        emit16(p, cur_loop(p).last_skip, NULL);
+        cur_loop(p).last_skip = addr;
+    } else {
+        emitn(p, OP_JMP);
+        int skip_jump = p->code_size;
+        emit16dummy(p);
+        jmpreplace16(p, cur_loop(p).begin_pos, skip_jump);
+    }
 }
 
 static void compile_stop(proto *p)
 {
+    if (cur_loop(p).is_for)
+        emitn(p, OP_FORSTOP);
+
     emitn(p, OP_JMP);
     int addr = p->code_size - cur_loop(p).begin_pos;
     SEAL_ASSERT(addr <= SHRT_MAX && addr >= SHRT_MIN);
@@ -1043,6 +1071,7 @@ static const OpSpec op_specs[] = {
     [OP_JNULL]   = { "jump if null", 2 },
     [OP_FORPREP] = { "for prep", 2 },
     [OP_FORNEXT] = { "for next", 3 },
+    [OP_FORSTOP] = { "for stop", 0 },
     [OP_CALL] = { "call", 1 },
     [OP_RETURN]  = { "return", 0 },
     /* binaries */

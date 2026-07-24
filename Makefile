@@ -29,7 +29,8 @@ DEFS   =
 ifeq ($(BUILD),release)
 	CFLAGS = -O2
 else
-	CFLAGS = -O0 -g
+	CFLAGS = -fsanitize=undefined -fno-omit-frame-pointer -g -O0
+	LDFLAGS += -fsanitize=undefined
 endif
 
 ifeq ($(TARGET),windows)

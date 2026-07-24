@@ -43,6 +43,11 @@ typedef void *DL_HANDLE;
 #define as_num    SEAL_AS_NUM
 #define as_udata  SEAL_AS_USERDATA
 
+#define push_null(S)      seal_push(S, SEAL_VNULL)
+#define push_bool(S, b)   seal_push(S, SEAL_VBOOL(b))
+#define push_int(S, i)    seal_push(S, SEAL_VINT(i))
+#define push_float(S, f)  seal_push(S, SEAL_VFLOAT(f))
+
 static const char *const _type_names[] = {
     [SEAL_TNULL] = "null",
     [SEAL_TBOOL] = "bool",
@@ -87,8 +92,8 @@ static const char *const _type_names[] = {
              #op, valt_name(v)) \
 
 /* arithmetic */
-#define int_op(S, op, a, b)   seal_pushint(S, as_int(a) op as_int(b))
-#define num_op(S, op, a, b)   seal_pushfloat(S, as_num(a) op as_num(b))
+#define int_op(S, op, a, b)   push_int(S, as_int(a) op as_int(b))
+#define num_op(S, op, a, b)   push_float(S, as_num(a) op as_num(b))
 #define str_op(S, a, b) do { \
     int len = as_str(a)->len + as_str(b)->len; \
     char *s = SEAL_MALLOC(len + 1); \
@@ -136,9 +141,9 @@ static const char *const _type_names[] = {
 /* comparison */
 #define cmp_op(S, op, a, b) do { \
     if (is_num(a) && is_num(b)) \
-        seal_pushbool(S, as_num(a) op as_num(b)); \
+        push_bool(S, as_num(a) op as_num(b)); \
     else if (is_str(a) && is_str(b)) \
-        seal_pushbool(S, as_strv(a) == as_strv(b) || strcmp(as_strv(a), as_strv(b)) op 0); \
+        push_bool(S, as_strv(a) == as_strv(b) || strcmp(as_strv(a), as_strv(b)) op 0); \
     else \
         bin_op_err(S, op, a, b); \
 } while (0)
@@ -146,34 +151,34 @@ static const char *const _type_names[] = {
 /* equality */
 #define eql_op(S, op, a, b) do { \
     if (is_num(a) && is_num(b)) \
-        seal_pushbool(S, as_num(a) op as_num(b)); \
+        push_bool(S, as_num(a) op as_num(b)); \
     else if (is_str(a) && is_str(b)) \
-        seal_pushbool(S, strcmp(as_strv(a), as_strv(b)) op 0); \
+        push_bool(S, strcmp(as_strv(a), as_strv(b)) op 0); \
     else if (is_bool(a) && is_bool(b)) \
-        seal_pushbool(S, as_bool(a) op as_bool(b)); \
+        push_bool(S, as_bool(a) op as_bool(b)); \
     else if (is_list(a) && is_list(b)) \
-        seal_pushbool(S, (void *)as_list(a) op (void *)as_list(b)); \
+        push_bool(S, (void *)as_list(a) op (void *)as_list(b)); \
     else if (is_map(a) && is_map(b)) \
-        seal_pushbool(S, (void *)as_map(a) op (void *)as_map(b)); \
+        push_bool(S, (void *)as_map(a) op (void *)as_map(b)); \
     else if (is_func(a) && is_func(b)) \
-        seal_pushbool(S, (void *)as_func(a) op (void *)as_func(b)); \
+        push_bool(S, (void *)as_func(a) op (void *)as_func(b)); \
     else \
-        seal_pushbool(S, vtype(a) op vtype(b)); \
+        push_bool(S, vtype(a) op vtype(b)); \
 } while (0)
 
 /* unaries */
 #define bnot_op(S, v) do { \
     if (is_int(v)) \
-        seal_pushint(S, ~ as_int(v)); \
+        push_int(S, ~ as_int(v)); \
     else \
         unry_op_err(S, ~, v); \
 } while (0)
 
 #define neg_op(S, v) do { \
     if (is_int(v)) \
-        seal_pushint(S, - as_int(v)); \
+        push_int(S, - as_int(v)); \
     else if (is_float(v)) \
-        seal_pushfloat(S, - as_float(v)); \
+        push_float(S, - as_float(v)); \
     else \
         unry_op_err(S, -, v); \
 } while (0)
@@ -407,21 +412,21 @@ int eval(seal_state *S, int till)
             PUSH_CONST(S, idx);
             break;
         case OP_PUSHNULL:
-            seal_pushnull(S);
+            push_null(S);
             break;
         case OP_PUSHTRUE:
-            seal_pushbool(S, true);
+            push_bool(S, true);
             break;
         case OP_PUSHFALSE:
-            seal_pushbool(S, false);
+            push_bool(S, false);
             break;
         case OP_PUSH8:
-            seal_pushint(S, FETCH(S));
+            push_int(S, FETCH(S));
             break;
         case OP_PUSH16:
             n  = FETCH(S) << 8;
             n |= FETCH(S);
-            seal_pushint(S, n);
+            push_int(S, n);
             break;
         case OP_POP:
             (void)seal_pop(S);
@@ -467,7 +472,7 @@ int eval(seal_state *S, int till)
                 S->ip += jmp_offset;
             break;
         case OP_FORPREP:
-            seal_push(S, SEAL_VINT(-1));
+            push_int(S, -1);
             jmp_offset = FETCH(S) << 8;
             jmp_offset |= FETCH(S);
             S->ip += jmp_offset;
@@ -476,7 +481,16 @@ int eval(seal_state *S, int till)
             idx = ++as_int(seal_getstack(S, -1));
             obj  = seal_getstack(S, -2);
             n = FETCH(S);
-            switch (obj.type) {
+            switch (vtype(obj)) {
+            case SEAL_TINT:
+                if (idx < as_int(obj)) {
+                    push_int(S, idx);
+                    popped = seal_pop(S);
+                    seal_getstack(S, n) = popped;
+                } else {
+                    goto exit_forloop;
+                }
+                break;
             case SEAL_TSTRING:
                 if (idx < as_str(obj)->len) {
                     seal_pushlstring(S, as_strv(obj) + idx, 1);
@@ -495,6 +509,9 @@ int eval(seal_state *S, int till)
                     goto exit_forloop;
                 }
                 break;
+            default:
+                vm_error(S, "\'%s\' cannot be used in for loop statements", valt_name(obj));
+                break;
             }
             jmp_offset = FETCH(S) << 8;
             jmp_offset |= FETCH(S);
@@ -503,6 +520,10 @@ int eval(seal_state *S, int till)
 exit_forloop:
             S->sp -= 2;
             S->ip += 2;
+            break;
+        case OP_FORSTOP:
+            /* move stack pointer to discard both counter and iterated */
+            S->sp -= 2;
             break;
         case OP_CALL:
             seal_call(S, FETCH(S));
@@ -588,7 +609,7 @@ exit_forloop:
         /* unaries */
         case OP_NOT:
             popped = seal_pop(S);
-            seal_pushbool(S, IS_FALSY(popped) ? 1 : 0);
+            push_bool(S, IS_FALSY(popped) ? 1 : 0);
             break;
         case OP_BNOT:
             popped = seal_pop(S);
@@ -611,7 +632,7 @@ exit_forloop:
             idx  = FETCH(S) << 8;
             idx |= FETCH(S);
             if (seal_getglobal(S, as_strv(GET_CONST(S, idx)))) {
-                seal_pushnull(S);
+                push_null(S);
             }
             break;
         case OP_SETGLOBAL:
@@ -664,7 +685,7 @@ exit_forloop:
             idx |= FETCH(S);
             key = as_strv(GET_CONST(S, idx));
             val = seal_getstack(S, -1);
-            switch (val.type) {
+            switch (vtype(val)) {
             case SEAL_TMAP:
                 break;
             case SEAL_TSTRING:
