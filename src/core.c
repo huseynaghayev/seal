@@ -10,7 +10,7 @@ static void core_print(seal_state *S)
     value *args = S->stack + S->sp - n;
 
     for (int i = 0; i < n; i++) {
-        seal_print_val(args + i, false);
+        seal_print_val(stdout, args + i, false);
         if (i < n - 1)
             putchar(' ');
     }
@@ -23,10 +23,10 @@ static void core_read(seal_state *S)
 {
     seal_checkargcmax(S, 1);
 
-
     if (seal_gettop(S) > 0) {
-        seal_print_val(&seal_getstack(S, 0), false);
+        seal_print_val(stdout, &seal_getstack(S, 0), false);
     }
+    fflush(stdout);
 
     char buf[512];
     fgets(buf, sizeof(buf), stdin);

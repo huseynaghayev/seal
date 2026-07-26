@@ -27,9 +27,8 @@ static void io_write(seal_state *S)
     struct seal_value *args = S->stack + S->sp - n;
 
     for (int i = 0; i < n; i++) {
-        seal_print_val(args + i, false);
+        seal_print_val(stdout, args + i, false);
     }
-    fflush(stdout);
 
     seal_pushnull(S);
 }
@@ -44,10 +43,17 @@ static void file_close(seal_state *S)
 
 static void file_write(seal_state *S)
 {
-    seal_checkargc(S, 2);
+    seal_checkargcmin(S, 1);
     FILE *file = seal_checkuserdata(S, 0);
-    const char *content = seal_checkstring(S, 1);
-    fwrite(content, 1, strlen(content), file);
+    int n = seal_gettop(S);
+    struct seal_value *args = S->stack + S->sp - n;
+
+    for (int i = 1; i < n; i++) {
+        seal_print_val(file, args + i, false);
+    }
+
+    fflush(file);
+
     seal_pushnull(S);
 }
 

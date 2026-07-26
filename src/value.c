@@ -1,82 +1,81 @@
 #include "value.h"
-#include <stdio.h> /* snprintf */
 
 
-void seal_print_val(struct seal_value *v, bool inside_obj)
+void seal_print_val(FILE *f, struct seal_value *v, bool inside_obj)
 {
     switch (v->type) {
     case SEAL_TNULL:
-        printf("null");
+        fprintf(f, "null");
         break;
     case SEAL_TBOOL:
-        printf("%s", SEAL_AS_BOOL(*v) ? "true" : "false");
+        fprintf(f, "%s", SEAL_AS_BOOL(*v) ? "true" : "false");
         break;
     case SEAL_TINT:
-        printf("%lld", SEAL_AS_INT(*v));
+        fprintf(f, "%lld", SEAL_AS_INT(*v));
         break;
     case SEAL_TFLOAT:
     {
         char buf[32];
         seal_format_float(SEAL_AS_FLOAT(*v), buf, sizeof(buf));
-        printf("%s", buf);
+        fprintf(f, "%s", buf);
         break;
     }
     case SEAL_TSTRING:
         if (inside_obj)
-            putchar('\'');
+            fputc('\'', f);
 
-        printf("%s", SEAL_AS_STRINGVAL(*v));
+        fprintf(f, "%s", SEAL_AS_STRINGVAL(*v));
 
         if (inside_obj)
-            putchar('\'');
+            fputc('\'', f);
 
         break;
     case SEAL_TLIST:
     {
         //printf("list: %p", (void*)SEAL_AS_LIST(*v));
-        putchar('[');
+        fputc('[', f);
         struct seal_list *l = SEAL_AS_LIST(*v);
         int len = l->len;
         for (int i = 0; i < len; i++) {
-            seal_print_val(&l->vals[i], true);
+            seal_print_val(f, &l->vals[i], true);
             if (i < len - 1) {
-                putchar(',');
-                putchar(' ');
+                fputc(',', f);
+                fputc(' ', f);
             } else {
                 break;
             }
         }
-        putchar(']');
+        fputc(']', f);
         break;
     }
     case SEAL_TMAP:
     {
         //printf("map: %p", (void*)SEAL_AS_MAP(*v));
-        putchar('{');
+        fputc('{', f);
         int printed = 0;
         int len = SEAL_AS_MAP(*v)->len;
         for (int i = 0; i < SEAL_AS_MAP(*v)->cap; i++) {
             struct h_entry e = SEAL_AS_MAP(*v)->entries[i];
             if (e.key) {
-                printf("%s = ", e.key);
-                seal_print_val(&e.val, true);
+                fprintf(f, "%s = ", e.key);
+                seal_print_val(f, &e.val, true);
                 printed++;
                 if (printed < len) {
-                    putchar(',');
-                    putchar(' ');
+                    fputc(',', f);
+                    fputc(' ', f);
                 } else {
                     break;
                 }
             }
         }
-        putchar('}');
+        fputc('}', f);
         break;
     }
     case SEAL_TFUNCTION:
-        printf("function: %p", (void*)SEAL_AS_FUNC(*v));
+        fprintf(f, "function: %p", (void*)SEAL_AS_FUNC(*v));
         break;
     case SEAL_TUSERDATA:
-        printf("userdata: %p", SEAL_AS_USERDATA(*v));
+        fprintf(f, "userdata: %p", SEAL_AS_USERDATA(*v));
         break;
     }
 }
