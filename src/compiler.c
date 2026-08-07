@@ -13,8 +13,6 @@ typedef struct ast ast;
 typedef struct seal_value value;
 typedef struct h_entry h_entry;
 
-#define MAX_LOOP_DEPTH (SEAL_MAX_INDENT_LEVEL + 1) /* 1 for extra inline loop */
-
 typedef struct {
     seal_byte *code; /* instructions */
     int code_size; /* instructions size */
@@ -31,7 +29,7 @@ typedef struct {
         int is_for;
         signed short last_stop;
         signed short last_skip; /* for loops */
-    } loops[MAX_LOOP_DEPTH];
+    } loops[SEAL_MAX_LOOP_DEPTH];
     int loop_count;
     const char *file_name;
 } proto;

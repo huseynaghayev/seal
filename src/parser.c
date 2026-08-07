@@ -122,12 +122,16 @@ static ast *ast_new(parser *p, int type)
 }
 
 /* parsing */
+#define mark_loop_stmt(p)     ((p)->loop[(p)->loop_lvl].is_loop_stmt_used = true)
+#define demark_loop_stmt(p)   ((p)->loop[(p)->loop_lvl].is_loop_stmt_used = false)
+#define is_loop_stmt_used(p)  ((p)->loop[(p)->loop_lvl].is_loop_stmt_used)
+
 #define inccondlvl(p) ((p)->cond_lvl++)
 #define inclooplvl(p) ((p)->loop_lvl++)
 #define incfunclvl(p) ((p)->func_lvl++)
 
 #define deccondlvl(p) ((p)->cond_lvl--)
-#define declooplvl(p) ((p)->loop_lvl--)
+#define declooplvl(p) ((p)->loop_lvl--, demark_loop_stmt(p))
 #define decfunclvl(p) ((p)->func_lvl--)
 
 #define incond(p) ((p)->cond_lvl > 0)
@@ -251,13 +255,23 @@ static ast *parse_dowhile(parser *p)
         indent(p);
             w->as.whilestmt.body = parse_stmts(p);
         dedent(p);
-        /* eat additional newline produced by "after dedentation rule" */
-        newl(p);
     }
-    eat(p, TK_WHILE);
-    w->as.whilestmt.cond = parse_expr(p, true);
-    declooplvl(p);
-    return w;
+    if (matchnext(p, TK_WHILE)) {
+        /* eat additional newline produced by "after dedentation rule"
+         * only if there is 'while'
+         */
+        newl(p);
+        adv(p);
+        w->as.whilestmt.cond = parse_expr(p, true);
+        declooplvl(p);
+        return w;
+    } else {
+        if (is_loop_stmt_used(p)) {
+            perror(p, cur(p), "cannot use \'skip\' or \'stop\' statement without \'while\' in \'do\' block");
+        }
+        declooplvl(p);
+        return w->as.whilestmt.body;
+    }
 }
 
 static ast *parse_for(parser *p)
@@ -307,10 +321,12 @@ static ast *parse_statement(parser *p, int inl)
     case TK_SKIP:
         if (!inloop(p)) goto error;
         adv(p);
+        mark_loop_stmt(p);
         return ast_new(p, AST_SKIP);
     case TK_STOP:
         if (!inloop(p)) goto error;
         adv(p);
+        mark_loop_stmt(p);
         return ast_new(p, AST_STOP);
     case TK_RETURN:
         if (!infunc(p)) goto error;

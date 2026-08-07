@@ -12,6 +12,9 @@ struct parser {
     struct token tcur, tnext;
     struct arena *a;
     int cond_lvl;
+    struct {
+        bool is_loop_stmt_used; /* did use skip or stop */
+    } loop[SEAL_MAX_LOOP_DEPTH];
     int loop_lvl;
     int func_lvl;
 };
