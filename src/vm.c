@@ -340,7 +340,7 @@ static int load_lib(seal_state *S, const char *name)
 
     included_file_t ift = fallback_file(name);
     if (ift.file_type == INCLUDED_FILE_TYPE_NIL) {
-        vm_error(S, "neither \'%s.seal\' nor \'%s."DL_EXT"\' file found", name, name);
+        vm_error(S, "neither \'%s.seal\' nor \'%s"DL_EXT"\' file found", name, name);
         return 1;
     }
 

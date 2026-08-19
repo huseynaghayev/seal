@@ -164,8 +164,7 @@ static void free_chunk(struct chunk *c, int free_cp) {
 
 int seal_dostring(seal_state *S, const char *str)
 {
-    struct parser p;
-    p.a = NULL;
+    struct parser p = {0};
     struct chunk *volatile c = NULL;
     struct seal_func *volatile func = NULL;
     int result = 0;
