@@ -11,13 +11,13 @@
 
 #define SRC_SIZE 512
 
-#if DEBUG
+#if SEAL_DEBUG
 #define dump_cache(l) do { \
     for (int i = 0; i < (l)->cachedtk_len; i++) { \
         printf("dumped: %s\n", tkname((l)->cachedtks[i].type)); \
     } \
 } while (0)
-#endif /* DEBUG */
+#endif
 
 #define clear() (printf("\033[2J\033[H"))
 
@@ -91,13 +91,13 @@ repl:
         goto end;
     }
     input[strlen(input) - 1] = '\0';
-#endif
+#endif /* USE_GNU_READL */
     if (strcmp(input, "clear") == 0) {
         clear();
     } else if (strcmp(input, "exit") == 0) {
         goto end;
     }
-#if DEBUG
+#if SEAL_DEBUG
     else if (strcmp(input, "stack") == 0) {
         print_stack(S);
     } else if (strcmp(input, "G") == 0) {
@@ -112,7 +112,7 @@ repl:
             }
         }
     }
-#endif
+#endif /* SEAL_DEBUG */
     else {
         if (seal_dostring(S, input)) {
             fprintf(stderr, "%s\n", S->errmsg);

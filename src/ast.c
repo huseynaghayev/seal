@@ -219,4 +219,4 @@ void dump_ast(struct ast *node, int i)
     }
 }
 
-#endif
+#endif /* SEAL_DEBUG */

@@ -846,4 +846,4 @@ void print_stack(seal_state *S)
     printf("----------END STACK----------\n");
 }
 
-#endif
+#endif /* SEAL_DEBUG */

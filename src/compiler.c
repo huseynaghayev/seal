@@ -1232,4 +1232,4 @@ void dump_bytecode(struct chunk *c)
     }
 }
 
-#endif
+#endif /* SEAL_DEBUG */

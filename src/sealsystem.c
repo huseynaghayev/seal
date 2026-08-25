@@ -26,7 +26,7 @@ static const char *osname = "Windows";
 static const char *osname = "MacOS";
 #else
 static const char *osname = "Unknown";
-#endif
+#endif /* defined(__linux__) */
 
 #if defined(__x86_64__) || defined(_M_X64)
 static const char *arch = "x86_64";
