@@ -2,9 +2,8 @@
 #include <stdio.h>
 #include <time.h>
 
-#if SEAL_DEBUG
+/* temporary solution for packages */
 #include "state.h"
-#endif
 
 #if defined(__linux__)
 #include <unistd.h>
@@ -209,11 +208,11 @@ void sealopen_system(seal_state *S)
     seal_setfield(S, -2, "arch");
     seal_pushconststring(S, SEAL_VERSION);
     seal_setfield(S, -2, "version");
+    seal_push(S, SEAL_VMAP(S->packages));
+    seal_setfield(S, -2, "packages");
 #if SEAL_DEBUG
     seal_push(S, SEAL_VMAP(S->metamaps));
     seal_setfield(S, -2, "metamaps");
-    seal_push(S, SEAL_VMAP(S->packages));
-    seal_setfield(S, -2, "packages");
     seal_push(S, SEAL_VMAP(S->globals));
     seal_setfield(S, -2, "globals");
 #endif

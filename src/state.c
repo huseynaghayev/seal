@@ -53,23 +53,28 @@ seal_state *seal_state_new()
 
     sealopen_core(S);
 
-#if SEAL_DEBUG
+#if SEAL_PRELOAD_STRLIB
     sealopen_string(S);
     hashmap_insert(S->packages, "string", SEAL_VBOOL(true));
     seal_getglobal(S, "String");
     S->string_lib = SEAL_AS_MAP(seal_pop(S));
+#else
+    S->string_lib = NULL;
+#endif
 
+#if SEAL_PRELOAD_LISTLIB
     sealopen_list(S);
     hashmap_insert(S->packages, "list", SEAL_VBOOL(true));
     seal_getglobal(S, "List");
     S->list_lib = SEAL_AS_MAP(seal_pop(S));
+#else
+    S->list_lib = NULL;
+#endif
 
+#if SEAL_PRELOAD_MAPLIB
     sealopen_map(S);
     hashmap_insert(S->packages, "map", SEAL_VBOOL(true));
-#else
-    S->string_lib = NULL;
-    S->list_lib = NULL;
-#endif /* SEAL_DEBUG */
+#endif
 
     return S;
 }
@@ -297,7 +302,10 @@ int seal_call(seal_state *S, int argc)
         S->ci->line = 0;
         S->ci->ret_ip = S->ip;
         S->ip = SEAL_AS_SFUNC(f).c->code;
-        S->sp += SEAL_AS_SFUNC(f).c->local_size - argc;
+        /* set every non-argument local variables to null to prevent undefined behaviours */
+        int non_arg_count = SEAL_AS_SFUNC(f).c->local_size - argc;
+        memset(S->stack + S->sp, 0, sizeof(*S->stack) * non_arg_count);
+        S->sp += non_arg_count;
     } else {
         SEAL_AS_CFUNC(f).f /* function */
             (S); /* calling */

@@ -16,7 +16,7 @@
 /* semantic versioning of Seal */
 #define SEAL_VERSION_MAJOR "0"
 #define SEAL_VERSION_MINOR "3"
-#define SEAL_VERSION_PATCH "1"
+#define SEAL_VERSION_PATCH "2"
 
 /* full version */
 #define SEAL_VERSION SEAL_VERSION_MAJOR "." SEAL_VERSION_MINOR "." SEAL_VERSION_PATCH
@@ -25,7 +25,12 @@
 #define SEAL_COPYRIGHT_YEARS "2024-2026"
 #define SEAL_WEBSITE_LINK "https://seallang.org"
 
-#define SEAL_DEBUG 1
+/* whether to load String, List, and Map global maps */
+#define SEAL_PRELOAD_STRLIB   1
+#define SEAL_PRELOAD_LISTLIB  1
+#define SEAL_PRELOAD_MAPLIB   1
+
+#define SEAL_DEBUG  0
 
 #define SEAL_MALLOC(size)    malloc(size)
 #define SEAL_CALLOC(n, size) calloc(n, size)
@@ -37,10 +42,11 @@
 #if SEAL_32BITS
     #define SEAL_INTEGER int
     #define SEAL_FLOAT   float
+    #define SEAL_FLOAT_FMT "%.7g"
 #else
     #define SEAL_INTEGER long long
     #define SEAL_FLOAT   double
-    #define SEAL_FLOAT_FMT "%.14g"
+    #define SEAL_FLOAT_FMT "%.17g"
 #endif
 
 #define SEAL_BOOL bool
